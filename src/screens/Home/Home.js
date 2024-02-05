@@ -58,12 +58,15 @@ function Home(props) {
       crm_update.push(obj);
     });
 
+    console.log(crm_update);
+    console.log(userData.messages);
+    console.log(connection_id);
+
     await props.db
       .from("data")
       .update({
         crm_data: crm_update,
         twitter_messages: userData.messages,
-        twitterLinked: true,
       })
       .eq("connection_id", connection_id);
     setTwitterLinked(true);
