@@ -1,0 +1,68 @@
+.login-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 100vh;
+  background: #f7f9fb;
+}
+
+.crm-container {
+  background-color: #fff;
+  border-radius: 30px;
+  margin-right: 5%;
+  width: 40vw;
+  height: 80vh;
+  object-fit: contain;
+  flex-direction: column;
+  display: flex;
+}
+
+.crm-link {
+  display: flex;
+  width: 100%;
+  align-self: center;
+}
+
+.login-pic {
+  object-fit: contain;
+  height: 100%;
+  width: 100%;
+}
+
+.sign-up-text {
+  /* margin-top: 20%; */
+  margin-bottom: 5vh;
+}
+
+.sign-in-button {
+  display: flex;
+  min-width: 313px;
+  padding: var(--8, 8px) var(--16, 16px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--8, 8px);
+  border-radius: var(--12, 12px);
+  background: var(--Primary-Brand, #1c1c1c);
+  color: #fff;
+  margin-top: 5vh;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.input-container {
+  display: flex;
+  height: 40px;
+  min-width: 313px;
+  width: 90%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--4, 4px);
+  align-self: center;
+  border-radius: var(--12, 12px);
+  border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
+  background: var(--white-80, rgba(255, 255, 255, 0.8));
+  margin-top: 2vh;
+}
