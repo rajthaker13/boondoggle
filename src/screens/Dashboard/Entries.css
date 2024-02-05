@@ -287,7 +287,8 @@
 
 .entries-table-column {
   display: flex;
-  height: 40px;
+  /* height: 40px; */
+  height: auto;
   min-height: 40px;
   padding: var(--8, 8px) var(--12, 12px) var(--8, 8px) 0px;
   flex-direction: column;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Home.css";
 import { useNavigate } from "react-router-dom";
+import OpenAI from "openai";
 
 function Home(props) {
   const navigation = useNavigate();
@@ -35,28 +36,46 @@ function Home(props) {
     let crm_update = data[0].crm_data;
     console.log(crm_update);
 
-    userData.messages.map((lead) => {
-      if (crm_update.includes(lead.messageData.dm_conversation_id)) {
-        let array = crm_update.filter((msg) => {
-          return msg.id !== lead.messageData.dm_conversation_id;
-        });
-        crm_update = array;
-      }
-
-      var obj = {
-        id: lead.messageData.dm_conversation_id,
-        role: "--",
-        title: lead.messageData.text,
-        source: "Twitter",
-        contact: lead.userData[0].username,
-        customer: lead.userData[0].name,
-        location: "--",
-      };
-
-      console.log(obj);
-
-      crm_update.push(obj);
+    const openai = new OpenAI({
+      apiKey: "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",
     });
+
+    await Promise.all(
+      userData.messages.map(async (lead) => {
+        if (crm_update.includes(lead.messageData.dm_conversation_id)) {
+          let array = crm_update.filter((msg) => {
+            return msg.id !== lead.messageData.dm_conversation_id;
+          });
+          crm_update = array;
+        }
+
+        const chatCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}`,
+            },
+          ],
+          model: "gpt-3.5-turbo",
+        });
+
+        console.log(chatCompletion);
+
+        var obj = {
+          id: lead.messageData.dm_conversation_id,
+          role: "--",
+          title: lead.messageData.text,
+          source: "Twitter",
+          contact: lead.userData[0].username,
+          customer: lead.userData[0].name,
+          location: "--",
+        };
+
+        console.log(obj);
+
+        crm_update.push(obj);
+      })
+    );
 
     console.log(crm_update);
     console.log(userData.messages);
