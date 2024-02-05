@@ -43,7 +43,7 @@ function Home(props) {
         crm_update = array;
       }
 
-      const obj = {
+      var obj = {
         id: lead.messageData.dm_conversation_id,
         role: "--",
         title: lead.messageData.text,
@@ -52,6 +52,8 @@ function Home(props) {
         customer: lead.userData[0].name,
         location: "--",
       };
+
+      console.log(obj);
 
       crm_update.push(obj);
     });
@@ -102,7 +104,7 @@ function Home(props) {
       await captureOauthVerifier();
     }
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("oauth_verifier")) {
+    if (urlParams.has("oauth_verifier") && !twitterLinked) {
       getData();
     }
     // checkLinks();
