@@ -14,7 +14,8 @@
   border-radius: var(--24, 24px);
   background: var(--white-100, #fff);
   width: 95vw;
-  height: 95vh;
+  min-height: 95vh;
+  height: auto;
   flex-direction: row;
   display: inline-flex;
 }

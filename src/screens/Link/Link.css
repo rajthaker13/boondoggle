@@ -12,7 +12,7 @@
   background-color: #fff;
   border-radius: 30px;
   margin-right: 5%;
-  width: 40vw;
+  width: auto;
   height: 80vh;
   object-fit: contain;
   flex-direction: column;
