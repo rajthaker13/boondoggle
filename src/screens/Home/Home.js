@@ -60,7 +60,7 @@ function Home(props) {
       .from("data")
       .update({
         crm_data: crm_update,
-        twitter_messages: data.messages,
+        twitter_messages: userData.messages,
         twitterLinked: true,
       })
       .eq("connection_id", connection_id);
