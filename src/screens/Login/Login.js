@@ -31,12 +31,9 @@ function Login(props) {
     console.log(data);
   }
 
-  // useEffect(() => {
-  //   const urlParams = new URLSearchParams(window.location.search);
-  //   if (urlParams.has("oauth_verifier")) {
-  //     captureOauthVerifier();
-  //   }
-  // }, []);
+  useEffect(() => {
+    console.log(localStorage.getItem("twitterLinked"));
+  }, []);
 
   async function signIn() {
     console.log(email);
@@ -71,6 +68,7 @@ function Login(props) {
         <input
           className="input-container"
           placeholder="Password"
+          type="password"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
