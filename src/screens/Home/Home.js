@@ -55,7 +55,7 @@ function Home(props) {
             messages: [
               {
                 role: "user",
-                content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}`,
+                content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}. Don't use term like "the person" use it as if you are updating a CRM for your own company.`,
               },
             ],
             model: "gpt-3.5-turbo",
@@ -66,7 +66,7 @@ function Home(props) {
           var obj = {
             id: lead.messageData.dm_conversation_id,
             role: "--",
-            title: lead.messageData.text,
+            title: chatCompletion.choices[0].message.content,
             source: "Twitter",
             contact: lead.userData[0].username,
             customer: lead.userData[0].name,
