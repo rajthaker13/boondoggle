@@ -42,38 +42,40 @@ function Home(props) {
 
     await Promise.all(
       userData.messages.map(async (lead) => {
-        if (crm_update.includes(lead.messageData.dm_conversation_id)) {
-          let array = crm_update.filter((msg) => {
-            return msg.id !== lead.messageData.dm_conversation_id;
+        if (lead.userData[0].username != "joincrewmate") {
+          if (crm_update.includes(lead.messageData.dm_conversation_id)) {
+            let array = crm_update.filter((msg) => {
+              return msg.id !== lead.messageData.dm_conversation_id;
+            });
+            crm_update = array;
+          }
+
+          const chatCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}`,
+              },
+            ],
+            model: "gpt-3.5-turbo",
           });
-          crm_update = array;
+
+          console.log(chatCompletion);
+
+          var obj = {
+            id: lead.messageData.dm_conversation_id,
+            role: "--",
+            title: lead.messageData.text,
+            source: "Twitter",
+            contact: lead.userData[0].username,
+            customer: lead.userData[0].name,
+            location: "--",
+          };
+
+          console.log(obj);
+
+          crm_update.push(obj);
         }
-
-        const chatCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}`,
-            },
-          ],
-          model: "gpt-3.5-turbo",
-        });
-
-        console.log(chatCompletion);
-
-        var obj = {
-          id: lead.messageData.dm_conversation_id,
-          role: "--",
-          title: lead.messageData.text,
-          source: "Twitter",
-          contact: lead.userData[0].username,
-          customer: lead.userData[0].name,
-          location: "--",
-        };
-
-        console.log(obj);
-
-        crm_update.push(obj);
       })
     );
 
