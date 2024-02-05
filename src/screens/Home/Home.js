@@ -122,7 +122,7 @@ function Home(props) {
     //   .eq("id", uid);
     // console.log(data);
     if (localStorage.getItem("twitterLinked") == true) {
-      setTwitterLinked(truec);
+      setTwitterLinked(true);
     }
     // console.log(data[0].twitterLinked);
     // setTwitterLinked(data[0].twitterLinked);
@@ -132,11 +132,13 @@ function Home(props) {
     async function getData() {
       await captureOauthVerifier();
     }
+    if (localStorage.getItem("twitterLinked") == true) {
+      setTwitterLinked(true);
+    }
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("oauth_verifier") && !twitterLinked) {
       getData();
     }
-    checkLinks();
   }, []);
 
   return (
