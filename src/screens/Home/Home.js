@@ -132,7 +132,7 @@ function Home(props) {
     if (urlParams.has("oauth_verifier") && !twitterLinked) {
       getData();
     }
-    // checkLinks();
+    checkLinks();
   }, []);
 
   return (
