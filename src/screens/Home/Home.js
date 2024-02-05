@@ -100,7 +100,7 @@ function Home(props) {
       await captureOauthVerifier();
     }
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("oauth_verifier") && !twitterLinked) {
+    if (urlParams.has("oauth_verifier")) {
       getData();
     }
     checkLinks();
