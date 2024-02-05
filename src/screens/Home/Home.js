@@ -121,7 +121,7 @@ function Home(props) {
     //   .select("twitterLinked")
     //   .eq("id", uid);
     // console.log(data);
-    if (localStorage.getItem("twitterLinked" == true)) {
+    if (localStorage.getItem("twitterLinked") == true) {
       setTwitterLinked(truec);
     }
     // console.log(data[0].twitterLinked);
