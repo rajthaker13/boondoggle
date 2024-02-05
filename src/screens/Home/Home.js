@@ -92,6 +92,7 @@ function Home(props) {
       })
       .eq("connection_id", connection_id);
     setTwitterLinked(true);
+    localStorage.setItem("twitterLinked", true);
   }
 
   async function captureOauthVerifier() {
@@ -115,11 +116,14 @@ function Home(props) {
 
   async function checkLinks() {
     const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db
-      .from("users")
-      .select("twitterLinked")
-      .eq("id", uid);
-    console.log(data);
+    // const { data, error } = await props.db
+    //   .from("users")
+    //   .select("twitterLinked")
+    //   .eq("id", uid);
+    // console.log(data);
+    if (localStorage.getItem("twitterLinked" == true)) {
+      setTwitterLinked(truec);
+    }
     // console.log(data[0].twitterLinked);
     // setTwitterLinked(data[0].twitterLinked);
   }
