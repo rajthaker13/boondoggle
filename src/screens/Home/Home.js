@@ -24,6 +24,49 @@ function Home(props) {
     });
   }
 
+  async function updateCRM(userData) {
+    console.log(userData);
+    const connection_id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+
+    let crm_update = data[0].crm_data;
+    console.log(crm_update);
+
+    userData.messages.map((lead) => {
+      if (crm_update.includes(lead.messageData.dm_conversation_id)) {
+        let array = crm_update.filter((msg) => {
+          return msg.id !== lead.messageData.dm_conversation_id;
+        });
+        crm_update = array;
+      }
+
+      const obj = {
+        id: lead.messageData.dm_conversation_id,
+        role: "--",
+        title: lead.messageData.text,
+        source: "Twitter",
+        contact: lead.userData[0].username,
+        customer: lead.userData[0].name,
+        location: "--",
+      };
+
+      crm_update.push(obj);
+    });
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: crm_update,
+        twitter_messages: data.messages,
+        twitterLinked: true,
+      })
+      .eq("connection_id", connection_id);
+    setTwitterLinked(true);
+  }
+
   async function captureOauthVerifier() {
     const urlParams = new URLSearchParams(window.location.search);
     const oauthVerifier = urlParams.get("oauth_verifier");
@@ -34,53 +77,12 @@ function Home(props) {
     const secret = localStorage.getItem("oauth_secret");
     console.log(token);
     console.log(secret);
-    let { data, error } = await props.db.functions.invoke("get-twitter-dms", {
+    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
       body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
     });
-    // console.log(data);
-    const userData = data;
-    if (userData) {
-      const connection_id = localStorage.getItem("connection_id");
-      let { data, error } = await props.db
-        .from("data")
-        .select()
-        .eq("connection_id", connection_id);
-
-      let ids = [];
-      console.log(userData);
-      console.log(data);
-      let crm_update = data[0].crm_data;
-
-      userData.messages.map((lead) => {
-        if (crm_update.includes(lead.messageData.dm_conversation_id)) {
-          let array = crm_update.filter((msg) => {
-            return msg.id !== lead.messageData.dm_conversation_id;
-          });
-          ids = array;
-        }
-
-        const obj = {
-          id: lead.messageData.dm_conversation_id,
-          role: "--",
-          title: lead.messageData.text,
-          source: "Twitter",
-          contact: lead.userData[0].username,
-          customer: lead.userData[0].name,
-          location: "--",
-        };
-
-        crm_update.push(obj);
-      });
-
-      await props.db
-        .from("data")
-        .update({
-          crm_data: crm_update,
-          twitter_messages: data.messages,
-          twitterLinked: true,
-        })
-        .eq("connection_id", connection_id);
-      setTwitterLinked(true);
+    console.log(data);
+    if (data) {
+      await updateCRM(data);
     }
   }
 
