@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
   
 
   const messages = await loggedClient.v2.listDmEvents(options);
+  console.log(messages)
   console.log(messages.events)
 
   let result = []

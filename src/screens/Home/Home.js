@@ -105,7 +105,7 @@ function Home(props) {
     if (urlParams.has("oauth_verifier")) {
       getData();
     }
-    checkLinks();
+    // checkLinks();
   }, []);
 
   return (
