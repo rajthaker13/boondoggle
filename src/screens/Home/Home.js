@@ -38,6 +38,7 @@ function Home(props) {
 
     const openai = new OpenAI({
       apiKey: "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",
+      dangerouslyAllowBrowser: true,
     });
 
     await Promise.all(
@@ -315,10 +316,14 @@ function Home(props) {
                   <button
                     className="link-button"
                     onClick={async () => {
-                      await linkWithTwitter();
+                      if (!twitterLinked) {
+                        await linkWithTwitter();
+                      }
                     }}
                   >
-                    <p className="link-button-text">Link</p>
+                    <p className="link-button-text">
+                      {twitterLinked == true ? "LINKED" : "Link"}
+                    </p>
                   </button>
                 </div>
 
