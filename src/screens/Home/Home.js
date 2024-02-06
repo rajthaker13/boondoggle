@@ -115,30 +115,32 @@ function Home(props) {
   }
 
   async function checkLinks() {
-    const uid = localStorage.getItem("uid");
-    // const { data, error } = await props.db
-    //   .from("users")
-    //   .select("twitterLinked")
-    //   .eq("id", uid);
-    // console.log(data);
-    if (localStorage.getItem("twitterLinked") == true) {
-      setTwitterLinked(true);
-    }
+    const id = localStorage.getItem("connection_id");
+    console.log(id);
+    const { data, error } = await props.db
+      .from("data")
+      .select("twitterLinked")
+      .eq("connection_id", id);
+
     // console.log(data[0].twitterLinked);
-    // setTwitterLinked(data[0].twitterLinked);
+    setTwitterLinked(data[0].twitterLinked);
   }
 
   useEffect(() => {
     async function getData() {
-      await captureOauthVerifier();
+      if (!twitterLinked) {
+        await captureOauthVerifier();
+      }
     }
-    if (localStorage.getItem("twitterLinked") == true) {
-      setTwitterLinked(true);
+
+    async function loadCheck() {
+      await checkLinks();
     }
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("oauth_verifier") && !twitterLinked) {
       getData();
     }
+    loadCheck();
   }, []);
 
   return (
@@ -321,6 +323,11 @@ function Home(props) {
                   </div>
                   <button
                     className="link-button"
+                    style={
+                      twitterLinked
+                        ? { background: "#34B233", color: "#fff" }
+                        : {}
+                    }
                     onClick={async () => {
                       if (!twitterLinked) {
                         await linkWithTwitter();
@@ -328,7 +335,7 @@ function Home(props) {
                     }}
                   >
                     <p className="link-button-text">
-                      {twitterLinked == true ? "LINKED" : "Link"}
+                      {twitterLinked == true ? "Linked" : "Link"}
                     </p>
                   </button>
                 </div>
@@ -492,6 +499,30 @@ function Home(props) {
 
                   <div className="integrations-table-column">
                     <p className="integrations-table-column-header">Status</p>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    flexDirection: "row",
+                    display: "flex",
+                    width: "95%",
+                    alignItems: "flex-start",
+                    alignSelf: "stretch",
+                  }}
+                >
+                  <div className="integrations-table-column">
+                    <p className="integrations-table-column-header">Twitter</p>
+                  </div>
+                  <div className="integrations-table-column">
+                    <p className="integrations-table-column-header">
+                      blake@boondoggle.ai
+                    </p>
+                  </div>
+                  <div className="integrations-table-column">
+                    <p className="integrations-table-column-header">Just now</p>
+                  </div>
+                  <div className="interations-table-column">
+                    <p className="integrations-table-column-header">Approved</p>
                   </div>
                 </div>
               </div>

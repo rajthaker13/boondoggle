@@ -31,7 +31,7 @@
   width: 100%;
 }
 
-.sign-up-text {
+.crm-text {
   /* margin-top: 20%; */
   margin-bottom: 5vh;
 }
@@ -51,7 +51,7 @@
   font-size: 18px;
 }
 
-.input-container {
+/* .input-container {
   display: flex;
   height: 40px;
   min-width: 313px;
@@ -65,4 +65,4 @@
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
   background: var(--white-80, rgba(255, 255, 255, 0.8));
   margin-top: 2vh;
-}
+} */

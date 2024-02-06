@@ -11,6 +11,7 @@ function Entries(props) {
   useEffect(() => {
     async function getData() {
       const connection_id = localStorage.getItem("connection_id");
+      console.log(connection_id);
 
       const { data, error } = await props.db
         .from("data")

@@ -272,20 +272,6 @@
   padding: 0px var(--12, 12px);
 }
 
-.link-button-text {
-  color: var(--white-100, #fff);
-  text-align: center;
-  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
-
-  /* 18 Regular */
-  font-family: Inter;
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 1px;
-  align-self: stretch;
-}
-
 .entries-table-column {
   display: flex;
   /* height: 40px; */

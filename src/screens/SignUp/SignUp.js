@@ -1,35 +1,62 @@
 import React, { useEffect, useState } from "react";
-import "./Login.css";
+import "./SignUp.css";
 import { useNavigate } from "react-router-dom";
 
-function Login(props) {
+function SignUp(props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigate();
 
-  async function redirect(uid) {
-    const { data, error } = await props.db.from("users").select().eq("id", uid);
-    localStorage.setItem("connection_id", data[0].crm_id);
-    navigation("/home");
+  async function signInWithTwitter() {
+    const { data, error } = await props.db.functions.invoke("twitter-login-3");
+    console.log(data);
+    localStorage.setItem("oauth_token", data.url.oauth_token);
+    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
+    window.open(data.url.url, "_self");
   }
+
+  async function captureOauthVerifier() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthVerifier = urlParams.get("oauth_verifier");
+
+    // Now oauthVerifier contains the value of oauth_verifier parameter
+    console.log("Verifier " + oauthVerifier);
+    const token = localStorage.getItem("oauth_token");
+    const secret = localStorage.getItem("oauth_secret");
+    console.log(token);
+    console.log(secret);
+    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
+      body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
+    });
+    console.log(data);
+  }
+
+  useEffect(() => {
+    console.log(localStorage.getItem("twitterLinked"));
+  }, []);
 
   async function signIn() {
     console.log(email);
     console.log(password);
-    const { data, error } = await props.db.auth.signInWithPassword({
+    const { data, error } = await props.db.auth.signUp({
       email: email,
       password: password,
     });
-    console.log(data);
     localStorage.setItem("email", data.user.email);
     localStorage.setItem("uid", data.user.id);
-    await redirect(data.user.id);
+    navigation("/link");
   }
 
   return (
     <div className="login-container">
       <div className="login-pic-container">
-        <p className="sign-up-text">Sign In</p>
+        <img
+          className="login-pic"
+          src={require("../../assets/login.png")}
+        ></img>
+      </div>
+      <div className="login-pic-container">
+        <p className="sign-up-text">Sign Up</p>
         <p className="trial-text">
           Start your 7 day free trial, no card required.
         </p>
@@ -61,19 +88,22 @@ function Login(props) {
           onClick={async () => {
             await signIn();
           }}
+          //   onClick={async () => {
+          //     await signInWithTwitter();
+          //   }}
         >
-          Sign In
+          Sign Up
         </button>
         <div className="sign-in-text-container">
           <span className="sign-in-text-1">
-            Not a Member Yet?{" "}
+            Already have an Account?{" "}
             <span
               className="sign-in-text-2"
               onClick={() => {
-                navigation("/");
+                navigation("/login");
               }}
             >
-              Sign Up
+              Sign In
             </span>
           </span>
         </div>
@@ -82,4 +112,4 @@ function Login(props) {
   );
 }
 
-export default Login;
+export default SignUp;

@@ -57,7 +57,7 @@ function Link(props) {
   return (
     <div className="login-container">
       <div className="crm-container">
-        <h1 className="sign-up-text">Link Your CRM</h1>
+        <h1 className="crm-text">Link Your CRM</h1>
         <div className="crm-link">
           <UnifiedDirectory
             workspace_id={"65c02dbec9810ed1f215c33b"}
