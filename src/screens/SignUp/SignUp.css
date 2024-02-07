@@ -12,7 +12,7 @@
   background-color: #fff;
   border-radius: 30px;
   margin-right: 5%;
-  width: 40vw;
+  width: 40%;
   height: 80vh;
   object-fit: contain;
   flex-direction: column;
@@ -54,13 +54,14 @@
   margin-top: 5vh;
   font-weight: 800;
   font-size: 18px;
+  width: 60%;
 }
 
 .input-container {
   display: flex;
   height: 40px;
   min-width: 313px;
-  width: 80%;
+  width: 75%;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
@@ -70,6 +71,7 @@
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
   background: var(--white-80, rgba(255, 255, 255, 0.8));
   margin-top: 4vh;
+  padding: var(--4, 4px) var(--12, 12px);
 }
 
 .trial-text {

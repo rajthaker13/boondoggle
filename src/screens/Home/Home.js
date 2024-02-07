@@ -421,11 +421,9 @@ function Home(props) {
                   </div>
                   <button
                     className="link-button"
-                    style={{ background: "#f7f9fb" }}
+                    // style={{ background: "#f7f9fb" }}
                   >
-                    <p className="link-button-text" style={{ color: "black" }}>
-                      Coming Soon
-                    </p>
+                    <p className="link-button-text">Link</p>
                   </button>
                 </div>
 

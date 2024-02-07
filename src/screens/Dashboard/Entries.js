@@ -157,6 +157,109 @@ function Entries(props) {
             </div>
           </div>
           <div className="dashboard">
+            <div className="entries-stats-container">
+              <div className="entries-stats-cell">
+                <div className="entries-stats-text-container"></div>
+                <span className="stats-line-text-1">
+                  Rejected <span className="stats-line-text-2">6</span>
+                </span>
+                <div className="stats-line-container">
+                  <div className="stats-line"></div>
+                </div>
+              </div>
+
+              <div className="entries-stats-cell">
+                <div className="entries-stats-text-container"></div>
+                <span className="stats-line-text-1">
+                  In Progress <span className="stats-line-text-2">6</span>
+                </span>
+                <div className="stats-line-container">
+                  <div
+                    className="stats-line"
+                    style={{ background: "var(--Secondary-Purple, #C6C7F8)" }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="entries-stats-cell">
+                <div className="entries-stats-text-container"></div>
+                <span className="stats-line-text-1">
+                  Pending <span className="stats-line-text-2">4</span>
+                </span>
+                <div className="stats-line-container">
+                  <div
+                    className="stats-line"
+                    style={{ background: "#B1E3FF" }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="entries-stats-cell">
+                <div className="entries-stats-text-container"></div>
+                <span className="stats-line-text-1">
+                  Completed <span className="stats-line-text-2">6</span>
+                </span>
+                <div className="stats-line-container">
+                  <div className="stats-line"></div>
+                </div>
+              </div>
+            </div>
+            <div className="sort-container">
+              <div className="filter-container">
+                <div className="filter-button">
+                  <div className="filter-icon">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M10.625 4.375C10.625 4.02982 10.3452 3.75 10 3.75C9.65482 3.75 9.375 4.02982 9.375 4.375V9.375H4.375C4.02982 9.375 3.75 9.65482 3.75 10C3.75 10.3452 4.02982 10.625 4.375 10.625H9.375V15.625C9.375 15.9702 9.65482 16.25 10 16.25C10.3452 16.25 10.625 15.9702 10.625 15.625V10.625H15.625C15.9702 10.625 16.25 10.3452 16.25 10C16.25 9.65482 15.9702 9.375 15.625 9.375H10.625V4.375Z"
+                        fill="#1C1C1C"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="filter-button">
+                  <div className="filter-icon">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M10.625 4.375C10.625 4.02982 10.3452 3.75 10 3.75C9.65482 3.75 9.375 4.02982 9.375 4.375V9.375H4.375C4.02982 9.375 3.75 9.65482 3.75 10C3.75 10.3452 4.02982 10.625 4.375 10.625H9.375V15.625C9.375 15.9702 9.65482 16.25 10 16.25C10.3452 16.25 10.625 15.9702 10.625 15.625V10.625H15.625C15.9702 10.625 16.25 10.3452 16.25 10C16.25 9.65482 15.9702 9.375 15.625 9.375H10.625V4.375Z"
+                        fill="#1C1C1C"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="filter-button">
+                  <div className="filter-icon">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M10.625 4.375C10.625 4.02982 10.3452 3.75 10 3.75C9.65482 3.75 9.375 4.02982 9.375 4.375V9.375H4.375C4.02982 9.375 3.75 9.65482 3.75 10C3.75 10.3452 4.02982 10.625 4.375 10.625H9.375V15.625C9.375 15.9702 9.65482 16.25 10 16.25C10.3452 16.25 10.625 15.9702 10.625 15.625V10.625H15.625C15.9702 10.625 16.25 10.3452 16.25 10C16.25 9.65482 15.9702 9.375 15.625 9.375H10.625V4.375Z"
+                        fill="#1C1C1C"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <input className="search-container" placeholder="Search"></input>
+            </div>
             <div className="entries-container">
               <div className="connected-apps-header-container">
                 <div
@@ -168,9 +271,32 @@ function Entries(props) {
                     alignSelf: "stretch",
                   }}
                 >
-                  {/* <div className="entries-table-column">
+                  <div className="entries-table-column" style={{ width: "5%" }}>
+                    <div className="integrations-table-column-checkbox">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M1 7.4C1 5.15979 1 4.03968 1.43597 3.18404C1.81947 2.43139 2.43139 1.81947 3.18404 1.43597C4.03968 1 5.15979 1 7.4 1H8.6C10.8402 1 11.9603 1 12.816 1.43597C13.5686 1.81947 14.1805 2.43139 14.564 3.18404C15 4.03968 15 5.15979 15 7.4V8.6C15 10.8402 15 11.9603 14.564 12.816C14.1805 13.5686 13.5686 14.1805 12.816 14.564C11.9603 15 10.8402 15 8.6 15H7.4C5.15979 15 4.03968 15 3.18404 14.564C2.43139 14.1805 1.81947 13.5686 1.43597 12.816C1 11.9603 1 10.8402 1 8.6V7.4Z"
+                          fill="#1C1C1C"
+                        />
+                        <path
+                          fill-rule="evenodd"
+                          clip-rule="evenodd"
+                          d="M11.0087 6.1989C11.3131 6.47985 11.3321 6.95435 11.0511 7.25871L8.23979 10.3043C7.83664 10.7411 7.1438 10.7319 6.75241 10.2845L5.18558 8.49388C4.91282 8.18215 4.9444 7.70833 5.25613 7.43557C5.56786 7.16281 6.04168 7.1944 6.31444 7.50613L7.51493 8.87811L9.94891 6.24129C10.2299 5.93693 10.7044 5.91795 11.0087 6.1989Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="entries-table-column">
                     <p className="integrations-table-column-header">Entry ID</p>
-                  </div> */}
+                  </div>
 
                   <div className="entries-table-column">
                     <p className="integrations-table-column-header">Customer</p>
@@ -183,21 +309,21 @@ function Entries(props) {
                   </div>
 
                   <div className="entries-table-column">
-                    <p className="integrations-table-column-header">Role</p>
+                    <p className="integrations-table-column-header">Summary</p>
                   </div>
 
                   <div className="entries-table-column">
                     <p className="integrations-table-column-header">
-                      Email/Username
+                      Date Deployed
                     </p>
                   </div>
 
                   <div className="entries-table-column">
-                    <p className="integrations-table-column-header">Location</p>
+                    <p className="integrations-table-column-header">Source</p>
                   </div>
 
                   <div className="entries-table-column">
-                    <p className="integrations-table-column-header">Source</p>
+                    <p className="integrations-table-column-header">Status</p>
                   </div>
                 </div>
                 {tableData.map((lead) => {
@@ -212,46 +338,80 @@ function Entries(props) {
                         alignSelf: "stretch",
                       }}
                     >
-                      {/* <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
-                          {lead.id}
-                        </p>
-                      </div> */}
+                      <div
+                        className="entries-table-column"
+                        style={{ width: "5%" }}
+                      >
+                        <div className="integrations-table-column-checkbox">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="M1 7.4C1 5.15979 1 4.03968 1.43597 3.18404C1.81947 2.43139 2.43139 1.81947 3.18404 1.43597C4.03968 1 5.15979 1 7.4 1H8.6C10.8402 1 11.9603 1 12.816 1.43597C13.5686 1.81947 14.1805 2.43139 14.564 3.18404C15 4.03968 15 5.15979 15 7.4V8.6C15 10.8402 15 11.9603 14.564 12.816C14.1805 13.5686 13.5686 14.1805 12.816 14.564C11.9603 15 10.8402 15 8.6 15H7.4C5.15979 15 4.03968 15 3.18404 14.564C2.43139 14.1805 1.81947 13.5686 1.43597 12.816C1 11.9603 1 10.8402 1 8.6V7.4Z"
+                              fill="#1C1C1C"
+                            />
+                            <path
+                              fill-rule="evenodd"
+                              clip-rule="evenodd"
+                              d="M11.0087 6.1989C11.3131 6.47985 11.3321 6.95435 11.0511 7.25871L8.23979 10.3043C7.83664 10.7411 7.1438 10.7319 6.75241 10.2845L5.18558 8.49388C4.91282 8.18215 4.9444 7.70833 5.25613 7.43557C5.56786 7.16281 6.04168 7.1944 6.31444 7.50613L7.51493 8.87811L9.94891 6.24129C10.2299 5.93693 10.7044 5.91795 11.0087 6.1989Z"
+                              fill="white"
+                            />
+                          </svg>
+                        </div>
+                      </div>
 
                       <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
+                        <p className="integrations-table-column-info">
+                          {lead.id}
+                        </p>
+                      </div>
+
+                      <div className="entries-table-column">
+                        <p className="integrations-table-column-info">
                           {lead.customer}
                         </p>
                       </div>
 
                       <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
-                          {lead.title}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
+                        <p className="integrations-table-column-info">
                           {lead.role}
                         </p>
                       </div>
 
                       <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
-                          {lead.contact}
+                        <p className="integrations-table-column-info">
+                          {lead.title}
                         </p>
                       </div>
 
                       <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
-                          {lead.location}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-header">
+                        <p className="integrations-table-column-info">
                           {lead.source}
                         </p>
+                      </div>
+
+                      <div className="entries-table-column">
+                        <p className="integrations-table-column-info">
+                          {lead.source}
+                        </p>
+                      </div>
+
+                      <div className="entries-table-column">
+                        <div className=".entries-table-status-container">
+                          <p
+                            className="integrations-table-column-info"
+                            style={{ color: "#8A8CD9" }}
+                          >
+                            In Progress
+                          </p>
+                        </div>
+                        {/* <p className="integrations-table-column-info">
+                          {lead.source}
+                        </p> */}
                       </div>
                     </div>
                   );

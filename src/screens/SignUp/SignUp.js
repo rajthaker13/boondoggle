@@ -55,7 +55,7 @@ function SignUp(props) {
           src={require("../../assets/login.png")}
         ></img>
       </div>
-      <div className="login-pic-container">
+      <div className="login-pic-container" style={{ width: "30%" }}>
         <p className="sign-up-text">Sign Up</p>
         <p className="trial-text">
           Start your 7 day free trial, no card required.
