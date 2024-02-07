@@ -325,7 +325,7 @@ function Home(props) {
                     className="link-button"
                     style={
                       twitterLinked
-                        ? { background: "#34B233", color: "#fff" }
+                        ? { background: "black", color: "#fff" }
                         : {}
                     }
                     onClick={async () => {
@@ -335,7 +335,7 @@ function Home(props) {
                     }}
                   >
                     <p className="link-button-text">
-                      {twitterLinked == true ? "Linked" : "Link"}
+                      {twitterLinked == true ? "Connected" : "Connect"}
                     </p>
                   </button>
                 </div>
@@ -421,9 +421,11 @@ function Home(props) {
                   </div>
                   <button
                     className="link-button"
-                    // style={{ background: "#f7f9fb" }}
+                    style={{ background: "#f7f9fb" }}
                   >
-                    <p className="link-button-text">Link</p>
+                    <p className="link-button-text" style={{ color: "black" }}>
+                      Coming Soon
+                    </p>
                   </button>
                 </div>
 

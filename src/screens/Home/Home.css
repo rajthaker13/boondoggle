@@ -268,6 +268,7 @@
   background: var(--Primary-Brand, #1c1c1c);
   padding: 0px var(--12, 12px);
   border-width: 1px;
+  width: auto;
 }
 
 .link-button-text {
@@ -279,7 +280,6 @@
   font-family: Inter;
   font-size: 14px;
   font-style: normal;
-  font-weight: 600;
   line-height: 1px;
   align-self: stretch;
 }
