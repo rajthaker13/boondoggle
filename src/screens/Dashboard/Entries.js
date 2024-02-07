@@ -36,8 +36,8 @@ function Entries(props) {
 
           <div className="sidebar-tabs">
             <svg
-              width="30"
-              height="30"
+              width="20"
+              height="20"
               viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -95,8 +95,8 @@ function Entries(props) {
 
             <div className="sidebar-tabs">
               <svg
-                width="30"
-                height="30"
+                width="20"
+                height="20"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -204,7 +204,7 @@ function Entries(props) {
                 </div>
               </div>
             </div>
-            <div className="sort-container">
+            {/* <div className="sort-container">
               <div className="filter-container">
                 <div className="filter-button">
                   <div className="filter-icon">
@@ -259,7 +259,7 @@ function Entries(props) {
               </div>
 
               <input className="search-container" placeholder="Search"></input>
-            </div>
+            </div> */}
             <div className="entries-container">
               <div className="connected-apps-header-container">
                 <div className="entries-table-row-head">

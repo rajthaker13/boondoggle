@@ -157,8 +157,8 @@ function Home(props) {
 
           <div className="sidebar-tabs">
             <svg
-              width="30"
-              height="30"
+              width="20"
+              height="20"
               viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -220,8 +220,8 @@ function Home(props) {
 
             <div className="sidebar-tabs">
               <svg
-                width="30"
-                height="30"
+                width="20"
+                height="20"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -509,18 +509,28 @@ function Home(props) {
                   }}
                 >
                   <div className="integrations-table-column">
-                    <p className="integrations-table-column-header">Twitter</p>
+                    <p
+                      className="integrations-table-column-text"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Twitter
+                    </p>
                   </div>
                   <div className="integrations-table-column">
-                    <p className="integrations-table-column-header">
+                    <p className="integrations-table-column-text">
                       blake@boondoggle.ai
                     </p>
                   </div>
                   <div className="integrations-table-column">
-                    <p className="integrations-table-column-header">Just now</p>
+                    <p className="integrations-table-column-text">Just now</p>
                   </div>
-                  <div className="interations-table-column">
-                    <p className="integrations-table-column-header">Approved</p>
+                  <div className="integrations-table-column">
+                    <p
+                      className="integrations-table-column-text"
+                      style={{ color: "#4AA785" }}
+                    >
+                      Approved
+                    </p>
                   </div>
                 </div>
               </div>

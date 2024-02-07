@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
     accessSecret: secret,
   });
 
+
   const { client: loggedClient, accessToken, accessSecret } = await client.login(oauthVerifier)
 
   const options = {
