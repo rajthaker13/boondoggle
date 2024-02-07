@@ -262,15 +262,7 @@ function Entries(props) {
             </div>
             <div className="entries-container">
               <div className="connected-apps-header-container">
-                <div
-                  style={{
-                    flexDirection: "row",
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "flex-start",
-                    alignSelf: "stretch",
-                  }}
-                >
+                <div className="entries-table-row-head">
                   <div className="entries-table-column" style={{ width: "5%" }}>
                     <div className="integrations-table-column-checkbox">
                       <svg
@@ -329,15 +321,7 @@ function Entries(props) {
                 {tableData.map((lead) => {
                   console.log(lead);
                   return (
-                    <div
-                      style={{
-                        flexDirection: "row",
-                        display: "flex",
-                        width: "100%",
-                        alignItems: "flex-start",
-                        alignSelf: "stretch",
-                      }}
-                    >
+                    <div className="entries-table-row">
                       <div
                         className="entries-table-column"
                         style={{ width: "5%" }}

@@ -287,6 +287,27 @@
   padding: 0px var(--12, 12px);
 }
 
+.entries-table-row-head {
+  flex-direction: row;
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  align-self: stretch;
+}
+
+.entries-table-row {
+  flex-direction: row;
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  align-self: stretch;
+  border-radius: var(--22, 22px);
+}
+
+.entries-table-row:hover {
+  background: var(--Primary-Light, #f7f9fb);
+}
+
 .entries-table-column {
   display: flex;
   /* height: 40px; */
