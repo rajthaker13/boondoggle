@@ -181,7 +181,7 @@ function Entries(props) {
                 </div>
               </div>
 
-              <div className="entries-stats-cell">
+              {/* <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
                 <span className="stats-line-text-1">
                   Pending <span className="stats-line-text-2">4</span>
@@ -192,7 +192,7 @@ function Entries(props) {
                     style={{ background: "#B1E3FF" }}
                   ></div>
                 </div>
-              </div>
+              </div> */}
 
               <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
@@ -200,7 +200,10 @@ function Entries(props) {
                   Completed <span className="stats-line-text-2">6</span>
                 </span>
                 <div className="stats-line-container">
-                  <div className="stats-line"></div>
+                  <div
+                    className="stats-line"
+                    style={{ background: "#A1E3CB" }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -362,13 +365,13 @@ function Entries(props) {
 
                       <div className="entries-table-column">
                         <p className="integrations-table-column-info">
-                          {lead.role}
+                          {lead.title}
                         </p>
                       </div>
 
                       <div className="entries-table-column">
                         <p className="integrations-table-column-info">
-                          {lead.title}
+                          {lead.summary}
                         </p>
                       </div>
 
@@ -390,7 +393,7 @@ function Entries(props) {
                             className="integrations-table-column-info"
                             style={{ color: "#8A8CD9" }}
                           >
-                            In Progress
+                            {lead.status}
                           </p>
                         </div>
                         {/* <p className="integrations-table-column-info">

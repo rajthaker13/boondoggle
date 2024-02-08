@@ -8,6 +8,7 @@ console.log("Hello from Functions!")
 
 
 const CALLBACK_URL = "https://boondoggle.vercel.app/home"; 
+// const CALLBACK_URL = "http://localhost:3000/home"; 
 // const CALLBACK_URL = "https://gwjtbxxhdsqrelswpgdi.supabase.co/functions/v1/twitter-callback"; // Update the callback URL to match your application's URL
 
 Deno.serve(async (req) => {

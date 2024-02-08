@@ -34,6 +34,7 @@ function Home(props) {
       .eq("connection_id", connection_id);
 
     let crm_update = data[0].crm_data;
+    let twitter_messages = [];
     console.log(crm_update);
 
     const openai = new OpenAI({
@@ -43,52 +44,113 @@ function Home(props) {
 
     await Promise.all(
       userData.messages.map(async (lead) => {
-        if (lead.userData[0].username != "joincrewmate") {
-          if (crm_update.includes(lead.messageData.dm_conversation_id)) {
-            let array = crm_update.filter((msg) => {
-              return msg.id !== lead.messageData.dm_conversation_id;
-            });
-            crm_update = array;
-          }
-
-          const chatCompletion = await openai.chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}. Don't use term like "the person" use it as if you are updating a CRM for your own company.`,
-              },
-            ],
-            model: "gpt-3.5-turbo",
+        const itemIndex = twitter_messages.findIndex(
+          (item) => item.id === lead.messageData.dm_conversation_id
+        );
+        if (itemIndex != -1) {
+          twitter_messages = twitter_messages.map((item, index) => {
+            if (index === itemIndex && item.customer === "joincrewmate") {
+              return {
+                ...item,
+                customer: lead.userData[0].username,
+                messages: [...item.messages, lead.messageData.text],
+              };
+            } else {
+              return {
+                ...item,
+                messages: [...item.messages, lead.messageData.text],
+              };
+            }
           });
-
-          console.log(chatCompletion);
-
-          var obj = {
+        } else {
+          twitter_messages.push({
             id: lead.messageData.dm_conversation_id,
-            role: "--",
-            title: chatCompletion.choices[0].message.content,
-            source: "Twitter",
-            contact: lead.userData[0].username,
-            customer: lead.userData[0].name,
-            location: "--",
-          };
-
-          console.log(obj);
-
-          crm_update.push(obj);
+            customer: lead.userData[0].username,
+            messages: [lead.messageData.text],
+          });
         }
+
+        // if (crm_update.includes(lead.messageData.dm_conversation_id)) {
+        //   let array = crm_update.filter((msg) => {
+        //     return msg.id !== lead.messageData.dm_conversation_id;
+        //   });
+        //   crm_update = array;
+        // }
+
+        // const chatCompletion = await openai.chat.completions.create({
+        //   messages: [
+        //     {
+        //       role: "user",
+        //       content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}. Don't use term like "the person" use it as if you are updating a CRM for your own company.`,
+        //     },
+        //   ],
+        //   model: "gpt-3.5-turbo",
+        // });
+
+        // console.log(chatCompletion);
+
+        // var obj = {
+        //   id: lead.messageData.dm_conversation_id,
+        //   role: "--",
+        //   title: chatCompletion.choices[0].message.content,
+        //   source: "Twitter",
+        //   contact: lead.userData[0].username,
+        //   customer: lead.userData[0].name,
+        //   location: "--",
+        // };
+
+        // console.log(obj);
+
+        // crm_update.push(obj);
+      })
+    );
+
+    console.log(twitter_messages);
+    await Promise.all(
+      twitter_messages.map(async (dm) => {
+        const titleCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a short title for this conversation.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+        const title = titleCompletion.choices[0].message.content;
+        const summaryCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a summary in first-person of this conversation.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+        const summary = summaryCompletion.choices[0].message.content;
+        var obj = {
+          id: dm.id,
+          customer: dm.customer,
+          title: title,
+          summary: summary,
+          date: "Just Now",
+          source: "Twitter",
+          status: "In Progress",
+        };
+        crm_update.push(obj);
       })
     );
 
     console.log(crm_update);
-    console.log(userData.messages);
-    console.log(connection_id);
+    // console.log(userData.messages);
+    // console.log(connection_id);
 
     await props.db
       .from("data")
       .update({
         crm_data: crm_update,
         twitter_messages: userData.messages,
+        twitterLinked: true,
       })
       .eq("connection_id", connection_id);
     setTwitterLinked(true);
@@ -119,10 +181,10 @@ function Home(props) {
     console.log(id);
     const { data, error } = await props.db
       .from("data")
-      .select("twitterLinked")
+      .select("")
       .eq("connection_id", id);
 
-    // console.log(data[0].twitterLinked);
+    console.log(data);
     setTwitterLinked(data[0].twitterLinked);
   }
 
@@ -336,14 +398,17 @@ function Home(props) {
                     <p className="connected-app-info-2">Direct Messages</p>
                   </div>
                   <button
-                    className={twitterLinked ? "linked-button" : "link=button"}
+                    className={twitterLinked ? "linked-button" : "link-button"}
                     onClick={async () => {
                       if (!twitterLinked) {
                         await linkWithTwitter();
                       }
                     }}
                   >
-                    <p className="link-button-text">
+                    <p
+                      className="link-button-text"
+                      style={!twitterLinked ? { color: "black" } : {}}
+                    >
                       {twitterLinked == true ? "Connected" : "Connect"}
                     </p>
                   </button>
