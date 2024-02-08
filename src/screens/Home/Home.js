@@ -108,36 +108,38 @@ function Home(props) {
     console.log(twitter_messages);
     await Promise.all(
       twitter_messages.map(async (dm) => {
-        const titleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a short title for this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const title = titleCompletion.choices[0].message.content;
-        const summaryCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a summary in first-person of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const summary = summaryCompletion.choices[0].message.content;
-        var obj = {
-          id: dm.id,
-          customer: dm.customer,
-          title: title,
-          summary: summary,
-          date: "Just Now",
-          source: "Twitter",
-          status: "In Progress",
-        };
-        crm_update.push(obj);
+        if (dm.customer != "joincrewmate") {
+          const titleCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a short title for this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const title = titleCompletion.choices[0].message.content;
+          const summaryCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a summary in first-person of this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const summary = summaryCompletion.choices[0].message.content;
+          var obj = {
+            id: dm.id,
+            customer: dm.customer,
+            title: title,
+            summary: summary,
+            date: "Just Now",
+            source: "Twitter",
+            status: "In Progress",
+          };
+          crm_update.push(obj);
+        }
       })
     );
 
