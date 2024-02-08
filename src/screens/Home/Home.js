@@ -292,6 +292,20 @@ function Home(props) {
               <div className="connected-apps-header-container">
                 <p className="connected-apps-header">Connected Apps</p>
               </div>
+              <div className="connected-apps-howto-container">
+                <div className="connected-apps-howto-text-container">
+                  <span className="connected-apps-howto-text-1">
+                    To automate access to your social accounts, Boondoggle uses
+                    your session cookie. When you log into an account, a new
+                    session cookie is created. When you log out or are
+                    disconnected, the cookie expires. We will notify you if any
+                    of your accounts disconnect.{" "}
+                    <span className="connected-apps-howto-text-2">
+                      Learn More
+                    </span>
+                  </span>
+                </div>
+              </div>
               <div
                 style={{
                   flexDirection: "row",
@@ -464,6 +478,53 @@ function Home(props) {
                   >
                     <p className="link-button-text" style={{ color: "black" }}>
                       Coming Soon
+                    </p>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="connected-apps-container">
+              <div className="connected-apps-header-container">
+                <p className="connected-apps-header">Connected CRM</p>
+              </div>
+              <div
+                style={{
+                  flexDirection: "row",
+                  display: "flex",
+                  width: "95%",
+                  gap: "30px",
+                }}
+              >
+                <div className="connected-apps-cell">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="40"
+                    height="40"
+                    viewBox="0 0 32 32"
+                    fill="none"
+                  >
+                    <path
+                      d="M16 32C24.8366 32 32 24.8366 32 16C32 7.16344 24.8366 0 16 0C7.16344 0 0 7.16344 0 16C0 24.8366 7.16344 32 16 32Z"
+                      fill="#1DA1F2"
+                    />
+                    <path
+                      d="M24.3127 11.0875C23.7252 11.3468 23.0971 11.5218 22.4346 11.6031C23.1096 11.1968 23.6283 10.5562 23.8721 9.7937C23.2408 10.1625 22.5377 10.4312 21.7939 10.5812C21.1971 9.9437 20.3502 9.5437 19.4064 9.5437C17.6002 9.5437 16.1346 11.0093 16.1346 12.8125C16.1346 13.0718 16.1658 13.3218 16.2189 13.5593C13.5002 13.4312 11.0877 12.125 9.4752 10.15C9.19082 10.6312 9.03145 11.1875 9.03145 11.7968C9.03145 12.9343 9.60957 13.9343 10.4877 14.5218C9.9502 14.5031 9.44707 14.3562 9.00645 14.1125V14.1531C9.00645 15.7406 10.1314 17.0625 11.6314 17.3625C11.3564 17.4375 11.0658 17.475 10.7689 17.475C10.5596 17.475 10.3596 17.4562 10.1596 17.4187C10.5783 18.7187 11.7846 19.6656 13.2221 19.6906C12.1064 20.5687 10.6877 21.0906 9.16582 21.0906C8.90645 21.0906 8.64707 21.075 8.3877 21.0468C9.84395 21.975 11.5596 22.5156 13.4127 22.5156C19.4283 22.5156 22.7189 17.5312 22.7189 13.2156C22.7189 13.0781 22.7189 12.9375 22.7096 12.7968C23.3471 12.3375 23.9064 11.7593 24.3439 11.1031L24.3127 11.0875Z"
+                      fill="white"
+                    />
+                  </svg>
+                  <div className="connected-app-info-container">
+                    <p className="connected-app-info-1">Salesforce</p>
+                    <p className="connected-app-info-2">
+                      Connected Account: blake@boondoggle.ai
+                    </p>
+                  </div>
+                  <button
+                    className="link-button"
+                    style={{ width: "10%", background: "#f7f9fb" }}
+                  >
+                    <p className="link-button-text" style={{ color: "black" }}>
+                      Switch CRM
                     </p>
                   </button>
                 </div>

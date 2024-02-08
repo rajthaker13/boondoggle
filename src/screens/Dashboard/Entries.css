@@ -13,15 +13,6 @@
   font-style: normal;
 }
 
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  align-content: center;
-  width: 80vw;
-}
-
 .dashboard-2 {
   display: flex;
   width: 100%;

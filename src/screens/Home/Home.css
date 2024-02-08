@@ -13,7 +13,7 @@
   /* padding: 275.62px 452px; */
   border-radius: var(--24, 24px);
   background: var(--white-100, #fff);
-  width: 90vw;
+  width: 95vw;
   height: 95vh;
   flex-direction: row;
   display: inline-flex;
@@ -119,7 +119,7 @@
   justify-content: center;
   align-items: center;
   align-content: center;
-  width: 80vw;
+  width: 100%;
 }
 
 .dashboard-header {
@@ -172,7 +172,7 @@
 
 .connected-apps-container {
   display: flex;
-  width: 90%;
+  width: 95%;
   min-width: 800px;
   padding: var(--24, 24px);
   align-items: flex-start;
@@ -182,7 +182,7 @@
   flex-wrap: wrap;
   border-radius: var(--16, 16px);
   background: var(--Primary-Light, #f7f9fb);
-  margin-top: 5vh;
+  margin-top: 2vh;
 }
 
 .connected-apps-header-container {
@@ -206,6 +206,53 @@
   font-weight: 600;
   line-height: 20px; /* 142.857% */
   align-self: stretch;
+}
+
+.connected-apps-howto-container {
+  display: flex;
+  width: 93%;
+  min-width: 800px;
+  padding: var(--16, 16px);
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 16px var(--16, 16px);
+  flex-wrap: wrap;
+  border-radius: var(--8, 8px);
+  background: var(--primary-purple-50, rgba(229, 236, 246, 0.5));
+}
+
+.connected-apps-howto-text-container {
+  display: flex;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 4px var(--4, 4px);
+  flex: 1 0 0;
+  flex-wrap: wrap;
+  border-radius: var(--8, 8px);
+}
+
+.connected-apps-howto-text-1 {
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+
+  /* 12 Regular */
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 18px; /* 150% */
+}
+
+.connected-apps-howto-text-2 {
+  color: var(--Secondary-Indigo, #95a4fc);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+
+  /* 12 Regular */
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 18px;
 }
 
 .connected-apps-cell {
@@ -269,6 +316,7 @@
   padding: 0px var(--12, 12px);
   border-width: 1px;
   width: auto;
+  border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
 }
 
 .link-button-text {
