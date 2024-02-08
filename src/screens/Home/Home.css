@@ -308,14 +308,26 @@
 
 .link-button {
   display: flex;
-  width: 20%;
+  padding: var(--4, 4px) var(--12, 12px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--4, 4px);
+  border-radius: var(--8, 8px);
+  border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.link-button:hover {
+  background: var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.linked-button {
+  display: flex;
   justify-content: center;
   align-items: center;
   border-radius: var(--12, 12px);
   background: var(--Primary-Brand, #1c1c1c);
   padding: 0px var(--12, 12px);
   border-width: 1px;
-  width: auto;
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
 }
 
