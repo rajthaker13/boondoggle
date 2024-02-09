@@ -18,6 +18,11 @@ function Entries(props) {
         .select()
         .eq("connection_id", connection_id);
       setTableData(data[0].crm_data);
+
+      // const client = new Unified({ api_token: "65c02dbec9810ed1f215c33b" });
+
+      // const results = client.crm(connection_id).contact.create(tableData[0]);
+      // console.log(results);
     }
 
     getData();
@@ -68,10 +73,10 @@ function Entries(props) {
           </div>
 
           <div className="tabs-container">
-            {/* <div className="sidebar-tabs">
+            <div className="sidebar-tabs">
               <svg
-                width="30"
-                height="30"
+                width="20"
+                height="20"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -90,8 +95,15 @@ function Entries(props) {
                   />
                 </g>
               </svg>
-              <p className="tabs-text">Performance</p>
-            </div> */}
+              <p
+                className="tabs-text"
+                onClick={() => {
+                  navigation("/performance");
+                }}
+              >
+                Performance
+              </p>
+            </div>
 
             <div className="sidebar-tabs">
               <svg
@@ -158,7 +170,7 @@ function Entries(props) {
           </div>
           <div className="dashboard">
             <div className="entries-stats-container">
-              <div className="entries-stats-cell">
+              {/* <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
                 <span className="stats-line-text-1">
                   Rejected <span className="stats-line-text-2">6</span>
@@ -166,12 +178,12 @@ function Entries(props) {
                 <div className="stats-line-container">
                   <div className="stats-line"></div>
                 </div>
-              </div>
+              </div> */}
 
               <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
                 <span className="stats-line-text-1">
-                  In Progress <span className="stats-line-text-2">6</span>
+                  Rejected <span className="stats-line-text-2">6</span>
                 </span>
                 <div className="stats-line-container">
                   <div
@@ -377,7 +389,7 @@ function Entries(props) {
 
                       <div className="entries-table-column">
                         <p className="integrations-table-column-info">
-                          {lead.source}
+                          {lead.date}
                         </p>
                       </div>
 

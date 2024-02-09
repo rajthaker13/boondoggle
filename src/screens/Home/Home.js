@@ -16,15 +16,6 @@ function Home(props) {
     window.open(data.url.url, "_self");
   }
 
-  function removeKeyFromArray(array, keyToRemove) {
-    array.forEach((obj) => {
-      if (obj.hasOwnProperty(keyToRemove)) {
-        delete obj[keyToRemove];
-        return array;
-      }
-    });
-  }
-
   async function updateCRM(userData) {
     console.log(userData);
     const connection_id = localStorage.getItem("connection_id");
@@ -42,6 +33,10 @@ function Home(props) {
       dangerouslyAllowBrowser: true,
     });
 
+    console.log(userData);
+    const meUser = userData.meUser.data.username;
+    const meName = userData.meUser.data.name;
+
     await Promise.all(
       userData.messages.map(async (lead) => {
         const itemIndex = twitter_messages.findIndex(
@@ -49,71 +44,64 @@ function Home(props) {
         );
         if (itemIndex != -1) {
           twitter_messages = twitter_messages.map((item, index) => {
-            if (index === itemIndex && item.customer === "joincrewmate") {
+            if (index === itemIndex && lead.userData[0].username != meUser) {
               return {
                 ...item,
-                customer: lead.userData[0].username,
-                messages: [...item.messages, lead.messageData.text],
+                customer: lead.userData[0].name,
+                messages: [
+                  ...item.messages,
+                  {
+                    name: lead.userData[0].name,
+                    username: lead.userData[0].username,
+                    text: lead.messageData.text,
+                  },
+                ],
               };
             } else {
               return {
                 ...item,
-                messages: [...item.messages, lead.messageData.text],
+                messages: [
+                  ...item.messages,
+                  {
+                    name: lead.userData[0].name,
+                    username: lead.userData[0].username,
+                    text: lead.messageData.text,
+                  },
+                ],
               };
             }
           });
         } else {
           twitter_messages.push({
             id: lead.messageData.dm_conversation_id,
-            customer: lead.userData[0].username,
-            messages: [lead.messageData.text],
+            customer: lead.userData[0].name,
+            messages: [
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ],
           });
         }
-
-        // if (crm_update.includes(lead.messageData.dm_conversation_id)) {
-        //   let array = crm_update.filter((msg) => {
-        //     return msg.id !== lead.messageData.dm_conversation_id;
-        //   });
-        //   crm_update = array;
-        // }
-
-        // const chatCompletion = await openai.chat.completions.create({
-        //   messages: [
-        //     {
-        //       role: "user",
-        //       content: `Give me a one sentence summary of what this twitter DM means in the context of updating a CRM...here is the tweet: ${lead.messageData.text}. Don't use term like "the person" use it as if you are updating a CRM for your own company.`,
-        //     },
-        //   ],
-        //   model: "gpt-3.5-turbo",
-        // });
-
-        // console.log(chatCompletion);
-
-        // var obj = {
-        //   id: lead.messageData.dm_conversation_id,
-        //   role: "--",
-        //   title: chatCompletion.choices[0].message.content,
-        //   source: "Twitter",
-        //   contact: lead.userData[0].username,
-        //   customer: lead.userData[0].name,
-        //   location: "--",
-        // };
-
-        // console.log(obj);
-
-        // crm_update.push(obj);
       })
     );
 
     console.log(twitter_messages);
     await Promise.all(
       twitter_messages.map(async (dm) => {
-        if (dm.customer != "joincrewmate") {
+        if (dm.customer != meName) {
+          const messagesString = dm.messages
+            .map(
+              (message) =>
+                `${message.name} (${message.username}): ${message.text}`
+            )
+            .join("\n");
           const titleCompletion = await openai.chat.completions.create({
             messages: [
               {
                 role: "user",
-                content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a short title for this conversation.`,
+                content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a short title that captures what this conversation was about.`,
               },
             ],
             model: "gpt-4",
@@ -123,7 +111,7 @@ function Home(props) {
             messages: [
               {
                 role: "user",
-                content: `I have an array of messages between two users having a twitter conversation right here: ${dm.messages}. Give a summary in first-person of this conversation.`,
+                content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a brief summary of this conversation that captures what it was about.`,
               },
             ],
             model: "gpt-4",
@@ -251,10 +239,10 @@ function Home(props) {
           </div>
 
           <div className="tabs-container">
-            {/* <div className="sidebar-tabs">
+            <div className="sidebar-tabs">
               <svg
-                width="30"
-                height="30"
+                width="20"
+                height="20"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -276,11 +264,13 @@ function Home(props) {
 
               <p
                 className="tabs-text"
-                style={selectedTab == 1 ? { fontWeight: 700 } : {}}
+                onClick={() => {
+                  navigation("/performance");
+                }}
               >
                 Performance
               </p>
-            </div> */}
+            </div>
 
             <div className="sidebar-tabs">
               <svg
@@ -307,7 +297,6 @@ function Home(props) {
 
               <p
                 className="tabs-text"
-                style={selectedTab == 2 ? { fontWeight: 700 } : {}}
                 onClick={() => {
                   navigation("/entries");
                 }}

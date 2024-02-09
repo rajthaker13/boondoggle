@@ -15,6 +15,7 @@ import {
 import Link from "./screens/Link/Link";
 import Entries from "./screens/Dashboard/Entries";
 import Login from "./screens/Login/Login";
+import Performance from "./screens/Peformance/Performance";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -83,6 +84,10 @@ export default function App() {
         <Route path="/link" element={<Link db={supabase} />}></Route>
         <Route path="/home" element={<Home db={supabase} />}></Route>
         <Route path="/entries" element={<Entries db={supabase} />}></Route>
+        <Route
+          path="/performance"
+          element={<Performance db={supabase} />}
+        ></Route>
       </Routes>
     </Router>
   );

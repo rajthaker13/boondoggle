@@ -31,8 +31,9 @@ Deno.serve(async (req) => {
   
 
   
-
+  const meUser = await loggedClient.v2.me({expansions: ['pinned_tweet_id']})
   const messages = await loggedClient.v2.listDmEvents(options);
+  console.log(meUser)
   console.log(messages)
   console.log(messages.events)
 
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
   
   await Promise.all(messages.events.map(async (message) => {
     const user = await loggedClient.v2.users([message.sender_id])
-    console.log(user)
+    console.log("JESUS", user)
     const messageObject = {
       messageData: message,
       userData: user.data
@@ -52,6 +53,9 @@ Deno.serve(async (req) => {
 
   const data = {
     messages: result,
+    meUser: meUser,
+    accessToken: accessToken, 
+    accessSecret: accessSecret
   }
 
   return new Response(JSON.stringify(data), {

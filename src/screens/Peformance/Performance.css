@@ -1,0 +1,93 @@
+.chart-container {
+  display: flex;
+  min-width: 800px;
+  padding: var(--24, 24px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--16, 16px);
+  flex: 1 0 0;
+  border-radius: var(--16, 16px);
+  background: var(--Primary-Light, #f7f9fb);
+}
+
+.chart-header-container {
+  display: flex;
+  height: 20px;
+  align-items: flex-start;
+  gap: 10px;
+  align-self: stretch;
+  flex-direction: row;
+}
+
+.chart-text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1 0 0;
+  border-radius: var(--8, 8px);
+}
+
+.chart-text {
+  align-self: stretch;
+  color: var(--black-100, #1c1c1c);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+
+  /* 14 Semibold */
+  font-family: Inter;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px; /* 142.857% */
+}
+
+.chart-filters-container {
+  display: flex;
+  padding: var(--8, 8px);
+  align-items: center;
+  align-content: center;
+  gap: 4px var(--4, 4px);
+  flex-wrap: wrap;
+  border-radius: var(--20, 20px);
+  background: var(--black-5, rgba(28, 28, 28, 0.05));
+}
+
+.chart-filter-button-selected {
+  display: flex;
+  padding: var(--16, 6.035px) var(--24, 9.053px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--8, 3.018px);
+  border-radius: var(--16, 6.035px);
+  background: var(--Primary-Brand, #1c1c1c);
+  color: white;
+  border: 0;
+}
+
+.chart-filter-button {
+  display: flex;
+  padding: var(--16, 6.035px) var(--24, 9.053px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--8, 3.018px);
+  border-radius: var(--16, 6.035px);
+  border: 0;
+}
+
+.chart-filter-text {
+  align-self: stretch;
+  color: var(--white-100, #fff);
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  color: black;
+  line-height: 9.053px; /* 133.333% */
+}
+
+.chart {
+  width: 90vw;
+  height: 20vh;
+}

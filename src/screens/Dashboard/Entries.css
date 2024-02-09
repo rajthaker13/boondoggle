@@ -82,6 +82,7 @@
   flex-wrap: wrap;
   border-radius: var(--16, 16px);
   background: #fff;
+  min-width: 80vw;
 }
 
 .entries-container-2 {

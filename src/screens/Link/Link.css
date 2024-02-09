@@ -12,6 +12,7 @@
 .crm-container {
   display: flex;
   width: 60%;
+  height: 80%;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -98,9 +99,14 @@
 }
 
 .unified_vendor_name {
-  color: "#000";
-  text-decoration: none;
-  stroke: none;
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 8.149px; /* 150% */
 }
 
 .crm-text {
