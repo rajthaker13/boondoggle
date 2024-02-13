@@ -185,7 +185,8 @@
   border-radius: var(--8, 9.892px);
   background: var(--black-5, rgba(28, 28, 28, 0.05));
   border: 0;
-  width: 10vw;
+  width: auto;
+  padding-inline: 20px;
 }
 
 .landing-button-text {

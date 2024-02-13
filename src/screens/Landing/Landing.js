@@ -13,6 +13,7 @@ import {
 
 function Landing(props) {
   const [category, selectCategory] = useState("crm");
+  const navigation = useNavigate();
   return (
     <>
       <BrowserView>
@@ -30,12 +31,18 @@ function Landing(props) {
               daily.
             </p>
             <div className="landing-button-container">
-              {/* <button className="get-started-button">
-            <p className="landing-button-text">Get Started</p>
-          </button> */}
-              <button className="get-started-button">
+              <button
+                className="get-started-button"
+                onClick={() => {
+                  navigation("/signup");
+                }}
+              >
+                <p className="landing-button-text">Get Started</p>
+              </button>
+              <button className="demo-button">
                 <p
                   className="landing-button-text"
+                  style={{ color: "black" }}
                   onClick={() => {
                     window.open(
                       "https://calendly.com/blakefaulkner/meeting",
