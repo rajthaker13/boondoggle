@@ -27,7 +27,7 @@ function Header(props) {
         <p className="page-text">Integrations</p>
         <p className="page-text">Pricing</p>
       </div> */}
-      <div className="action-container">
+      {/* <div className="action-container">
         <button className="sign-up-header-container">
           <p className="action-text">Sign Up</p>
         </button>
@@ -36,7 +36,7 @@ function Header(props) {
             Sign In
           </p>
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

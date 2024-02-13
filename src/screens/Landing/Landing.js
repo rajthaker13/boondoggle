@@ -22,11 +22,19 @@ function Landing(props) {
           daily.
         </p>
         <div className="landing-button-container">
-          <button className="get-started-button">
+          {/* <button className="get-started-button">
             <p className="landing-button-text">Get Started</p>
-          </button>
-          <button className="demo-button">
-            <p className="landing-button-text" style={{ color: "black" }}>
+          </button> */}
+          <button className="get-started-button">
+            <p
+              className="landing-button-text"
+              onClick={() => {
+                window.open(
+                  "https://calendly.com/blakefaulkner/meeting",
+                  "_blank"
+                );
+              }}
+            >
               Book a demo
             </p>
           </button>
@@ -816,9 +824,9 @@ function Landing(props) {
                 </span>
               </div>
             </div>
-            <button className="pricing-box-button-small">
+            {/* <button className="pricing-box-button-small">
               <p className="pricing-box-button-text-small">Get Started</p>
-            </button>
+            </button> */}
           </div>
           <div className="pricing-box-white">
             <span
@@ -971,7 +979,7 @@ function Landing(props) {
                 </span>
               </div>
             </div>
-            <button
+            {/* <button
               className="pricing-box-button-small"
               style={{ background: "var(--black-100, #1C1C1C)" }}
             >
@@ -984,7 +992,7 @@ function Landing(props) {
               >
                 Get Started
               </p>
-            </button>
+            </button> */}
           </div>
           <div className="pricing-box-black">
             <span className="pricing-box-header-small">ENTERPRISES</span>
@@ -1089,9 +1097,9 @@ function Landing(props) {
                 </span>
               </div>
             </div>
-            <button className="pricing-box-button-small">
+            {/* <button className="pricing-box-button-small">
               <p className="pricing-box-button-text-small">Book a demo</p>
-            </button>
+            </button> */}
           </div>
         </div>
         <div className="upper-footer-container">
@@ -1165,6 +1173,9 @@ function Landing(props) {
           </div>
           <div className="lower-footer-logos">
             <svg
+              onClick={() => {
+                window.open("https://twitter.com/boondoggleai", "blank");
+              }}
               xmlns="http://www.w3.org/2000/svg"
               width="40"
               height="40"
@@ -1177,6 +1188,12 @@ function Landing(props) {
               />
             </svg>
             <svg
+              onClick={() => {
+                window.open(
+                  "https://www.linkedin.com/company/boondoggleai/",
+                  "blank"
+                );
+              }}
               xmlns="http://www.w3.org/2000/svg"
               width="40"
               height="40"
