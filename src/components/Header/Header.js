@@ -6,7 +6,10 @@ import axios from "axios";
 
 function Header(props) {
   return (
-    <div className="header-container">
+    <div
+      className="header-container"
+      style={props.isMobile ? { justifyContent: "center" } : {}}
+    >
       <div className="logo-container">
         <svg
           xmlns="http://www.w3.org/2000/svg"

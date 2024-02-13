@@ -34,8 +34,6 @@
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 2.128px;
-  width: 44%;
   /* padding-right: 35%; */
   /* flex: 1 0 0; */
 }
@@ -174,7 +172,8 @@
   border-radius: var(--8, 9.892px);
   background: var(--Primary-Brand, #1c1c1c);
   border: 0;
-  width: 10vw;
+  width: auto;
+  padding-inline: 20px;
 }
 
 .demo-button {
@@ -194,7 +193,7 @@
   text-align: center;
   font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
   font-family: Inter;
-  font-size: 15px;
+  font-size: 18px;
   font-style: normal;
   font-weight: 400;
   line-height: 1px; /* 142.857% */
