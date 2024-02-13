@@ -16,6 +16,9 @@ import Link from "./screens/Link/Link";
 import Entries from "./screens/Dashboard/Entries";
 import Login from "./screens/Login/Login";
 import Performance from "./screens/Peformance/Performance";
+import Airtable from "./screens/Airtable/Airtable";
+import ConnectAirtable from "./screens/ConnectAirtable/ConnectAirtable";
+import Landing from "./screens/Landing/Landing";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -79,7 +82,8 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<SignUp db={supabase} />}></Route>
+        <Route path="/" element={<Landing db={supabase} />}></Route>
+        <Route path="/signup" element={<SignUp db={supabase} />}></Route>
         <Route path="/login" element={<Login db={supabase} />}></Route>
         <Route path="/link" element={<Link db={supabase} />}></Route>
         <Route path="/home" element={<Home db={supabase} />}></Route>
@@ -87,6 +91,11 @@ export default function App() {
         <Route
           path="/performance"
           element={<Performance db={supabase} />}
+        ></Route>
+        <Route path="/airtable" element={<Airtable db={supabase} />}></Route>
+        <Route
+          path="/connectAirtable"
+          element={<ConnectAirtable db={supabase} />}
         ></Route>
       </Routes>
     </Router>

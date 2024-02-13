@@ -278,7 +278,7 @@ function Entries(props) {
             <div className="entries-container">
               <div className="connected-apps-header-container">
                 <div className="entries-table-row-head">
-                  <div className="entries-table-column" style={{ width: "5%" }}>
+                  {/* <div className="entries-table-column" style={{ width: "5%" }}>
                     <div className="integrations-table-column-checkbox">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -299,7 +299,7 @@ function Entries(props) {
                         />
                       </svg>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="entries-table-column">
                     <p className="integrations-table-column-header">Entry ID</p>
@@ -337,7 +337,7 @@ function Entries(props) {
                   console.log(lead);
                   return (
                     <div className="entries-table-row">
-                      <div
+                      {/* <div
                         className="entries-table-column"
                         style={{ width: "5%" }}
                       >
@@ -361,7 +361,7 @@ function Entries(props) {
                             />
                           </svg>
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className="entries-table-column">
                         <p className="integrations-table-column-info">

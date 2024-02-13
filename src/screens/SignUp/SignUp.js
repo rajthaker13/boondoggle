@@ -88,9 +88,6 @@ function SignUp(props) {
           onClick={async () => {
             await signIn();
           }}
-          //   onClick={async () => {
-          //     await signInWithTwitter();
-          //   }}
         >
           Sign Up
         </button>

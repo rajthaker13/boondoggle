@@ -3,10 +3,65 @@ import "./Performance.css";
 import { useNavigate } from "react-router-dom";
 import OpenAI from "openai";
 import { BarChart, ResponsiveChartContainer } from "@mui/x-charts";
+import Unified from "unified-ts-client";
+import axios from "axios";
 
 function Performance(props) {
   const navigation = useNavigate();
   const [selectedTab, setSelectedTab] = useState(0);
+
+  useEffect(() => {
+    async function getData() {
+      const connection_id = localStorage.getItem("connection_id");
+      const options = {
+        method: "GET",
+        url: `https://api.unified.to/crm/${connection_id}/contact`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+        params: {
+          query: "Blake",
+        },
+      };
+      const results = await axios.request(options);
+      const customer = results.data[0];
+      console.log(customer["id"]);
+      const { data, error } = await props.db.functions.invoke("airtable-login");
+      // console.log(data);
+      // window.open(data.url, "_self");
+      const url =
+        "https://airtable.com/oauth2/v1/authorize?client_id=e193ec31-2ca6-4c1b-8e01-94093e5c4cef&redirect_uri=http://localhost:3000/link&response_type=code&scope=data.records:read%20data.records:write%20schema.bases:read%20schema.bases:write%20user.email:read&state=aR58Klz4zGfK7P05&code_challenge=kXzBSrKLf7W-9JjVGAOLuHLOp48JVN1U8MokoIoJdzk&code_challenge_method=S256";
+      window.open(url, "_self");
+
+      // const crmOptions = {
+      //   method: "POST",
+      //   url: `https://api.unified.to/crm/${connection_id}/event`,
+      //   headers: {
+      //     authorization:
+      //       "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      //   },
+      //   data: {
+      //     id: customer["id"],
+      //     created_at: Date.now(),
+      //     updated_at: Date.now(),
+      //     type: "NOTE",
+      //     note: {
+      //       description: "Asked for CRM, he said nah",
+      //     },
+      //     deal_ids: customer["deal_ids"],
+      //     company_ids: customer["company_ids"],
+      //     contact_ids: customer["user_id"],
+      //     lead_ids: [],
+      //     user_id: customer["user_id"],
+      //   },
+      // };
+      // const eventResults = await axios.request(crmOptions);
+      // console.log(eventResults);
+    }
+
+    getData();
+  }, []);
   return (
     <div className="container">
       <div className="content-container">
