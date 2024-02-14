@@ -1291,7 +1291,7 @@ function Landing(props) {
               </button>
             </div>
             <img
-              src={image}
+              src={require("../../assets/landing/1.png")}
               className="landing-1-img"
               style={{ width: "100%" }}
             ></img>
@@ -1306,7 +1306,7 @@ function Landing(props) {
               and data collection.
             </p>
             <img
-              src={image2}
+              src={require("../../assets/landing/2.png")}
               className="landing-2-img"
               style={{ width: "100vw" }}
             ></img>
@@ -2073,7 +2073,7 @@ function Landing(props) {
               </p>
 
               <img
-                src={image3}
+                src={require("../../assets/landing/8.png")}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
@@ -2110,7 +2110,7 @@ function Landing(props) {
                 </p>
               </div>
               <img
-                src={image4}
+                src={require("../../assets/landing/4.png")}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
@@ -2147,7 +2147,7 @@ function Landing(props) {
                 </p>
               </div>
               <img
-                src={image5}
+                src={require("../../assets/landing/5.png")}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
