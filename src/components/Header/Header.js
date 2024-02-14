@@ -31,26 +31,28 @@ function Header(props) {
         <p className="page-text">Integrations</p>
         <p className="page-text">Pricing</p>
       </div> */}
-      <div className="action-container">
-        <button
-          className="sign-up-header-container"
-          onClick={() => {
-            navigation("/signup");
-          }}
-        >
-          <p className="action-text">Sign Up</p>
-        </button>
-        <button
-          className="sign-in-header-container"
-          onClick={() => {
-            navigation("/login");
-          }}
-        >
-          <p className="action-text" style={{ color: "#fff" }}>
-            Sign In
-          </p>
-        </button>
-      </div>
+      {!props.isMobile && (
+        <div className="action-container">
+          <button
+            className="sign-up-header-container"
+            onClick={() => {
+              navigation("/signup");
+            }}
+          >
+            <p className="action-text">Sign Up</p>
+          </button>
+          <button
+            className="sign-in-header-container"
+            onClick={() => {
+              navigation("/login");
+            }}
+          >
+            <p className="action-text" style={{ color: "#fff" }}>
+              Sign In
+            </p>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

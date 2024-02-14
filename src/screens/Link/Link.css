@@ -26,14 +26,15 @@
 
 .crm-container {
   display: flex;
-  width: 60%;
-  height: 80%;
+  width: auto;
+  height: auto;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 28px;
   border-radius: 24px;
   background: var(--white-100, #fff);
+  padding: 5%;
 }
 
 .crm-header-text {

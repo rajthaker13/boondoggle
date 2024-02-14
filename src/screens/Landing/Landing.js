@@ -10,6 +10,11 @@ import {
   isBrowser,
   isMobile,
 } from "react-device-detect";
+import image from "../../assets/landing/2.svg";
+import image2 from "../../assets/landing/1.svg";
+import image3 from "../../assets/landing/1-update.svg";
+import image4 from "../../assets/landing/cross-platform.svg";
+import image5 from "../../assets/landing/crm-choice.svg";
 
 function Landing(props) {
   const [category, selectCategory] = useState("crm");
@@ -54,10 +59,7 @@ function Landing(props) {
                 </p>
               </button>
             </div>
-            <img
-              src={require("../../assets/landing/1.png")}
-              className="landing-1-img"
-            ></img>
+            <img src={image} className="landing-1-img"></img>
             <span className="landing-text-big" style={{ marginTop: "125px" }}>
               Get back 10 hours every week
             </span>
@@ -65,10 +67,7 @@ function Landing(props) {
               Boondoggle’s AI tooling allows you to automate your CRM entries
               and data collection.
             </p>
-            <img
-              src={require("../../assets/landing/2.png")}
-              className="landing-2-img"
-            ></img>
+            <img src={image2} className="landing-2-img"></img>
             <span
               className="landing-text-big"
               style={{ marginTop: "125px" }}
@@ -633,6 +632,7 @@ function Landing(props) {
                     <img
                       src={require("../../assets/landing/integrations/meeting/otter.png")}
                       className="integration-table-img"
+                      style={{ width: "40px", height: "20px" }}
                     ></img>
                     <p className="integration-table-cell-label">Otter.ai</p>
                   </div>
@@ -666,15 +666,12 @@ function Landing(props) {
                   Summarizes business-related daily conversations
                 </p>
               </div>
-              <img
-                src={require("../../assets/landing/8.png")}
-                className="landing-3-img"
-              ></img>
+              <img src={image3} className="landing-3-img"></img>
             </div>
 
             <div className="features-container">
               <img
-                src={require("../../assets/landing/4.png")}
+                src={image4}
                 className="landing-3-img"
                 style={{ marginRight: "3vw" }}
               ></img>
@@ -734,7 +731,7 @@ function Landing(props) {
                 </p>
               </div>
               <img
-                src={require("../../assets/landing/5.png")}
+                src={image5}
                 className="landing-3-img"
                 style={{ marginLeft: "3vw" }}
               ></img>
@@ -1294,7 +1291,7 @@ function Landing(props) {
               </button>
             </div>
             <img
-              src={require("../../assets/landing/1.png")}
+              src={image}
               className="landing-1-img"
               style={{ width: "100%" }}
             ></img>
@@ -1309,7 +1306,7 @@ function Landing(props) {
               and data collection.
             </p>
             <img
-              src={require("../../assets/landing/2.png")}
+              src={image2}
               className="landing-2-img"
               style={{ width: "100vw" }}
             ></img>
@@ -2076,7 +2073,7 @@ function Landing(props) {
               </p>
 
               <img
-                src={require("../../assets/landing/8.png")}
+                src={image3}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
@@ -2113,7 +2110,7 @@ function Landing(props) {
                 </p>
               </div>
               <img
-                src={require("../../assets/landing/4.png")}
+                src={image4}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
@@ -2150,7 +2147,7 @@ function Landing(props) {
                 </p>
               </div>
               <img
-                src={require("../../assets/landing/5.png")}
+                src={image5}
                 className="landing-3-img"
                 style={{ width: "100vw" }}
               ></img>
