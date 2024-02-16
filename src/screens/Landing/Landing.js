@@ -22,7 +22,7 @@ function Landing(props) {
   const navigation = useNavigate();
 
   useEffect(() => {
-    if (state.id) {
+    if (state) {
       const item = document.getElementById(state.id);
       item.scrollIntoView({ behavior: "smooth" });
     } else {
