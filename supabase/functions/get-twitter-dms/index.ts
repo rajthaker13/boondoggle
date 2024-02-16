@@ -47,8 +47,6 @@ Deno.serve(async (req) => {
       userData: user.data
     }
     result.push(messageObject)
-
-
   }))
 
   const data = {

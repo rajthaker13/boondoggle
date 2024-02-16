@@ -27,9 +27,42 @@ function Entries(props) {
 
     getData();
   }, []);
+
+  function timeAgo(timestamp) {
+    const currentTime = new Date();
+    const targetTime = new Date(timestamp);
+
+    const timeDifference = currentTime - targetTime;
+    const seconds = Math.floor(timeDifference / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+
+    if (months > 0) {
+      return `${months} month${months !== 1 ? "s" : ""} ago`;
+    } else if (days > 0) {
+      return `${days} day${days !== 1 ? "s" : ""} ago`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    } else {
+      return `${seconds} second${seconds !== 1 ? "s" : ""} ago`;
+    }
+  }
+
   return (
     <div className="container">
-      <div className="content-container">
+      <div
+        className="content-container"
+        style={{
+          height: "auto",
+          marginBottom: "2vh",
+          minHeight: "96vh",
+          marginTop: "2vh",
+        }}
+      >
         <div className="sidebar">
           <div className="name-badge">
             <img
@@ -333,11 +366,15 @@ function Entries(props) {
                     <p className="integrations-table-column-header">Status</p>
                   </div>
                 </div>
-                {tableData.map((lead) => {
-                  console.log(lead);
-                  return (
-                    <div className="entries-table-row">
-                      {/* <div
+                {tableData
+                  .slice()
+                  .reverse()
+                  .map((lead) => {
+                    const timestamp = lead.date;
+                    const timeAgoString = timeAgo(timestamp);
+                    return (
+                      <div className="entries-table-row">
+                        {/* <div
                         className="entries-table-column"
                         style={{ width: "5%" }}
                       >
@@ -363,58 +400,58 @@ function Entries(props) {
                         </div>
                       </div> */}
 
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.id}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.customer}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.title}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.summary}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.date}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <p className="integrations-table-column-info">
-                          {lead.source}
-                        </p>
-                      </div>
-
-                      <div className="entries-table-column">
-                        <div className=".entries-table-status-container">
-                          <p
-                            className="integrations-table-column-info"
-                            style={{ color: "#8A8CD9" }}
-                          >
-                            {lead.status}
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {lead.id}
                           </p>
                         </div>
-                        {/* <p className="integrations-table-column-info">
+
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {lead.customer}
+                          </p>
+                        </div>
+
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {lead.title}
+                          </p>
+                        </div>
+
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {lead.summary}
+                          </p>
+                        </div>
+
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {timeAgoString}
+                          </p>
+                        </div>
+
+                        <div className="entries-table-column">
+                          <p className="integrations-table-column-info">
+                            {lead.source}
+                          </p>
+                        </div>
+
+                        <div className="entries-table-column">
+                          <div className=".entries-table-status-container">
+                            <p
+                              className="integrations-table-column-info"
+                              style={{ color: "#8A8CD9" }}
+                            >
+                              {lead.status}
+                            </p>
+                          </div>
+                          {/* <p className="integrations-table-column-info">
                           {lead.source}
                         </p> */}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>

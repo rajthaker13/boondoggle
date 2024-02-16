@@ -9,15 +9,58 @@ function Home(props) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [twitterLinked, setTwitterLinked] = useState(false);
   const [crmType, setCRMType] = useState("");
-  const client_id = "9608aa34-5c2f-47a5-9157-1d4a61168a01";
+  const client_id = "250580cb-7041-42d1-abf3-f7958c92c1d3";
 
   async function linkWithTwitter() {
-    const { data, error } = await props.db.functions.invoke("twitter-login-3");
+    const url = window.location.href;
+    console.log(url);
+    const { data, error } = await props.db.functions.invoke("twitter-login-3", {
+      body: { url },
+    });
     console.log(data);
     localStorage.setItem("oauth_token", data.url.oauth_token);
     localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
     window.open(data.url.url, "_self");
   }
+
+  async function sendToAirtable(crm_update, baseID, tableID, fieldOptions) {
+    const id = localStorage.getItem("connection_id");
+    console.log("Update", crm_update);
+    console.log("base", baseID);
+    console.log("tableID", tableID);
+    console.log(fieldOptions);
+    console.log("test", fieldOptions.fullName);
+    console.log("test2", fieldOptions["fullName"]);
+    Promise.all(
+      crm_update.map(async (update) => {
+        if (update.customer != "") {
+          const regexCustomer = update.customer.replace(
+            /\s(?=[\uD800-\uDFFF])/g,
+            ""
+          );
+          console.log(regexCustomer);
+
+          const formula = `({${fieldOptions.fullName}} = "${regexCustomer}")`;
+          // const formula = '({fld46Pr3RcS1A5pe5} = "Blake Faulkner")';
+          console.log("FORMULA", formula);
+          // console.log("FORMULA 2 ", formula2);
+          const encodedFormula = encodeURIComponent(formula);
+          const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+          const searchResult = await axios.get(url, {
+            headers: {
+              Authorization: `Bearer ${id}`,
+            },
+          });
+          setTimeout(function () {
+            console.log("Executed after 1 second");
+          }, 2000);
+          console.log(regexCustomer, searchResult.data);
+        }
+      })
+    );
+  }
+
+  async function sendToCRM(crm_update) {}
 
   async function updateCRM(userData) {
     console.log(userData);
@@ -28,6 +71,16 @@ function Home(props) {
       .eq("connection_id", connection_id);
 
     let crm_update = data[0].crm_data;
+    let type = data[0].type;
+    let baseID;
+    let tableID;
+    let fieldOptions;
+    if (type == "airtable") {
+      console.log("LOCAL STORAGE FTW");
+      baseID = data[0].baseID;
+      tableID = data[0].tableID;
+      fieldOptions = data[0].fieldOptions;
+    }
     let twitter_messages = [];
     console.log(crm_update);
 
@@ -45,35 +98,27 @@ function Home(props) {
         const itemIndex = twitter_messages.findIndex(
           (item) => item.id === lead.messageData.dm_conversation_id
         );
-        if (itemIndex != -1) {
-          twitter_messages = twitter_messages.map((item, index) => {
-            if (index === itemIndex && lead.userData[0].username != meUser) {
-              return {
-                ...item,
-                customer: lead.userData[0].name,
-                messages: [
-                  ...item.messages,
-                  {
-                    name: lead.userData[0].name,
-                    username: lead.userData[0].username,
-                    text: lead.messageData.text,
-                  },
-                ],
-              };
-            } else {
-              return {
-                ...item,
-                messages: [
-                  ...item.messages,
-                  {
-                    name: lead.userData[0].name,
-                    username: lead.userData[0].username,
-                    text: lead.messageData.text,
-                  },
-                ],
-              };
-            }
-          });
+        if (itemIndex !== -1) {
+          if (lead.userData[0].username != meUser) {
+            twitter_messages[itemIndex].customer = lead.userData[0].name;
+            twitter_messages[itemIndex].messages = [
+              ...twitter_messages[itemIndex].messages,
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ];
+          } else {
+            twitter_messages[itemIndex].messages = [
+              ...twitter_messages[itemIndex].messages,
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ];
+          }
         } else {
           twitter_messages.push({
             id: lead.messageData.dm_conversation_id,
@@ -136,14 +181,16 @@ function Home(props) {
 
     console.log(crm_update);
 
-    if (crmType == "airtable") {
-      await Promise.all(
-        crm_update.map((update) => {
-          if (update.customer != "No Response") {
-            console.log("here");
-          }
-        })
-      );
+    if (type == "airtable") {
+      console.log("airtable");
+      await sendToAirtable(crm_update, baseID, tableID, fieldOptions);
+      // await Promise.all(
+      //   crm_update.map((update) => {
+      //     if (update.customer != "No Response") {
+      //       console.log("here");
+      //     }
+      //   })
+      // );
     }
     // console.log(userData.messages);
     // console.log(connection_id);
@@ -218,29 +265,50 @@ function Home(props) {
           })
           .eq("connection_id", id);
         localStorage.setItem("connection_id", res.data.access_token);
+        window.location.reload();
       });
   }
 
   async function checkLinks() {
     const id = localStorage.getItem("connection_id");
-    console.log("Heyeyeyey", id);
-    // await getRefreshTokenAirtable(id);
+
     const { data, error } = await props.db
       .from("data")
       .select("")
       .eq("connection_id", id);
 
     console.log(data);
+    console.log(data[0].type, "fuckers");
     setTwitterLinked(data[0].twitterLinked);
     localStorage.setItem("twitterLinked", data[0].twitterLinked);
     localStorage.setItem("crmType", data[0].type);
     setCRMType(data[0].type);
 
     //testing
-    const baseID = data[0].baseID;
-    const tableID = data[0].tableID;
-    console.log("base", baseID);
-    console.log(tableID);
+    if (crmType == "airtable") {
+      // const baseID = data[0].baseID;
+      // const tableID = data[0].tableID;
+      // console.log("base", baseID);
+      // console.log(tableID);
+      // const formula = '({fld46Pr3RcS1A5pe5} = "Blake Faulkner")';
+      // const encodedFormula = encodeURIComponent(formula);
+      // const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+      // axios
+      //   .get(url, {
+      //     headers: {
+      //       Authorization: `Bearer ${id}`,
+      //     },
+      //   })
+      //   .then(async (res) => {
+      //     let data = res.data.records;
+      //     console.log(data);
+      //   })
+      //   .catch(async (err) => {
+      //     if (err.response.status == 401) {
+      //       await getRefreshTokenAirtable(id);
+      //     }
+      //   });
+    }
 
     // const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
 
@@ -270,19 +338,6 @@ function Home(props) {
     //       type: "airtable",
     //     });
     //   })
-
-    const url = `https://api.airtable.com/v0/${baseID}/${tableID}?fields[]=Contact`;
-    const fields = ["Contact"];
-    axios
-      .get(url, {
-        headers: {
-          Authorization: `Bearer ${id}`,
-        },
-      })
-      .then(async (res) => {
-        let data = res.data.records;
-        console.log(data);
-      });
   }
 
   useEffect(() => {

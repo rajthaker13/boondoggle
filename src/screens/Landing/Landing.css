@@ -491,6 +491,22 @@
   line-height: 36.984px; /* 184.918% */
 }
 
+.upper-footer-column-header {
+  overflow: hidden;
+  color: var(--black-100, #1c1c1c);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  text-overflow: ellipsis;
+  font-family: Inter;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 36.984px; /* 184.918% */
+}
+
+.upper-footer-column-text:hover {
+  color: var(--Primary-Light, grey);
+}
+
 .lower-footer-container {
   display: flex;
   width: 75%;

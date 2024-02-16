@@ -19,6 +19,8 @@ import Performance from "./screens/Peformance/Performance";
 import Airtable from "./screens/Airtable/Airtable";
 import ConnectAirtable from "./screens/ConnectAirtable/ConnectAirtable";
 import Landing from "./screens/Landing/Landing";
+import Privacy from "./screens/Privacy/Privacy";
+import Terms from "./screens/Terms/Terms";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -82,21 +84,20 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Landing db={supabase} />}></Route>
-        <Route path="/signup" element={<SignUp db={supabase} />}></Route>
-        <Route path="/login" element={<Login db={supabase} />}></Route>
-        <Route path="/link" element={<Link db={supabase} />}></Route>
-        <Route path="/home" element={<Home db={supabase} />}></Route>
-        <Route path="/entries" element={<Entries db={supabase} />}></Route>
-        <Route
-          path="/performance"
-          element={<Performance db={supabase} />}
-        ></Route>
-        <Route path="/airtable" element={<Airtable db={supabase} />}></Route>
+        <Route path="/" element={<Landing db={supabase} />} />
+        <Route path="/privacy" element={<Privacy db={supabase} />} />
+        <Route path="/terms" element={<Terms db={supabase} />} />
+        <Route path="/signup" element={<SignUp db={supabase} />} />
+        <Route path="/login" element={<Login db={supabase} />} />
+        <Route path="/link" element={<Link db={supabase} />} />
+        <Route path="/home" element={<Home db={supabase} />} />
+        <Route path="/entries" element={<Entries db={supabase} />} />
+        <Route path="/performance" element={<Performance db={supabase} />} />
+        <Route path="/airtable" element={<Airtable db={supabase} />} />
         <Route
           path="/connectAirtable"
           element={<ConnectAirtable db={supabase} />}
-        ></Route>
+        />
       </Routes>
     </Router>
   );

@@ -7,14 +7,19 @@ import { corsHeaders } from '../_shared/cors.ts';
 console.log("Hello from Functions!")
 
 
-const CALLBACK_URL = "https://boondoggle.vercel.app/home"; 
 // const CALLBACK_URL = "http://localhost:3000/home"; 
 // const CALLBACK_URL = "https://gwjtbxxhdsqrelswpgdi.supabase.co/functions/v1/twitter-callback"; // Update the callback URL to match your application's URL
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+  const { url} = await req.json()
+
+
   const client = new TwitterApi({ appKey: "Abh3jrK5aX8v8hXCRyh87KiNf", appSecret: "Ns1nJm1XGnhFj0O728rKGWgP5mP9tLHdkv1KdFDRFm58dlKWBd" });
   // const authLink = await client.generateAuthLink(CALLBACK_URL); //Sus
-  const authLink = await client.generateAuthLink(CALLBACK_URL, { linkMode: 'authorize' });
+  const authLink = await client.generateAuthLink(url, { linkMode: 'authorize' });
 
   const data = {
     url: authLink

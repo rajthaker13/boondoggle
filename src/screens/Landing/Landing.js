@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./Landing.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import OpenAI from "openai";
 import axios from "axios";
 import Header from "../../components/Header/Header";
@@ -18,7 +18,17 @@ import image5 from "../../assets/landing/crm-choice.svg";
 
 function Landing(props) {
   const [category, selectCategory] = useState("crm");
+  const { state } = useLocation();
   const navigation = useNavigate();
+
+  useEffect(() => {
+    if (state.id) {
+      const item = document.getElementById(state.id);
+      item.scrollIntoView({ behavior: "smooth" });
+    } else {
+      console.log("none");
+    }
+  }, []);
   return (
     <>
       <BrowserView>
@@ -39,10 +49,14 @@ function Landing(props) {
               <button
                 className="get-started-button"
                 onClick={() => {
-                  navigation("/signup");
+                  // navigation("/signup");
+                  window.open(
+                    "https://ipk90u6jozo.typeform.com/to/dJcgJZAu",
+                    "_blank"
+                  );
                 }}
               >
-                <p className="landing-button-text">Get Started</p>
+                <p className="landing-button-text">Join Waitlist</p>
               </button>
               <button className="demo-button">
                 <p
@@ -1127,12 +1141,7 @@ function Landing(props) {
               </p>
               <div className="upper-footer-pages">
                 <div className="upper-footer-column">
-                  <span
-                    className="upper-footer-column-text"
-                    style={{ fontWeight: "600" }}
-                  >
-                    Product
-                  </span>
+                  <span className="upper-footer-column-header">Product</span>
                   <span
                     className="upper-footer-column-text"
                     onClick={() => {
@@ -1163,16 +1172,21 @@ function Landing(props) {
                   </span>
                 </div>
                 <div className="upper-footer-column">
+                  <span className="upper-footer-column-header">Legal</span>
                   <span
                     className="upper-footer-column-text"
-                    style={{ fontWeight: "600" }}
+                    onClick={() => {
+                      navigation("/privacy");
+                    }}
                   >
-                    Legal
-                  </span>
-                  <span className="upper-footer-column-text">
                     Privacy Policy
                   </span>
-                  <span className="upper-footer-column-text">
+                  <span
+                    className="upper-footer-column-text"
+                    onClick={() => {
+                      navigation("/terms");
+                    }}
+                  >
                     Terms of Service
                   </span>
                 </div>
@@ -1272,19 +1286,32 @@ function Landing(props) {
               daily.
             </p>
             <div className="landing-button-container">
-              {/* <button className="get-started-button">
-            <p className="landing-button-text">Get Started</p>
-          </button> */}
-              <button className="get-started-button">
+              <button
+                className="get-started-button"
+                onClick={() => {
+                  // navigation("/signup");
+                  window.open(
+                    "https://ipk90u6jozo.typeform.com/to/dJcgJZAu",
+                    "_blank"
+                  );
+                }}
+              >
+                <p className="landing-button-text" style={{ fontSize: "14px" }}>
+                  Get Started
+                </p>
+              </button>
+              <button
+                className="demo-button"
+                onClick={() => {
+                  window.open(
+                    "https://calendly.com/blakefaulkner/meeting",
+                    "_blank"
+                  );
+                }}
+              >
                 <p
                   className="landing-button-text"
-                  style={{ fontSize: "14px" }}
-                  onClick={() => {
-                    window.open(
-                      "https://calendly.com/blakefaulkner/meeting",
-                      "_blank"
-                    );
-                  }}
+                  style={{ fontSize: "14px", color: "black" }}
                 >
                   Book a demo
                 </p>
@@ -2556,12 +2583,7 @@ function Landing(props) {
               </span> */}
               <div className="upper-footer-pages">
                 <div className="upper-footer-column">
-                  <span
-                    className="upper-footer-column-text"
-                    style={{ fontWeight: "600" }}
-                  >
-                    Product
-                  </span>
+                  <span className="upper-footer-column-header">Product</span>
                   <span
                     className="upper-footer-column-text"
                     onClick={() => {
@@ -2592,13 +2614,13 @@ function Landing(props) {
                   </span>
                 </div>
                 <div className="upper-footer-column">
+                  <span className="upper-footer-column-header">Legal</span>
                   <span
                     className="upper-footer-column-text"
-                    style={{ fontWeight: "600" }}
+                    onClick={() => {
+                      navigation("/privacy");
+                    }}
                   >
-                    Legal
-                  </span>
-                  <span className="upper-footer-column-text">
                     Privacy Policy
                   </span>
                   <span className="upper-footer-column-text">
