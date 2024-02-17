@@ -6,7 +6,7 @@ import axios from "axios";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "250580cb-7041-42d1-abf3-f7958c92c1d3";
+  const client_id = "9455bca6-66a9-4ab8-88a0-164a93c89c52";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 

@@ -49,6 +49,14 @@ function Landing(props) {
               <button
                 className="get-started-button"
                 onClick={() => {
+                  navigation("/signup");
+                }}
+              >
+                <p className="landing-button-text">Get Started</p>
+              </button>
+              {/* <button
+                className="get-started-button"
+                onClick={() => {
                   // navigation("/signup");
                   window.open(
                     "https://ipk90u6jozo.typeform.com/to/dJcgJZAu",
@@ -57,7 +65,7 @@ function Landing(props) {
                 }}
               >
                 <p className="landing-button-text">Join Waitlist</p>
-              </button>
+              </button> */}
               <button className="demo-button">
                 <p
                   className="landing-button-text"
