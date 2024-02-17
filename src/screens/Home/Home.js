@@ -779,40 +779,42 @@ function Home(props) {
                     <p className="integrations-table-column-header">Status</p>
                   </div>
                 </div>
-                <div
-                  style={{
-                    flexDirection: "row",
-                    display: "flex",
-                    width: "95%",
-                    alignItems: "flex-start",
-                    alignSelf: "stretch",
-                  }}
-                >
-                  <div className="integrations-table-column">
-                    <p
-                      className="integrations-table-column-text"
-                      style={{ fontWeight: 700 }}
-                    >
-                      Twitter
-                    </p>
+                {twitterLinked && (
+                  <div
+                    style={{
+                      flexDirection: "row",
+                      display: "flex",
+                      width: "95%",
+                      alignItems: "flex-start",
+                      alignSelf: "stretch",
+                    }}
+                  >
+                    <div className="integrations-table-column">
+                      <p
+                        className="integrations-table-column-text"
+                        style={{ fontWeight: 700 }}
+                      >
+                        Twitter
+                      </p>
+                    </div>
+                    <div className="integrations-table-column">
+                      <p className="integrations-table-column-text">
+                        raj@boondoggle.ai
+                      </p>
+                    </div>
+                    <div className="integrations-table-column">
+                      <p className="integrations-table-column-text">Just now</p>
+                    </div>
+                    <div className="integrations-table-column">
+                      <p
+                        className="integrations-table-column-text"
+                        style={{ color: "#4AA785" }}
+                      >
+                        Approved
+                      </p>
+                    </div>
                   </div>
-                  <div className="integrations-table-column">
-                    <p className="integrations-table-column-text">
-                      blake@boondoggle.ai
-                    </p>
-                  </div>
-                  <div className="integrations-table-column">
-                    <p className="integrations-table-column-text">Just now</p>
-                  </div>
-                  <div className="integrations-table-column">
-                    <p
-                      className="integrations-table-column-text"
-                      style={{ color: "#4AA785" }}
-                    >
-                      Approved
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
