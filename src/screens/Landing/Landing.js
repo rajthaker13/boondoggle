@@ -46,15 +46,15 @@ function Landing(props) {
               daily.
             </p>
             <div className="landing-button-container">
-              <button
+              {/* <button
                 className="get-started-button"
                 onClick={() => {
                   navigation("/signup");
                 }}
               >
                 <p className="landing-button-text">Get Started</p>
-              </button>
-              {/* <button
+              </button> */}
+              <button
                 className="get-started-button"
                 onClick={() => {
                   // navigation("/signup");
@@ -65,7 +65,7 @@ function Landing(props) {
                 }}
               >
                 <p className="landing-button-text">Join Waitlist</p>
-              </button> */}
+              </button>
               <button className="demo-button">
                 <p
                   className="landing-button-text"
