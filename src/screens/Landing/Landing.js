@@ -1305,7 +1305,7 @@ function Landing(props) {
                 }}
               >
                 <p className="landing-button-text" style={{ fontSize: "14px" }}>
-                  Get Started
+                  Join Waitlist
                 </p>
               </button>
               <button
