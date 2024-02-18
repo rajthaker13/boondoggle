@@ -1343,7 +1343,7 @@ function Landing(props) {
             <img
               src={require("../../assets/landing/2.png")}
               className="landing-2-img"
-              style={{ width: "160vw" }}
+              style={{ width: "100vw" }}
             ></img>
             <span
               className="landing-text-big"
