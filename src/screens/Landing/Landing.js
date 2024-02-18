@@ -1282,7 +1282,10 @@ function Landing(props) {
       <MobileView>
         <div className="landing-container">
           <Header isMobile={true} />
-          <div className="landing-text-container" style={{ width: "100vw" }}>
+          <div
+            className="landing-text-container"
+            style={{ width: "100vw", marginTop: "0px" }}
+          >
             <span className="landing-text-big" style={{ fontSize: "30px" }}>
               Automations that simplify your work
             </span>
@@ -2182,24 +2185,32 @@ function Landing(props) {
               >
                 Go inbox zero across email and socials
               </span>
-              <p
-                className="landing-text-medium"
-                style={{ textAlign: "left", fontSize: "20px" }}
-              >
-                Reads your in/outbound emails and messages
-              </p>
-              <p
-                className="landing-text-medium"
-                style={{ textAlign: "left", fontSize: "20px" }}
-              >
-                Generates professional responses for pasting
-              </p>
-              <p
-                className="landing-text-medium"
-                style={{ textAlign: "left", fontSize: "20px" }}
-              >
-                Summarizes business-related daily conversations
-              </p>
+              <ul>
+                <li>
+                  <p
+                    className="landing-text-medium"
+                    style={{ textAlign: "left", fontSize: "20px" }}
+                  >
+                    Reads your in/outbound emails and messages
+                  </p>
+                </li>
+                <li>
+                  <p
+                    className="landing-text-medium"
+                    style={{ textAlign: "left", fontSize: "20px" }}
+                  >
+                    Generates professional responses for pasting
+                  </p>
+                </li>
+                <li>
+                  <p
+                    className="landing-text-medium"
+                    style={{ textAlign: "left", fontSize: "20px" }}
+                  >
+                    Summarizes business-related daily conversations
+                  </p>
+                </li>
+              </ul>
 
               <img
                 src={require("../../assets/landing/8.png")}
@@ -2219,24 +2230,32 @@ function Landing(props) {
                 >
                   Enrich your cross-platform contacts
                 </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Connect your lead enrichment integrations
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Enrich your contacts with cross-platform info
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Access new info on your existing leads
-                </p>
+                <ul>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Connect your lead enrichment integrations
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Enrich your contacts with cross-platform info
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Access new info on your existing leads
+                    </p>
+                  </li>
+                </ul>
               </div>
               <img
                 src={require("../../assets/landing/4.png")}
@@ -2256,24 +2275,32 @@ function Landing(props) {
                 >
                   Passively update your CRM of choice
                 </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Daily interactions entered as CRM updates
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Identifies existing contacts and new leads
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "20px" }}
-                >
-                  Entries match your CRM’s set formatting
-                </p>
+                <ul>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Daily interactions entered as CRM updates
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Identifies existing contacts and new leads
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{ textAlign: "left", fontSize: "20px" }}
+                    >
+                      Entries match your CRM’s set formatting
+                    </p>
+                  </li>
+                </ul>
               </div>
               <img
                 src={require("../../assets/landing/5.png")}

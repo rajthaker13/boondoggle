@@ -556,3 +556,16 @@
   font-weight: 700;
   line-height: 20px; /* 142.857% */
 }
+
+.desktop-list {
+  list-style-type: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.desktop-list li::before {
+  display: inline-block;
+  content: "•"; /* Set custom bullet content */
+  font-size: 50px; /* Adjust bullet size */
+  margin: 0;
+}
