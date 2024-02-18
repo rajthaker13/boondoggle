@@ -1343,7 +1343,7 @@ function Landing(props) {
             <img
               src={require("../../assets/landing/2.png")}
               className="landing-2-img"
-              style={{ width: "100vw" }}
+              style={{ width: "160vw" }}
             ></img>
             <span
               className="landing-text-big"
@@ -2071,6 +2071,7 @@ function Landing(props) {
                     <img
                       src={require("../../assets/landing/integrations/meeting/otter.png")}
                       className="integration-table-img"
+                      style={{ width: "40px", height: "20px" }}
                     ></img>
                     <p className="integration-table-cell-label">Otter.ai</p>
                   </div>
@@ -2198,7 +2199,10 @@ function Landing(props) {
               className="pricing-container"
               style={{ flexDirection: "column" }}
             >
-              <div className="pricing-box-black" style={{ width: "80vw" }}>
+              <div
+                className="pricing-box-black"
+                style={{ width: "80vw", marginBottom: "2vh" }}
+              >
                 <span className="pricing-box-header-small">STARTER</span>
                 <span className="pricing-box-subheader-small">
                   for individuals and startups
@@ -2304,7 +2308,10 @@ function Landing(props) {
               <p className="pricing-box-button-text-small">Get Started</p>
             </button> */}
               </div>
-              <div className="pricing-box-white" style={{ width: "80vw" }}>
+              <div
+                className="pricing-box-white"
+                style={{ width: "80vw", marginBottom: "2vh" }}
+              >
                 <span
                   className="pricing-box-header-small"
                   style={{ fontSize: "23.314px", color: "black" }}
