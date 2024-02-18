@@ -566,6 +566,6 @@
 .desktop-list li::before {
   display: inline-block;
   content: "•"; /* Set custom bullet content */
-  font-size: 50px; /* Adjust bullet size */
-  margin: 0;
+  font-size: 40px; /* Adjust bullet size */
+  margin-right: 10px;
 }

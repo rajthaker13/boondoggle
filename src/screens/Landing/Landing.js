@@ -669,24 +669,44 @@ function Landing(props) {
                 >
                   Go inbox zero across email and socials
                 </span>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Reads your in/outbound emails and messages
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Generates professional responses for pasting
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Summarizes business-related daily conversations
-                </p>
+                <ul className="desktop-list">
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Reads your in/outbound emails and messages
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Generates professional responses for pasting
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Summarizes business-related daily conversations
+                    </p>
+                  </li>
+                </ul>
               </div>
               <img src={image3} className="landing-3-img"></img>
             </div>
@@ -704,24 +724,44 @@ function Landing(props) {
                 >
                   Enrich your cross-platform contacts
                 </span>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Connect your lead enrichment integrations
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Enrich your contacts with cross-platform info
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Access new info on your existing leads
-                </p>
+                <ul className="desktop-list">
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Connect your lead enrichment integrations
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Enrich your contacts with cross-platform info
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Access new info on your existing leads
+                    </p>
+                  </li>
+                </ul>
               </div>
             </div>
 
@@ -733,24 +773,44 @@ function Landing(props) {
                 >
                   Passively update your CRM of choice
                 </span>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Daily interactions entered as CRM updates
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Identifies existing contacts and new leads
-                </p>
-                <p
-                  className="landing-text-medium"
-                  style={{ textAlign: "left", fontSize: "30px" }}
-                >
-                  Entries match your CRM’s set formatting
-                </p>
+                <ul className="desktop-list">
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Daily interactions entered as CRM updates
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Identifies existing contacts and new leads
+                    </p>
+                  </li>
+                  <li>
+                    <p
+                      className="landing-text-medium"
+                      style={{
+                        textAlign: "left",
+                        fontSize: "30px",
+                        display: "inline-flex",
+                      }}
+                    >
+                      Entries match your CRM’s set formatting
+                    </p>
+                  </li>
+                </ul>
               </div>
               <img
                 src={image5}
