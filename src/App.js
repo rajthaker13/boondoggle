@@ -13,7 +13,7 @@ import {
   Switch,
 } from "react-router-dom";
 import Link from "./screens/Link/Link";
-import Entries from "./screens/Dashboard/Entries";
+import Entries from "./screens/Entries/Entries";
 import Login from "./screens/Login/Login";
 import Performance from "./screens/Peformance/Performance";
 import Airtable from "./screens/Airtable/Airtable";

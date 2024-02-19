@@ -70,7 +70,7 @@ function Login(props) {
             <span
               className="sign-in-text-2"
               onClick={() => {
-                navigation("/");
+                navigation("/signup");
               }}
             >
               Sign Up

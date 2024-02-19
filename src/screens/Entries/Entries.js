@@ -3,10 +3,12 @@ import "./Entries.css";
 import { useNavigate } from "react-router-dom";
 import Unified from "unified-ts-client";
 import axios from "axios";
+import ClickAwayListener from "react-click-away-listener";
 
 function Entries(props) {
   const navigation = useNavigate();
   const [tableData, setTableData] = useState([]);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
     async function getData() {
@@ -372,34 +374,17 @@ function Entries(props) {
                   .map((lead) => {
                     const timestamp = lead.date;
                     const timeAgoString = timeAgo(timestamp);
+                    const isExpanded = expandedRow === lead.id;
                     return (
-                      <div className="entries-table-row">
-                        {/* <div
-                        className="entries-table-column"
-                        style={{ width: "5%" }}
+                      <div
+                        className={
+                          isExpanded
+                            ? "entries-table-row-chosen"
+                            : "entries-table-row"
+                        }
+                        onClick={() => setExpandedRow(lead.id)}
+                        key={lead.id}
                       >
-                        <div className="integrations-table-column-checkbox">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                          >
-                            <path
-                              d="M1 7.4C1 5.15979 1 4.03968 1.43597 3.18404C1.81947 2.43139 2.43139 1.81947 3.18404 1.43597C4.03968 1 5.15979 1 7.4 1H8.6C10.8402 1 11.9603 1 12.816 1.43597C13.5686 1.81947 14.1805 2.43139 14.564 3.18404C15 4.03968 15 5.15979 15 7.4V8.6C15 10.8402 15 11.9603 14.564 12.816C14.1805 13.5686 13.5686 14.1805 12.816 14.564C11.9603 15 10.8402 15 8.6 15H7.4C5.15979 15 4.03968 15 3.18404 14.564C2.43139 14.1805 1.81947 13.5686 1.43597 12.816C1 11.9603 1 10.8402 1 8.6V7.4Z"
-                              fill="#1C1C1C"
-                            />
-                            <path
-                              fill-rule="evenodd"
-                              clip-rule="evenodd"
-                              d="M11.0087 6.1989C11.3131 6.47985 11.3321 6.95435 11.0511 7.25871L8.23979 10.3043C7.83664 10.7411 7.1438 10.7319 6.75241 10.2845L5.18558 8.49388C4.91282 8.18215 4.9444 7.70833 5.25613 7.43557C5.56786 7.16281 6.04168 7.1944 6.31444 7.50613L7.51493 8.87811L9.94891 6.24129C10.2299 5.93693 10.7044 5.91795 11.0087 6.1989Z"
-                              fill="white"
-                            />
-                          </svg>
-                        </div>
-                      </div> */}
-
                         <div className="entries-table-column">
                           <p className="integrations-table-column-info">
                             {lead.id}
@@ -420,7 +405,9 @@ function Entries(props) {
 
                         <div className="entries-table-column">
                           <p className="integrations-table-column-info">
-                            {lead.summary}
+                            {isExpanded
+                              ? lead.summary
+                              : lead.summary.slice(0, 50) + "..."}
                           </p>
                         </div>
 
@@ -445,9 +432,6 @@ function Entries(props) {
                               {lead.status}
                             </p>
                           </div>
-                          {/* <p className="integrations-table-column-info">
-                          {lead.source}
-                        </p> */}
                         </div>
                       </div>
                     );

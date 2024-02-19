@@ -10,6 +10,10 @@ function Home(props) {
   const [twitterLinked, setTwitterLinked] = useState(false);
   const [crmType, setCRMType] = useState("");
   const client_id = "9455bca6-66a9-4ab8-88a0-164a93c89c52";
+  const openai = new OpenAI({
+    apiKey: "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",
+    dangerouslyAllowBrowser: true,
+  });
 
   async function linkWithTwitter() {
     const url = window.location.href;
@@ -23,16 +27,16 @@ function Home(props) {
     window.open(data.url.url, "_self");
   }
 
-  async function sendToAirtable(crm_update, baseID, tableID, fieldOptions) {
+  async function sendToAirtable(new_crm_data, baseID, tableID, fieldOptions) {
     const id = localStorage.getItem("connection_id");
-    console.log("Update", crm_update);
+    console.log("Update", new_crm_data);
     console.log("base", baseID);
     console.log("tableID", tableID);
     console.log(fieldOptions);
     console.log("test", fieldOptions.fullName);
     console.log("test2", fieldOptions["fullName"]);
     Promise.all(
-      crm_update.map(async (update) => {
+      new_crm_data.map(async (update) => {
         if (update.customer != "") {
           const regexCustomer = update.customer.replace(
             /\s(?=[\uD800-\uDFFF])/g,
@@ -60,7 +64,91 @@ function Home(props) {
     );
   }
 
-  async function sendToCRM(crm_update) {}
+  async function sendToCRM(new_crm_data) {
+    console.log("new_crm", new_crm_data);
+    const connection_id = localStorage.getItem("connection_id");
+
+    Promise.all(
+      new_crm_data.map(async (update) => {
+        if (update.customer != "") {
+          console.log(update);
+          const regexCustomer = update.customer.replace(
+            /\s(?=[\uD800-\uDFFF])/g,
+            ""
+          );
+          console.log("REGES", regexCustomer);
+          const options = {
+            method: "GET",
+            url: `https://api.unified.to/crm/${connection_id}/contact`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+            params: {
+              limit: 1000,
+              query: regexCustomer,
+            },
+          };
+          const results = await axios.request(options);
+          console.log("Rsults", results);
+          const current_crm = results.data[0];
+
+          console.log(current_crm);
+
+          if (current_crm != undefined) {
+            const event = {
+              id: current_crm.id,
+              type: "NOTE",
+              note: {
+                description: update.title + "\n" + update.summary,
+              },
+              company_ids: current_crm.company_ids,
+              contact_ids: [current_crm.id],
+              user_id: current_crm[0].user_id,
+            };
+            console.log("event", event);
+            const { data, error } = await props.db.functions.invoke(
+              "update-crm-unified",
+              {
+                body: { connection_id: connection_id, event: event },
+              }
+            );
+          } else {
+            const contact = {
+              name: regexCustomer,
+            };
+            const { data, error } = await props.db.functions.invoke(
+              "new-contact-unified",
+              {
+                body: {
+                  connection_id: connection_id,
+                  contact: contact,
+                  title: update.title,
+                  description: update.summary,
+                },
+              }
+            );
+          }
+        }
+      })
+    );
+
+    // const arraySearch = await openai.chat.completions.create({
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: `I have an array of objects as follows: ${current_crm} (This is the dataset I will be reffering to for this question). I want you to output the index where the object's property customer = "Blake Faulkner" and if does not exist then output -1. I don't want any code, I just want you to output the index where the object's property of customer is equal to "Blake Faulkner".`,
+    //     },
+    //   ],
+    //   model: "gpt-3.5-turbo",
+    // });
+
+    // console.log(arraySearch);
+    // const number = parseInt(
+    //   arraySearch.choices[0].message.content.match(/\d+/)[0]
+    // );
+    // console.log(current_crm[number]);
+  }
 
   async function updateCRM(userData) {
     console.log(userData);
@@ -84,11 +172,6 @@ function Home(props) {
     }
     let twitter_messages = [];
     console.log(crm_update);
-
-    const openai = new OpenAI({
-      apiKey: "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",
-      dangerouslyAllowBrowser: true,
-    });
 
     console.log(userData);
     const meUser = userData.meUser.data.username;
@@ -177,6 +260,7 @@ function Home(props) {
           status: "In Progress",
         };
         crm_update.push(obj);
+        new_crm_data.push(obj);
         // }
       })
     );
@@ -185,7 +269,7 @@ function Home(props) {
 
     if (type == "airtable") {
       console.log("airtable");
-      await sendToAirtable(crm_update, baseID, tableID, fieldOptions);
+      await sendToAirtable(new_crm_data, baseID, tableID, fieldOptions);
       // await Promise.all(
       //   crm_update.map((update) => {
       //     if (update.customer != "No Response") {
@@ -193,6 +277,8 @@ function Home(props) {
       //     }
       //   })
       // );
+    } else {
+      await sendToCRM(new_crm_data);
     }
     // console.log(userData.messages);
     // console.log(connection_id);
@@ -279,12 +365,22 @@ function Home(props) {
       .select("")
       .eq("connection_id", id);
 
-    console.log(data);
-    console.log(data[0].type, "fuckers");
     setTwitterLinked(data[0].twitterLinked);
     localStorage.setItem("twitterLinked", data[0].twitterLinked);
     localStorage.setItem("crmType", data[0].type);
     setCRMType(data[0].type);
+
+    // const options = {
+    //   method: "GET",
+    //   url: `https://api.unified.to/unified/connection/${id}`,
+    //   headers: {
+    //     authorization:
+    //       "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+    //   },
+    // };
+
+    // const results = await axios.request(options);
+    // console.log("RESULTS", results);
 
     //testing
     if (crmType == "airtable") {

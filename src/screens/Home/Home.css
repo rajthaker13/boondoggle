@@ -326,7 +326,7 @@
   align-items: center;
   border-radius: var(--12, 12px);
   background: var(--Primary-Brand, #1c1c1c);
-  padding: 0px var(--12, 12px);
+  padding: var(--4, 4px) var(--12, 12px);
   border-width: 1px;
   border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
 }
