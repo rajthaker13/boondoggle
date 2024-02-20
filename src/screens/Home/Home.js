@@ -104,7 +104,7 @@ function Home(props) {
               },
               company_ids: current_crm.company_ids,
               contact_ids: [current_crm.id],
-              user_id: current_crm[0].user_id,
+              user_id: current_crm.user_id,
             };
             console.log("event", event);
             const { data, error } = await props.db.functions.invoke(
@@ -357,6 +357,11 @@ function Home(props) {
       });
   }
 
+  async function linkedInTest() {
+    const { data, error } = await props.db.functions.invoke("linked-scrape");
+    console.log("SHIT", data);
+  }
+
   async function checkLinks() {
     const id = localStorage.getItem("connection_id");
 
@@ -381,6 +386,8 @@ function Home(props) {
 
     // const results = await axios.request(options);
     // console.log("RESULTS", results);
+
+    // await linkedInTest();
 
     //testing
     if (crmType == "airtable") {
