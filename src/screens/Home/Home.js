@@ -77,7 +77,7 @@ function Home(props) {
             ""
           );
           console.log("REGES", regexCustomer);
-          if (regexCustomer == "Blake Faulkner 🌉") {
+          if (update.customer == "Blake Faulkner 🌉") {
             regexCustomer = "Blake Faulkner";
           }
           const options = {

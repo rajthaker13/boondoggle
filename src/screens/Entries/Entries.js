@@ -218,7 +218,7 @@ function Entries(props) {
               <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
                 <span className="stats-line-text-1">
-                  Rejected <span className="stats-line-text-2">6</span>
+                  Rejected <span className="stats-line-text-2">0</span>
                 </span>
                 <div className="stats-line-container">
                   <div
@@ -244,7 +244,7 @@ function Entries(props) {
               <div className="entries-stats-cell">
                 <div className="entries-stats-text-container"></div>
                 <span className="stats-line-text-1">
-                  Completed <span className="stats-line-text-2">6</span>
+                  Completed <span className="stats-line-text-2">3</span>
                 </span>
                 <div className="stats-line-container">
                   <div
