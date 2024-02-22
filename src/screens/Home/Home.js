@@ -257,7 +257,7 @@ function Home(props) {
           summary: summary + "\n Summarized by Boondoggle AI",
           date: Date.now(),
           source: "Twitter",
-          status: "In Progress",
+          status: "Completed",
         };
         crm_update.push(obj);
         new_crm_data.push(obj);

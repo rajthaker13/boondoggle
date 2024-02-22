@@ -427,7 +427,7 @@ function Entries(props) {
                           <div className=".entries-table-status-container">
                             <p
                               className="integrations-table-column-info"
-                              style={{ color: "#8A8CD9" }}
+                              style={{ color: "#34b233" }}
                             >
                               {lead.status}
                             </p>
