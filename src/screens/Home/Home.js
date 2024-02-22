@@ -77,6 +77,9 @@ function Home(props) {
             ""
           );
           console.log("REGES", regexCustomer);
+          if (regexCustomer == "Blake Faulkner 🌉") {
+            regexCustomer = "Blake Faulkner";
+          }
           const options = {
             method: "GET",
             url: `https://api.unified.to/crm/${connection_id}/contact`,
