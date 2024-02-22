@@ -72,7 +72,7 @@ function Home(props) {
       new_crm_data.map(async (update) => {
         if (update.customer != "") {
           console.log(update);
-          const regexCustomer = update.customer.replace(
+          let regexCustomer = update.customer.replace(
             /\s(?=[\uD800-\uDFFF])/g,
             ""
           );
