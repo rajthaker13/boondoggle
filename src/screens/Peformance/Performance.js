@@ -414,14 +414,14 @@ function Performance(props) {
             </div>
           </div>
           <div className="dashboard">
-            <button
+            {/* <button
               onClick={async () => {
                 await testPushCRM();
               }}
             >
               CRM TEST
             </button>
-            <button>Airtable TEST</button>
+            <button>Airtable TEST</button> */}
             <div
               className="connected-apps-container"
               style={{ justifyContent: "center" }}
