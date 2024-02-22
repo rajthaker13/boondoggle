@@ -254,7 +254,7 @@ function Home(props) {
           id: dm.id,
           customer: dm.customer != meName ? dm.customer : "No Response",
           title: title,
-          summary: summary,
+          summary: summary + "\n Summarized by Boondoggle AI",
           date: Date.now(),
           source: "Twitter",
           status: "In Progress",
