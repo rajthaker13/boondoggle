@@ -127,7 +127,8 @@ function Home(props) {
                   connection_id: connection_id,
                   contact: contact,
                   title: update.title,
-                  description: update.summary,
+                  description:
+                    update.summary + "\n + Summarized by Boondoggle AI",
                 },
               }
             );
@@ -257,7 +258,7 @@ function Home(props) {
           id: dm.id,
           customer: dm.customer != meName ? dm.customer : "No Response",
           title: title,
-          summary: summary + "\n Summarized by Boondoggle AI",
+          summary: summary,
           date: Date.now(),
           source: "Twitter",
           status: "Completed",
