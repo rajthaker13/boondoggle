@@ -400,7 +400,7 @@ function Home(props) {
       // const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
       // axios
       //   .get(url, {
-      //     headers: {
+      //     headers: {I have
       //       Authorization: `Bearer ${id}`,
       //     },
       //   })

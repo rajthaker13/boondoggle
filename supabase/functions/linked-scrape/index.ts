@@ -16,15 +16,36 @@ Deno.serve(async (req) => {
   const page = await browser.newPage();
   const url = "https://www.linkedin.com/"
   // const cookies = await page.cookies()
-  await page.setCookie({ name: "li_at", value: "AQEDATM8nvYEypToAAABjcgCu7YAAAGN7A8_tlYAICw7e2fNjj1PxAAFSAc9MUba-Ev5TmFx-EnSh4_BZek5LoA3fL27gmfDy42C-HwlMCuHYTruKQOqk3vKHgSeV1I-eBnp0-OZST3c0MpF8pty_zfX", domain: "www.linkedin.com" })
+  await page.setCookie({ name: "li_at", value: "AQEDATM8nvYAVsMUAAABjcl1OcUAAAGN7YG9xVYAWaEuRe1Go_YLhksLY93qvRyz-KSQ9jkhJt8jd6UF60OGKbcAi46msaquFLgHbX3C_P6UaJam2rc3_vAJssZ7GMpsgCx7xOo9N51Rr7hQJGwIDa3F", domain: "www.linkedin.com" })
   await page.goto(url);
   await page.click('a[href="https://www.linkedin.com/messaging/?"]');
   await page.waitForNavigation();
-  const content = await page.content();
-  console.log(content);
+
+  const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link');
+
+  console.log("Conversations", conversationLinks)
+
+
+  const conversationContents = [];
+
+  for (const link of conversationLinks) {
+    // console.log(link)
+    await link.click()
+    await page.waitForNavigation()
+    const content = await page.content()
+    console.log(content)
+
+    conversationContents.push(content)
+
+  }
+
+  // console.log(conversationContents)
+
+  // const content = await page.content();
+  // console.log(content);
 
   const data = {
-    message: content,
+    message: conversationContents,
   }
   await browser.close();
 
