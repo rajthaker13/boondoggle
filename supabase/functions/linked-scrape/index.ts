@@ -13,39 +13,67 @@ Deno.serve(async (req) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: `wss://chrome.browserless.io?token=c751be2b-0d3d-4e26-8516-f4c774e0df6f`
   });
+
+  const session_cookie = "AQEDATM8nvYClQ4aAAABjdfzId8AAAGN-_-l31YAraw4kzupwgwiwrEej49v4_Uns3LpZLEcFwiPmELQnwFHEV1f7_fkqs700cCKnbsD8KS-TcPeCo2NuxKcOPxDIWTZHIo0-Y7y3bEl8oNFII4Hph76"
   const page = await browser.newPage();
   const url = "https://www.linkedin.com/"
   // const cookies = await page.cookies()
-  await page.setCookie({ name: "li_at", value: "AQEDATM8nvYAVsMUAAABjcl1OcUAAAGN7YG9xVYAWaEuRe1Go_YLhksLY93qvRyz-KSQ9jkhJt8jd6UF60OGKbcAi46msaquFLgHbX3C_P6UaJam2rc3_vAJssZ7GMpsgCx7xOo9N51Rr7hQJGwIDa3F", domain: "www.linkedin.com" })
+  await page.setCookie({ name: "li_at", value: session_cookie, domain: "www.linkedin.com" })
   await page.goto(url);
   await page.click('a[href="https://www.linkedin.com/messaging/?"]');
   await page.waitForNavigation();
 
-  const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link');
+  const test = await page.content()
 
-  console.log("Conversations", conversationLinks)
+  const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link', links => links.map(link => link.href));
+
+  // console.log("Conversations", conversationLinks)
 
 
   const conversationContents = [];
+  const result = []
 
   for (const link of conversationLinks) {
     // console.log(link)
-    await link.click()
-    await page.waitForNavigation()
-    const content = await page.content()
-    console.log(content)
+    // await page.click(link)
+    const relativePath = new URL(link).pathname;
+    console.log(relativePath)
+    await page.click(`a[href="${relativePath}"]`)
+    // await page.waitForNavigation()
+    await page.waitForSelector('body');
+    const fullPageContent = await page.content()
+    console.log(fullPageContent);
+    conversationContents.push(fullPageContent)
 
-    conversationContents.push(content)
+    const messages = await page.$$eval('p.msg-s-event-listitem__body', paragraphs => {
+      return paragraphs.map(paragraph => paragraph.textContent.trim());
+    });
+    const profileURL = await page.$$eval('a.app-aware-link.msg-thread__link-to-profile', links => links.map(link => link.href)); 
 
+    console.log("PRIFLE", profileURL)
+
+    const name = await page.$$eval('h2.msg-entity-lockup__entity-title', paragraphs => {
+      return paragraphs.map(paragraph => paragraph.textContent.trim());
+    }); 
+
+    const senders = await page.$$eval('span.msg-s-message-group__profile-link.msg-s-message-group__name', spans => {
+      return spans.map(span => span.textContent.trim());
+    });
+
+    console.log("Name", name)
+
+    const data = {
+      name: name[0],
+      url: profileURL[0],
+      messages: messages,
+      senders: senders
+    }
+    result.push(data)
   }
-
-  // console.log(conversationContents)
-
-  // const content = await page.content();
-  // console.log(content);
 
   const data = {
     message: conversationContents,
+    text: result
   }
   await browser.close();
 
