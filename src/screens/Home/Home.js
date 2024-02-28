@@ -366,6 +366,11 @@ function Home(props) {
     console.log("SHIT", data);
   }
 
+  async function twitterTest() {
+    const { data, error } = await props.db.functions.invoke("twitter-scrape");
+    console.log("SHITTWEET", data);
+  }
+
   async function checkLinks() {
     const id = localStorage.getItem("connection_id");
 
@@ -392,6 +397,8 @@ function Home(props) {
     // console.log("RESULTS", results);
 
     // await linkedInTest();
+
+    // await twitterTest();
 
     //testing
     if (crmType == "airtable") {
@@ -713,7 +720,7 @@ function Home(props) {
                   </div>
                   <button className="link-button">
                     <p className="link-button-text" style={{ color: "black" }}>
-                      Coming Soon
+                      Connect
                     </p>
                   </button>
                 </div>
@@ -754,7 +761,7 @@ function Home(props) {
                   </div>
                   <button className="link-button">
                     <p className="link-button-text" style={{ color: "black" }}>
-                      Coming Soon
+                      Connect
                     </p>
                   </button>
                 </div>
@@ -785,12 +792,12 @@ function Home(props) {
                     />
                   </svg>
                   <div className="connected-app-info-container">
-                    <p className="connected-app-info-1">Telegram</p>
+                    <p className="connected-app-info-1">Instagram</p>
                     <p className="connected-app-info-2">Direct Messages</p>
                   </div>
                   <button className="link-button">
                     <p className="link-button-text" style={{ color: "black" }}>
-                      Coming Soon
+                      Connect
                     </p>
                   </button>
                 </div>
