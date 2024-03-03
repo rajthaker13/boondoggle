@@ -13,6 +13,10 @@ function Entries(props) {
   const [expandedRow, setExpandedRow] = useState(null);
   const [viewTasks, setViewTasks] = useState(false);
 
+  let renderedData = [];
+
+  let renderedTasks = [];
+
   useEffect(() => {
     async function getData() {
       const connection_id = localStorage.getItem("connection_id");
@@ -178,70 +182,76 @@ function Entries(props) {
                     {tableData
                       .slice()
                       .reverse()
-                      .map((lead) => {
+                      .map((lead, index) => {
                         const timestamp = lead.date;
                         const timeAgoString = timeAgo(timestamp);
                         const isExpanded = expandedRow === lead.id;
-                        return (
-                          <div
-                            className={
-                              isExpanded
-                                ? "entries-table-row-chosen"
-                                : "entries-table-row"
-                            }
-                            onClick={() => setExpandedRow(lead.id)}
-                            key={lead.id}
-                          >
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.id}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.customer}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.title}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {isExpanded
-                                  ? lead.summary
-                                  : lead.summary.slice(0, 50) + "..."}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {timeAgoString}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.source}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <div className=".entries-table-status-container">
-                                <p
-                                  className="integrations-table-column-info"
-                                  style={{ color: "#34b233" }}
-                                >
-                                  {lead.status}
+                        const itemIndex = renderedData.findIndex(
+                          (item) => item === lead.customer
+                        );
+                        if (itemIndex == -1) {
+                          renderedData.push(lead.customer);
+                          return (
+                            <div
+                              className={
+                                isExpanded
+                                  ? "entries-table-row-chosen"
+                                  : "entries-table-row"
+                              }
+                              onClick={() => setExpandedRow(lead.id)}
+                              key={lead.id}
+                            >
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.id}
                                 </p>
                               </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.customer}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.title}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {isExpanded
+                                    ? lead.summary
+                                    : lead.summary.slice(0, 50) + "..."}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {timeAgoString}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.source}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <div className=".entries-table-status-container">
+                                  <p
+                                    className="integrations-table-column-info"
+                                    style={{ color: "#34b233" }}
+                                  >
+                                    {lead.status}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
+                          );
+                        }
                       })}
                   </>
                 )}
@@ -293,66 +303,72 @@ function Entries(props) {
                         const timestamp = lead.date;
                         const timeAgoString = timeAgo(timestamp);
                         const isExpanded = expandedRow === lead.id;
-                        return (
-                          <div
-                            className={
-                              isExpanded
-                                ? "entries-table-row-chosen"
-                                : "entries-table-row"
-                            }
-                            onClick={() => setExpandedRow(lead.id)}
-                            key={lead.id}
-                          >
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.id}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.customer}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.title}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {timeAgoString}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {isExpanded
-                                  ? lead.response
-                                  : lead.response.slice(0, 50) + "..."}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <p className="integrations-table-column-info">
-                                {lead.source}
-                              </p>
-                            </div>
-
-                            <div className="entries-table-column">
-                              <div className=".entries-table-status-container">
-                                <p
-                                  className="integrations-table-column-info"
-                                  style={{ color: "#34b233" }}
-                                >
-                                  Test
+                        const itemIndex = renderedTasks.findIndex(
+                          (item) => item === lead.customer
+                        );
+                        if (itemIndex == -1) {
+                          renderedTasks.push(lead.customer);
+                          return (
+                            <div
+                              className={
+                                isExpanded
+                                  ? "entries-table-row-chosen"
+                                  : "entries-table-row"
+                              }
+                              onClick={() => setExpandedRow(lead.id)}
+                              key={lead.id}
+                            >
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.id}
                                 </p>
                               </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.customer}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.title}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {timeAgoString}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {isExpanded
+                                    ? lead.response
+                                    : lead.response.slice(0, 50) + "..."}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <p className="integrations-table-column-info">
+                                  {lead.source}
+                                </p>
+                              </div>
+
+                              <div className="entries-table-column">
+                                <div className=".entries-table-status-container">
+                                  <p
+                                    className="integrations-table-column-info"
+                                    style={{ color: "#34b233" }}
+                                  >
+                                    Test
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
+                          );
+                        }
                       })}
                   </>
                 )}
