@@ -38,7 +38,7 @@ function Landing(props) {
             <span className="landing-text-big" style={{ fontSize: "60px" }}>
               Automations that simplify your work
             </span>
-            <p className="landing-text-medium">
+            <p className="landing-text-medium" style={{ lineHeight: "50px" }}>
               Boondoggle <span style={{ fontWeight: "700" }}>summarizes</span>{" "}
               your social media messages, emails, <br /> and meeting notes,{" "}
               <span style={{ fontWeight: "700" }}>enriches</span> your contacts,

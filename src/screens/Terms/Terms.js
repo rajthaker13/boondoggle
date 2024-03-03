@@ -1,15 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect } from "react";
 import "./Terms.css";
 import { useNavigate } from "react-router-dom";
-import OpenAI from "openai";
-import axios from "axios";
 import Header from "../../components/Header/Header";
-import {
-  BrowserView,
-  MobileView,
-  isBrowser,
-  isMobile,
-} from "react-device-detect";
+import { BrowserView, MobileView } from "react-device-detect";
 
 function Terms(props) {
   const navigation = useNavigate();

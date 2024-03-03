@@ -22,17 +22,6 @@
   border-radius: var(--0, 0px);
 }
 
-.dashboard-header {
-  display: flex;
-  width: 90%;
-  padding: var(--20, 20px) var(--28, 28px);
-  justify-content: space-between;
-  align-items: center;
-  border-radius: var(--0, 0px);
-  border-bottom: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
-  height: 5vh;
-}
-
 .header-text-container {
   display: flex;
   align-items: center;
@@ -70,9 +59,49 @@
   line-height: 20px; /* 142.857% */
 }
 
+.entries-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  margin-left: 1.5vw;
+  margin-top: 1.5vw;
+}
+
+.entries-tasks-button {
+  display: flex;
+  padding: 2px;
+  padding-inline: 20px;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  align-self: stretch;
+  flex-wrap: wrap;
+  border-radius: 5px;
+  background: var(--Primary-Light, #f7f9fb);
+  border: 0;
+}
+
+.entries-tasks-button-text {
+  color: var(--black-100, #1c1c1c);
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+
+  /* 12 Regular */
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1px; /* 150% */
+  align-self: stretch;
+}
+
 .entries-container {
   display: flex;
-  width: 85%;
+  width: 96%;
+  margin-inline: 2vw;
   min-width: 800px;
   padding: var(--24, 24px);
   align-items: flex-start;

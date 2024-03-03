@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import "./SignUp.css";
 import { useNavigate } from "react-router-dom";
 
@@ -7,38 +7,10 @@ function SignUp(props) {
   const [password, setPassword] = useState("");
   const navigation = useNavigate();
 
-  async function signInWithTwitter() {
-    const { data, error } = await props.db.functions.invoke("twitter-login-3");
-    console.log(data);
-    localStorage.setItem("oauth_token", data.url.oauth_token);
-    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
-    window.open(data.url.url, "_self");
-  }
-
-  async function captureOauthVerifier() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const oauthVerifier = urlParams.get("oauth_verifier");
-
-    // Now oauthVerifier contains the value of oauth_verifier parameter
-    console.log("Verifier " + oauthVerifier);
-    const token = localStorage.getItem("oauth_token");
-    const secret = localStorage.getItem("oauth_secret");
-    console.log(token);
-    console.log(secret);
-    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
-      body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
-    });
-    console.log(data);
-  }
-
-  useEffect(() => {
-    console.log(localStorage.getItem("twitterLinked"));
-  }, []);
-
   async function signIn() {
     console.log(email);
     console.log(password);
-    const { data, error } = await props.db.auth.signUp({
+    const { data } = await props.db.auth.signUp({
       email: email,
       password: password,
     });
@@ -53,6 +25,7 @@ function SignUp(props) {
         <img
           className="login-pic"
           src={require("../../assets/login.png")}
+          alt="Boondoggle: The AI CRM Entry/Analytics System"
         ></img>
       </div>
       <div className="login-pic-container" style={{ width: "30%" }}>

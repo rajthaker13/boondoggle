@@ -1,17 +1,10 @@
 import "./App.css";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
 import Home from "./screens/Home/Home";
 import SignUp from "./screens/SignUp/SignUp";
 // import { Client, auth } from "twitter-api-sdk";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Switch,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Link from "./screens/Link/Link";
 import Entries from "./screens/Entries/Entries";
 import Login from "./screens/Login/Login";
@@ -21,6 +14,7 @@ import ConnectAirtable from "./screens/ConnectAirtable/ConnectAirtable";
 import Landing from "./screens/Landing/Landing";
 import Privacy from "./screens/Privacy/Privacy";
 import Terms from "./screens/Terms/Terms";
+import Manager from "./screens/Manager/Manager";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -28,22 +22,6 @@ const supabase = createClient(
 );
 
 export default function App() {
-  const [session, setSession] = useState(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   // async function signInWithTwitter() {
   //   const { data, error } = await supabase.functions.invoke("twitter-login-3");
   //   console.log(data);
@@ -93,6 +71,7 @@ export default function App() {
         <Route path="/home" element={<Home db={supabase} />} />
         <Route path="/entries" element={<Entries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />
+        <Route path="/manager" element={<Manager db={supabase} />} />
         <Route path="/airtable" element={<Airtable db={supabase} />} />
         <Route
           path="/connectAirtable"
