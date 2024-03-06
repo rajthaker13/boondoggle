@@ -679,18 +679,16 @@ function Home(props) {
           if (email.latestDraftOrMessage.from[0].email == userEmail) {
             var obj = {
               id: email.id,
-              customer:
-                email.latestDraftOrMessage.to[0].name == null
-                  ? email.latestDraftOrMessage.to[0].email
-                  : email.latestDraftOrMessage.to[0].name,
+              customer: email.latestDraftOrMessage.to[0].name
+                ? email.latestDraftOrMessage.to[0].email
+                : email.latestDraftOrMessage.to[0].name,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
-                  sender:
-                    email.latestDraftOrMessage.from[0].name == null
-                      ? email.latestDraftOrMessage.from[0].email
-                      : email.latestDraftOrMessage.from[0].name,
+                  sender: email.latestDraftOrMessage.from[0].name
+                    ? email.latestDraftOrMessage.from[0].email
+                    : email.latestDraftOrMessage.from[0].name,
                 },
               ],
               participants: email.participants,
@@ -701,15 +699,16 @@ function Home(props) {
           } else {
             var obj = {
               id: email.id,
-              customer:
-                email.latestDraftOrMessage.from[0].name == null
-                  ? email.latestDraftOrMessage.from[0].email
-                  : email.latestDraftOrMessage.from[0].name,
+              customer: email.latestDraftOrMessage.from[0].name
+                ? email.latestDraftOrMessage.from[0].email
+                : email.latestDraftOrMessage.from[0].name,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
-                  sender: email.latestDraftOrMessage.from[0].email,
+                  sender: email.latestDraftOrMessage.from[0].name
+                    ? email.latestDraftOrMessage.from[0].email
+                    : email.latestDraftOrMessage.from[0].name,
                 },
               ],
               participants: email.participants,
