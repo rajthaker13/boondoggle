@@ -681,9 +681,9 @@ function Home(props) {
           if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
             var obj = {
               id: email.id,
-              customer: email.latestDraftOrMessage?.to[0]?.name
-                ? email.latestDraftOrMessage?.to[0]?.name
-                : email.latestDraftOrMessage?.to[0]?.email,
+              customer:
+                email.latestDraftOrMessage?.to[0]?.name ??
+                email.latestDraftOrMessage?.to[0]?.email,
               data: email,
               snippet: [
                 {
