@@ -791,11 +791,18 @@ function Home(props) {
 
         const toDoTitle = toDoTitleCompletion.choices[0].message.content;
 
+        let responseType;
+        if (email.type == "OUTBOUND") {
+          responseType = "Follow-Up";
+        } else {
+          responseType = "Response";
+        }
+
         const responseCompletion = await openai.chat.completions.create({
           messages: [
             {
               role: "user",
-              content: `${emailContext} Generate me a response to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
+              content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
             },
           ],
           model: "gpt-4",
