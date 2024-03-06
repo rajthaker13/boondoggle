@@ -664,6 +664,7 @@ function Home(props) {
             .includes("contact us") &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("luma") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("receipt") &&
           email.folders[0] != "DRAFT"
         ) {
           // const itemIndex = new_emails.findIndex(
@@ -750,7 +751,7 @@ function Home(props) {
             })
             .join("\n");
 
-          const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation.`;
+          const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context you are the user associated with ${userEmail} so use first person when that account is conversing..`;
 
           const titleCompletion = await openai.chat.completions.create({
             messages: [
