@@ -682,15 +682,15 @@ function Home(props) {
             var obj = {
               id: email.id,
               customer: email.latestDraftOrMessage.to[0].name
-                ? email.latestDraftOrMessage.to[0].email
-                : email.latestDraftOrMessage.to[0].name,
+                ? email.latestDraftOrMessage.to[0].name
+                : email.latestDraftOrMessage.to[0].email,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
                   sender: email.latestDraftOrMessage.from[0].name
-                    ? email.latestDraftOrMessage.from[0].email
-                    : email.latestDraftOrMessage.from[0].name,
+                    ? email.latestDraftOrMessage.from[0].name
+                    : email.latestDraftOrMessage.from[0].email,
                 },
               ],
               participants: email.participants,
@@ -702,15 +702,15 @@ function Home(props) {
             var obj = {
               id: email.id,
               customer: email.latestDraftOrMessage.from[0].name
-                ? email.latestDraftOrMessage.from[0].email
-                : email.latestDraftOrMessage.from[0].name,
+                ? email.latestDraftOrMessage.from[0].name
+                : email.latestDraftOrMessage.from[0].email,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
                   sender: email.latestDraftOrMessage.from[0].name
-                    ? email.latestDraftOrMessage.from[0].email
-                    : email.latestDraftOrMessage.from[0].name,
+                    ? email.latestDraftOrMessage.from[0].name
+                    : email.latestDraftOrMessage.from[0].email,
                 },
               ],
               participants: email.participants,
@@ -726,7 +726,7 @@ function Home(props) {
 
     await Promise.all(
       new_emails.map(async (email) => {
-        if (email.customer != "") {
+        if (email.customer) {
           const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
           const subject = email.data.subject;
 
