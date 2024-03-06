@@ -16,6 +16,7 @@ import Privacy from "./screens/Privacy/Privacy";
 import Terms from "./screens/Terms/Terms";
 import Manager from "./screens/Manager/Manager";
 import Payment from "./screens/Payment/Payment";
+import Settings from "./screens/Settings/Settings";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/entries" element={<Entries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />
         <Route path="/manager" element={<Manager db={supabase} />} />
+        <Route path="/settings" element={<Settings db={supabase} />} />
         <Route path="/airtable" element={<Airtable db={supabase} />} />
         <Route
           path="/connectAirtable"

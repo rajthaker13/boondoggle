@@ -116,7 +116,7 @@ function Sidebar(props) {
           </p>
         </div>
 
-        {/* <div className="sidebar-tabs">
+        <div className="sidebar-tabs">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"
@@ -139,12 +139,12 @@ function Sidebar(props) {
             className="tabs-text"
             style={selectedTab == 3 ? { fontWeight: 700 } : {}}
             onClick={() => {
-              navigation("/manager");
+              navigation("/settings");
             }}
           >
-            Manager
+            Settings
           </p>
-        </div> */}
+        </div>
 
         {/* <div className="sidebar-tabs">
         <svg

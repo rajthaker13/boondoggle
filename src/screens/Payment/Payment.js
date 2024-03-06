@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import UnifiedDirectory from "@unified-api/react-directory";
-import axios from "axios";
-import Stripe from "stripe";
 import { loadStripe } from "@stripe/stripe-js";
 
 function Payment(props) {
-  //"prod_PgfUENZu6CBtgR"
-  //   const stripe = new Stripe(
-  //     "sk_test_51NO1SKGzsfuVxfRNZxN3U7oU5gMwVYXMdjgcrxFVx06lVBqQ6iLenrUnJIuVKZZKL7gvLIw0FG8j5PGpXNMeCD6u00HVtWE7Ri",
-  //     {
-  //       httpClient: Stripe.createFetchHttpClient(),
-  //       apiVersion: "2022-08-01",
-  //     }
-  //   );
-
   const navigation = useNavigate();
 
   async function handleSubscription(stripe_id, productId) {

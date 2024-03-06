@@ -678,19 +678,19 @@ function Home(props) {
           //     },
           //   ];
           // } else {
-          if (email.latestDraftOrMessage.from[0].email == userEmail) {
+          if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
             var obj = {
               id: email.id,
-              customer: email.latestDraftOrMessage.to[0].name
-                ? email.latestDraftOrMessage.to[0].name
-                : email.latestDraftOrMessage.to[0].email,
+              customer: email.latestDraftOrMessage?.to[0]?.name
+                ? email.latestDraftOrMessage?.to[0]?.name
+                : email.latestDraftOrMessage?.to[0]?.email,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
-                  sender: email.latestDraftOrMessage.from[0].name
-                    ? email.latestDraftOrMessage.from[0].name
-                    : email.latestDraftOrMessage.from[0].email,
+                  sender: email.latestDraftOrMessage?.from[0]?.name
+                    ? email.latestDraftOrMessage?.from[0]?.name
+                    : email.latestDraftOrMessage?.from[0]?.email,
                 },
               ],
               participants: email.participants,
@@ -701,16 +701,16 @@ function Home(props) {
           } else {
             var obj = {
               id: email.id,
-              customer: email.latestDraftOrMessage.from[0].name
-                ? email.latestDraftOrMessage.from[0].name
-                : email.latestDraftOrMessage.from[0].email,
+              customer: email.latestDraftOrMessage?.from[0]?.name
+                ? email.latestDraftOrMessage?.from[0]?.name
+                : email.latestDraftOrMessage?.from[0]?.email,
               data: email,
               snippet: [
                 {
                   message: email.snippet,
-                  sender: email.latestDraftOrMessage.from[0].name
-                    ? email.latestDraftOrMessage.from[0].name
-                    : email.latestDraftOrMessage.from[0].email,
+                  sender: email.latestDraftOrMessage?.from[0]?.name
+                    ? email.latestDraftOrMessage?.from[0]?.name
+                    : email.latestDraftOrMessage?.from[0]?.email,
                 },
               ],
               participants: email.participants,
