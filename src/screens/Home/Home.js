@@ -663,7 +663,8 @@ function Home(props) {
             .toLowerCase()
             .includes("contact us") &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("luma")
+          !email.latestDraftOrMessage.body.toLowerCase().includes("luma") &&
+          email.folders[0] != "DRAFT"
         ) {
           // const itemIndex = new_emails.findIndex(
           //   (item) => item.customer === email.latestDraftOrMessage.from[0].name
@@ -679,11 +680,16 @@ function Home(props) {
           //   ];
           // } else {
           if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
+            console.log("YOBLAKE", email);
+            console.log({
+              data: email,
+              customer: email.latestDraftOrMessage.to[0].name,
+            });
             var obj = {
               id: email.id,
-              customer:
-                email.latestDraftOrMessage?.to[0]?.name ??
-                email.latestDraftOrMessage?.to[0]?.email,
+              customer: email.latestDraftOrMessage?.to[0]?.name
+                ? email.latestDraftOrMessage?.to[0]?.name
+                : email.latestDraftOrMessage?.to[0]?.email,
               data: email,
               snippet: [
                 {
