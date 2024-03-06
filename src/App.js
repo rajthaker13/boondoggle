@@ -15,6 +15,7 @@ import Landing from "./screens/Landing/Landing";
 import Privacy from "./screens/Privacy/Privacy";
 import Terms from "./screens/Terms/Terms";
 import Manager from "./screens/Manager/Manager";
+import Payment from "./screens/Payment/Payment";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/signup" element={<SignUp db={supabase} />} />
         <Route path="/login" element={<Login db={supabase} />} />
         <Route path="/link" element={<Link db={supabase} />} />
+        <Route path="/payment" element={<Payment db={supabase} />} />
         <Route path="/home" element={<Home db={supabase} />} />
         <Route path="/entries" element={<Entries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />

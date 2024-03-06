@@ -530,7 +530,9 @@ function Home(props) {
   }
 
   async function connectEmail() {
-    const { data, error } = await props.db.functions.invoke("email-auth");
+    const { data, error } = await props.db.functions.invoke("email-auth", {
+      body: { source: window.location.href },
+    });
     console.log(data);
     window.open(data.url, "_self");
   }
@@ -540,9 +542,11 @@ function Home(props) {
     const code = urlParams.get("code");
 
     console.log("CODE", code);
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
 
     const { data, error } = await props.db.functions.invoke("email-callback", {
-      body: { code: code },
+      body: { code: code, source: urlWithoutParams },
     });
 
     console.log("ERROR", error);
@@ -565,8 +569,11 @@ function Home(props) {
   }
 
   async function uploadEmails(id) {
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
+
     const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { identifier: id },
+      body: { identifier: id, source: urlWithoutParams },
     });
 
     const connection_id = localStorage.getItem("connection_id");
@@ -584,47 +591,130 @@ function Home(props) {
     let new_emails = [];
 
     await Promise.all(
-      emails.map((email) => {
-        const itemIndex = new_emails.findIndex(
-          (item) => item.customer === email.from[0].name
+      emails.map(async (email) => {
+        //ERlzAH9YTUybDbWKkKmjr01OomstER6T
+        var myHeaders = new Headers();
+        myHeaders.append("apikey", "ERlzAH9YTUybDbWKkKmjr01OomstER6T");
+
+        var requestOptions = {
+          method: "POST",
+          redirect: "follow",
+          headers: myHeaders,
+          body: email.latestDraftOrMessage.body,
+        };
+
+        const spamRespone = await axios.post(
+          "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+          {
+            email: email.latestDraftOrMessage.body,
+            options: "short",
+          },
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
         );
 
-        if (itemIndex != -1) {
-          new_emails[itemIndex].snippet = [
-            ...new_emails[itemIndex].snippet,
-            {
-              message: email.snippet,
-              sender: email.to,
-            },
-          ];
-        } else {
+        console.log({
+          snip: email.snippet,
+          score: spamRespone,
+        });
+
+        if (
+          email.latestDraftOrMessage.from[0].name != "" &&
+          spamRespone.data.score >= 7 &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("verification") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("alert") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("confirmation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("invitation") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("activation") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("unsubscribe") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("confirmation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("considering") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("tax") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("taxes") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("notification") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("demo") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("hesitate") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("invitation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("registration") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("contact us") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("luma")
+        ) {
+          // const itemIndex = new_emails.findIndex(
+          //   (item) => item.customer === email.latestDraftOrMessage.from[0].name
+          // );
+
+          // if (itemIndex != -1) {
+          //   new_emails[itemIndex].snippet = [
+          //     ...new_emails[itemIndex].snippet,
+          //     {
+          //       message: email.snippet,
+          //       sender: email.latestDraftOrMessage.from[0].name,
+          //     },
+          //   ];
+          // } else {
           var obj = {
             id: email.id,
-            customer: email.from[0].name,
+            customer: email.latestDraftOrMessage.from[0].name,
             data: email,
             snippet: [
               {
                 message: email.snippet,
-                sender: email.to,
+                sender: email.latestDraftOrMessage.from[0].name,
               },
             ],
+            participants: email.participants,
           };
 
           new_emails.push(obj);
+          // }
         }
       })
     );
 
     await Promise.all(
       new_emails.map(async (email) => {
-        const from = `${email.data.from[0].name} (${email.data.from[0].email})`;
+        const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
         const subject = email.data.subject;
 
         const snippetString = email.snippet
           .map((message) => `${message.sender}: ${message.message}`)
           .join("\n");
 
-        const emailContext = `I have an conversation sent from ${from} to this array of  emails ${email.data.to}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}.`;
+        const participantsString = email.participants
+          .map((user) => `${user.name}: ${user.email}`)
+          .join("\n");
+
+        const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}.`;
 
         const titleCompletion = await openai.chat.completions.create({
           messages: [
@@ -730,6 +820,7 @@ function Home(props) {
       getEmailData();
     }
     loadCheck();
+    console.log(window.location);
   }, []);
 
   return (
@@ -865,9 +956,9 @@ function Home(props) {
                     <p className="connected-app-info-1">LinkedIn</p>
                     <p className="connected-app-info-2">Direct Messages</p>
                   </div>
-                  <button className="link-button">
+                  <button className="link-button" disabled={true}>
                     <p className="link-button-text" style={{ color: "black" }}>
-                      Connect
+                      Coming Soon
                     </p>
                   </button>
                 </div>

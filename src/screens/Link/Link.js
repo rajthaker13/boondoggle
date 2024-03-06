@@ -3,6 +3,7 @@ import "./Link.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import UnifiedDirectory from "@unified-api/react-directory";
 import axios from "axios";
+import Stripe from "stripe";
 
 function Link(props) {
   const navigation = useNavigate();
@@ -42,7 +43,7 @@ function Link(props) {
       const { error } = await props.db
         .from("users")
         .insert({ id: uid, crm_id: connection_id });
-      navigation("/home");
+      navigation("/payment");
     }
 
     async function connectAirTable() {
@@ -114,6 +115,7 @@ function Link(props) {
       //   type: "airtable"
       // });
     }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("id")) {
       storeData();

@@ -8,11 +8,11 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const { identifier } = await req.json()
+  const { identifier, source } = await req.json()
 
   const config = {
     clientId: "bcfea5e3-89e3-4586-8251-1f7f82e41c98",
-    callbackUri: "https://boondoggle.ai/home",
+    callbackUri: source,
     apiKey: "nyk_v0_Dk8U2N1IQwzWQ8XvAmPcDuoJzQCuwQFodQhUu7uQ7XnbtZ9eJaf6ILrvRKypOSM7",
     apiUri: "https://api.us.nylas.com",
   };
@@ -23,16 +23,19 @@ Deno.serve(async (req) => {
     apiUri: config.apiUri
   });
 
-  const messages = await nylas.messages.list({
+  const messages = await nylas.threads.list({
     identifier,
     queryParams: {
-      limit: 10,
+      limit: 50,
     },
   });
+
+  console.log('Recent Threads:', messages)
 
   const data = {
     data: messages,
   }
+
 
   return new Response(
     JSON.stringify(data),

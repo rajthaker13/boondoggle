@@ -15,13 +15,13 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const { code } = await req.json()
+  const { code, source } = await req.json()
 
   console.log("CODE", code)
 
   const config = {
     clientId: "bcfea5e3-89e3-4586-8251-1f7f82e41c98",
-    callbackUri: "https://boondoggle.ai/home",
+    callbackUri: source,
     apiKey: "nyk_v0_Dk8U2N1IQwzWQ8XvAmPcDuoJzQCuwQFodQhUu7uQ7XnbtZ9eJaf6ILrvRKypOSM7",
     apiUri: "https://api.us.nylas.com",
   };
