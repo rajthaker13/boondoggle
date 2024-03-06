@@ -724,101 +724,103 @@ function Home(props) {
 
     await Promise.all(
       new_emails.map(async (email) => {
-        const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
-        const subject = email.data.subject;
+        if (email.customer != "") {
+          const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
+          const subject = email.data.subject;
 
-        const snippetString = email.snippet
-          .map((message) => `${message.sender}: ${message.message}`)
-          .join("\n");
+          const snippetString = email.snippet
+            .map((message) => `${message.sender}: ${message.message}`)
+            .join("\n");
 
-        const participantsString = email.participants
-          .map((user) => {
-            if (user.name && user.name.trim() !== "") {
-              return `${user.name}: ${user.email}`;
-            } else {
-              return user.email;
-            }
-          })
-          .join("\n");
+          const participantsString = email.participants
+            .map((user) => {
+              if (user.name && user.name.trim() !== "") {
+                return `${user.name}: ${user.email}`;
+              } else {
+                return user.email;
+              }
+            })
+            .join("\n");
 
-        const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation.`;
+          const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation.`;
 
-        const titleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `${emailContext} Give a short title that captures what this email thread was about.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const title = titleCompletion.choices[0].message.content;
-        const summaryCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const summary = summaryCompletion.choices[0].message.content;
+          const titleCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Give a short title that captures what this email thread was about.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const title = titleCompletion.choices[0].message.content;
+          const summaryCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const summary = summaryCompletion.choices[0].message.content;
 
-        const date = Date.now();
+          const date = Date.now();
 
-        var obj = {
-          id: email.id,
-          customer: email.customer,
-          title: title,
-          summary: summary,
-          date: date,
-          source: "Email",
-          status: "Completed",
-        };
+          var obj = {
+            id: email.id,
+            customer: email.customer,
+            title: title,
+            summary: summary,
+            date: date,
+            source: "Email",
+            status: "Completed",
+          };
 
-        updated_CRM.push(obj);
+          updated_CRM.push(obj);
 
-        const toDoTitleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
+          const toDoTitleCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
 
-        const toDoTitle = toDoTitleCompletion.choices[0].message.content;
+          const toDoTitle = toDoTitleCompletion.choices[0].message.content;
 
-        let responseType;
-        if (email.type == "OUTBOUND") {
-          responseType = "Follow-Up";
-        } else {
-          responseType = "Response";
+          let responseType;
+          if (email.type == "OUTBOUND") {
+            responseType = "Follow-Up";
+          } else {
+            responseType = "Response";
+          }
+
+          const responseCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+
+          const toDoResponse = responseCompletion.choices[0].message.content;
+
+          var toDoObject = {
+            id: email.id,
+            customer: email.customer,
+            title: toDoTitle,
+            response: toDoResponse,
+            date: date,
+            type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
+            source: "Email",
+          };
+          to_dos.push(toDoObject);
         }
-
-        const responseCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-
-        const toDoResponse = responseCompletion.choices[0].message.content;
-
-        var toDoObject = {
-          id: email.id,
-          customer: email.customer,
-          title: toDoTitle,
-          response: toDoResponse,
-          date: date,
-          type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
-          source: "Email",
-        };
-        to_dos.push(toDoObject);
       })
     );
 
