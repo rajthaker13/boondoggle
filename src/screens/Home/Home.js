@@ -569,11 +569,11 @@ function Home(props) {
         })
         .eq("connection_id", connection_id);
 
-      await uploadEmails(data.id);
+      await uploadEmails(data.id, data.email);
     }
   }
 
-  async function uploadEmails(id) {
+  async function uploadEmails(id, userEmail) {
     const currentUrl = window.location.href;
     const urlWithoutParams = currentUrl.split("?")[0];
 
@@ -676,20 +676,48 @@ function Home(props) {
           //     },
           //   ];
           // } else {
-          var obj = {
-            id: email.id,
-            customer: email.latestDraftOrMessage.from[0].name,
-            data: email,
-            snippet: [
-              {
-                message: email.snippet,
-                sender: email.latestDraftOrMessage.from[0].name,
-              },
-            ],
-            participants: email.participants,
-          };
+          if (email.latestDraftOrMessage.from[0].email == userEmail) {
+            var obj = {
+              id: email.id,
+              customer:
+                email.latestDraftOrMessage.to[0].name == null
+                  ? email.latestDraftOrMessage.to[0].email
+                  : email.latestDraftOrMessage.to[0].name,
+              data: email,
+              snippet: [
+                {
+                  message: email.snippet,
+                  sender:
+                    email.latestDraftOrMessage.from[0].name == null
+                      ? email.latestDraftOrMessage.from[0].email
+                      : email.latestDraftOrMessage.from[0].name,
+                },
+              ],
+              participants: email.participants,
+              type: "OUTBOUND",
+            };
 
-          new_emails.push(obj);
+            new_emails.push(obj);
+          } else {
+            var obj = {
+              id: email.id,
+              customer:
+                email.latestDraftOrMessage.from[0].name == null
+                  ? email.latestDraftOrMessage.from[0].email
+                  : email.latestDraftOrMessage.from[0].name,
+              data: email,
+              snippet: [
+                {
+                  message: email.snippet,
+                  sender: email.latestDraftOrMessage.from[0].email,
+                },
+              ],
+              participants: email.participants,
+              type: "INBOUND",
+            };
+
+            new_emails.push(obj);
+          }
           // }
         }
       })
@@ -714,13 +742,13 @@ function Home(props) {
           })
           .join("\n");
 
-        const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}.`;
+        const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation.`;
 
         const titleCompletion = await openai.chat.completions.create({
           messages: [
             {
               role: "user",
-              content: `${emailContext} Give a short title that captures what this conversation was about.`,
+              content: `${emailContext} Give a short title that captures what this email thread was about.`,
             },
           ],
           model: "gpt-4",
@@ -730,7 +758,7 @@ function Home(props) {
           messages: [
             {
               role: "user",
-              content: `${emailContext} Generate me a summary of this email in a few short sentences.`,
+              content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
             },
           ],
           model: "gpt-4",
@@ -781,6 +809,7 @@ function Home(props) {
           title: toDoTitle,
           response: toDoResponse,
           date: date,
+          type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
           source: "Email",
         };
         to_dos.push(toDoObject);

@@ -352,7 +352,7 @@ function Entries(props) {
 
                               <div className="entries-table-column">
                                 <p className="integrations-table-column-info">
-                                  Task
+                                  {lead.type}
                                 </p>
                               </div>
 

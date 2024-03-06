@@ -41,10 +41,12 @@ Deno.serve(async (req) => {
   });
 
   const response = await nylas.auth.exchangeCodeForToken(codeExchangePayload);
-  const { grantId } = response;
+  console.log("HEY<MAN>", response)
+  const { grantId, email } = response;
 
   const data = {
     id: grantId,
+    email: email
   }
 
   console.log(grantId, "GRSANT")
