@@ -534,8 +534,10 @@ function Home(props) {
   }
 
   async function connectEmail() {
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
     const { data, error } = await props.db.functions.invoke("email-auth", {
-      body: { source: window.location.href },
+      body: { source: urlWithoutParams },
     });
     console.log(data);
     window.open(data.url, "_self");
