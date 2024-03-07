@@ -8,7 +8,7 @@ function Payment(props) {
   async function handleSubscription(stripe_id, productId) {
     const { data, error } = await props.db.functions.invoke("stripe-link", {
       body: {
-        planId: "price_1OrI9UGzsfuVxfRN3bWrN3aV",
+        planId: "price_1Orpw8GzsfuVxfRNtJo8NX5C",
         stripeId: stripe_id,
         source: window.location.href,
       },
