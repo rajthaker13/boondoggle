@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
           plan: planId,
         },
       ],
+      trial_period_days: 14, 
     },
     // COMMUNITY TODO: Work out whether in prod or dev to use the correct URL
     success_url:

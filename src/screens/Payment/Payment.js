@@ -21,8 +21,6 @@ function Payment(props) {
     console.log(JSON.parse(data).id);
 
     await stripe?.redirectToCheckout({ sessionId: JSON.parse(data).id });
-
-    console.log("WORKPLS", data[0]);
   }
 
   useEffect(() => {
@@ -35,7 +33,7 @@ function Payment(props) {
 
       const stripe_id = data[0].stripe_customer_id;
 
-      await handleSubscription(stripe_id, "prod_PgfUENZu6CBtgR");
+      await handleSubscription(stripe_id, "prod_PhEOMSYN6ZZFLE");
     }
 
     async function subscribe() {
