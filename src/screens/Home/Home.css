@@ -264,7 +264,7 @@
   flex: 1 0 0;
   flex-wrap: wrap;
   border-radius: var(--0, 0px);
-  border-bottom: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
+  /* border-bottom: 1px solid var(--black-10, rgba(28, 28, 28, 0.1)); */
 }
 
 .connected-app-info-container {
@@ -354,7 +354,6 @@
   gap: var(--4, 4px);
   align-self: stretch;
   border-radius: var(--0, 0px);
-  border-bottom: 1px solid var(--black-20, rgba(28, 28, 28, 0.2));
   min-width: 25%;
 }
 

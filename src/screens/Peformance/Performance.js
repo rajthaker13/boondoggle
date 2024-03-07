@@ -225,7 +225,22 @@ function Performance(props) {
       // window.open(url, "_self");
     }
 
+    async function test() {
+      const connection_id = localStorage.getItem("connection_id");
+      const options = {
+        method: "GET",
+        url: `https://api.unified.to/hris/${connection_id}/employee`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+      };
+      const results = await axios.request(options);
+      console.log(results);
+    }
+
     getData();
+    test();
   }, []);
 
   async function testPushCRM() {

@@ -144,19 +144,6 @@
   align-self: stretch;
 }
 
-.connected-apps-cell {
-  display: flex;
-  min-width: 400px;
-  padding-bottom: var(--16, 16px);
-  align-items: center;
-  align-content: center;
-  gap: 16px var(--16, 16px);
-  flex: 1 0 0;
-  flex-wrap: wrap;
-  border-radius: var(--0, 0px);
-  border-bottom: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
-}
-
 .connected-app-info-container {
   display: flex;
   flex-direction: column;

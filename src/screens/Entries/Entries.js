@@ -12,10 +12,30 @@ function Entries(props) {
   const [tasks, setTasks] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
   const [viewTasks, setViewTasks] = useState(false);
+  const [viewCompleted, setViewCompleted] = useState(false);
 
   let renderedData = [];
 
   let renderedTasks = [];
+
+  async function completeTask(index, isCompleted) {
+    let reverseTasks = tasks.reverse();
+    reverseTasks[index].status = isCompleted ? "Complete" : "Incomplete";
+    reverseTasks = reverseTasks.reverse();
+
+    const connection_id = localStorage.getItem("connection_id");
+
+    await props.db
+      .from("data")
+      .update({
+        tasks: reverseTasks,
+      })
+      .eq("connection_id", connection_id);
+
+    setTasks(reverseTasks);
+
+    console.log(reverseTasks);
+  }
 
   useEffect(() => {
     async function getData() {
@@ -101,34 +121,44 @@ function Entries(props) {
             )}
 
             {viewTasks && (
-              <button
-                className="entries-tasks-button"
-                onClick={() => {
-                  setViewTasks(false);
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 18 18"
-                  fill="none"
+              <>
+                <button
+                  className="entries-tasks-button"
+                  onClick={() => {
+                    setViewTasks(false);
+                  }}
                 >
-                  <path
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
-                    d="M7.61292 3.87347L6.91289 5.76494C6.71611 6.29665 6.29685 6.71585 5.76512 6.91257L3.87357 7.61238L5.76504 8.31242C6.29675 8.5092 6.71595 8.92845 6.91267 9.46018L7.61248 11.3517L8.31252 9.46027C8.5093 8.92856 8.92855 8.50936 9.46028 8.31263L11.3518 7.61282L9.46037 6.91279C8.92866 6.71601 8.50946 6.29675 8.31273 5.76502L7.61292 3.87347ZM8.39378 2.78494C8.12561 2.06011 7.10045 2.06005 6.8322 2.78485L5.87186 5.37965C5.78752 5.60753 5.60784 5.78719 5.37996 5.8715L2.78504 6.83153C2.06021 7.09969 2.06015 8.12486 2.78495 8.39311L5.37975 9.35345C5.60763 9.43778 5.78729 9.61746 5.8716 9.84535L6.83163 12.4403C7.09979 13.1651 8.12496 13.1652 8.39321 12.4404L9.35355 9.84555C9.43788 9.61768 9.61756 9.43802 9.84545 9.35371L12.4404 8.39368C13.1652 8.12551 13.1653 7.10034 12.4405 6.8321L9.84565 5.87176C9.61778 5.78742 9.43812 5.60774 9.35381 5.37986L8.39378 2.78494Z"
-                    fill="#1C1C1C"
-                  />
-                  <path
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
-                    d="M13.1626 11.3995L12.9076 12.0884C12.767 12.4682 12.4676 12.7677 12.0878 12.9082L11.3988 13.1631L12.0877 13.418C12.4675 13.5586 12.767 13.8581 12.9075 14.2379L13.1624 14.9269L13.4174 14.2379C13.5579 13.8581 13.8574 13.5587 14.2372 13.4182L14.9262 13.1633L14.2372 12.9083C13.8574 12.7677 13.558 12.4683 13.4175 12.0885L13.1626 11.3995ZM13.6832 10.4072C13.5044 9.92402 12.8209 9.92398 12.6421 10.4072L12.1268 11.7995C12.0706 11.9514 11.9508 12.0712 11.7989 12.1274L10.4066 12.6425C9.92333 12.8213 9.92329 13.5047 10.4065 13.6835L11.7988 14.1988C11.9507 14.255 12.0705 14.3748 12.1267 14.5267L12.6418 15.9191C12.8206 16.4023 13.504 16.4024 13.6828 15.9192L14.1981 14.5269C14.2544 14.375 14.3741 14.2552 14.5261 14.199L15.9184 13.6839C16.4016 13.5051 16.4017 12.8216 15.9185 12.6428L14.5262 12.1275C14.3743 12.0713 14.2545 11.9515 14.1983 11.7996L13.6832 10.4072Z"
-                    fill="#1C1C1C"
-                  />
-                </svg>
-                <p className="entries-tasks-button-text">View Entries</p>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M7.61292 3.87347L6.91289 5.76494C6.71611 6.29665 6.29685 6.71585 5.76512 6.91257L3.87357 7.61238L5.76504 8.31242C6.29675 8.5092 6.71595 8.92845 6.91267 9.46018L7.61248 11.3517L8.31252 9.46027C8.5093 8.92856 8.92855 8.50936 9.46028 8.31263L11.3518 7.61282L9.46037 6.91279C8.92866 6.71601 8.50946 6.29675 8.31273 5.76502L7.61292 3.87347ZM8.39378 2.78494C8.12561 2.06011 7.10045 2.06005 6.8322 2.78485L5.87186 5.37965C5.78752 5.60753 5.60784 5.78719 5.37996 5.8715L2.78504 6.83153C2.06021 7.09969 2.06015 8.12486 2.78495 8.39311L5.37975 9.35345C5.60763 9.43778 5.78729 9.61746 5.8716 9.84535L6.83163 12.4403C7.09979 13.1651 8.12496 13.1652 8.39321 12.4404L9.35355 9.84555C9.43788 9.61768 9.61756 9.43802 9.84545 9.35371L12.4404 8.39368C13.1652 8.12551 13.1653 7.10034 12.4405 6.8321L9.84565 5.87176C9.61778 5.78742 9.43812 5.60774 9.35381 5.37986L8.39378 2.78494Z"
+                      fill="#1C1C1C"
+                    />
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M13.1626 11.3995L12.9076 12.0884C12.767 12.4682 12.4676 12.7677 12.0878 12.9082L11.3988 13.1631L12.0877 13.418C12.4675 13.5586 12.767 13.8581 12.9075 14.2379L13.1624 14.9269L13.4174 14.2379C13.5579 13.8581 13.8574 13.5587 14.2372 13.4182L14.9262 13.1633L14.2372 12.9083C13.8574 12.7677 13.558 12.4683 13.4175 12.0885L13.1626 11.3995ZM13.6832 10.4072C13.5044 9.92402 12.8209 9.92398 12.6421 10.4072L12.1268 11.7995C12.0706 11.9514 11.9508 12.0712 11.7989 12.1274L10.4066 12.6425C9.92333 12.8213 9.92329 13.5047 10.4065 13.6835L11.7988 14.1988C11.9507 14.255 12.0705 14.3748 12.1267 14.5267L12.6418 15.9191C12.8206 16.4023 13.504 16.4024 13.6828 15.9192L14.1981 14.5269C14.2544 14.375 14.3741 14.2552 14.5261 14.199L15.9184 13.6839C16.4016 13.5051 16.4017 12.8216 15.9185 12.6428L14.5262 12.1275C14.3743 12.0713 14.2545 11.9515 14.1983 11.7996L13.6832 10.4072Z"
+                      fill="#1C1C1C"
+                    />
+                  </svg>
+                  <p className="entries-tasks-button-text">View Entries</p>
+                </button>
+                <button
+                  className="entries-tasks-button"
+                  onClick={() => setViewCompleted(!viewCompleted)}
+                >
+                  <p className="entries-tasks-button-text">
+                    {viewCompleted ? "View To-Dos" : "View Completed"}
+                  </p>
+                </button>
+              </>
             )}
           </div>
           <div className="dashboard">
@@ -299,88 +329,107 @@ function Entries(props) {
                     {tasks
                       .slice()
                       .reverse()
-                      .map((lead) => {
+                      .map((lead, index) => {
                         const timestamp = lead.date;
                         const timeAgoString = timeAgo(timestamp);
                         const isExpanded = expandedRow === lead.id;
                         const itemIndex = renderedTasks.findIndex(
                           (item) => item === lead.customer
                         );
+                        const status = viewCompleted
+                          ? "Complete"
+                          : "Incomplete";
                         if (itemIndex == -1) {
                           renderedTasks.push(lead.customer);
-                          return (
-                            <div
-                              className={
-                                isExpanded
-                                  ? "entries-table-row-chosen"
-                                  : "entries-table-row"
-                              }
-                              onClick={() => setExpandedRow(lead.id)}
-                              key={lead.id}
-                            >
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {lead.id}
-                                </p>
-                              </div>
-
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {lead.customer}
-                                </p>
-                              </div>
-
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {lead.title}
-                                </p>
-                              </div>
-
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {timeAgoString}
-                                </p>
-                              </div>
-
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {isExpanded
-                                    ? lead.response
-                                    : lead.response.slice(0, 50) + "..."}
-                                </p>
-                              </div>
-
-                              <div className="entries-table-column">
-                                <p className="integrations-table-column-info">
-                                  {lead.type}
-                                </p>
-                              </div>
-
+                          if (lead.status == status) {
+                            return (
                               <div
-                                className="entries-table-column"
-                                style={{
-                                  justifyContent: "center",
-                                  alignContent: "center",
-                                }}
+                                className={
+                                  isExpanded
+                                    ? "entries-table-row-chosen"
+                                    : "entries-table-row"
+                                }
+                                onClick={() => setExpandedRow(lead.id)}
+                                key={lead.id}
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="60"
-                                  height="16"
-                                  viewBox="0 0 16 16"
-                                  fill="none"
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {lead.id}
+                                  </p>
+                                </div>
+
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {lead.customer}
+                                  </p>
+                                </div>
+
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {lead.title}
+                                  </p>
+                                </div>
+
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {timeAgoString}
+                                  </p>
+                                </div>
+
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {isExpanded
+                                      ? lead.response
+                                      : lead.response.slice(0, 50) + "..."}
+                                  </p>
+                                </div>
+
+                                <div className="entries-table-column">
+                                  <p className="integrations-table-column-info">
+                                    {lead.type}
+                                  </p>
+                                </div>
+
+                                <div
+                                  className="entries-table-column"
+                                  style={{
+                                    justifyContent: "center",
+                                    alignContent: "center",
+                                  }}
                                 >
-                                  <path
-                                    fill-rule="evenodd"
-                                    clip-rule="evenodd"
-                                    d="M8.6 2H7.4C6.26339 2 5.47108 2.00078 4.85424 2.05118C4.24907 2.10062 3.90138 2.19279 3.63803 2.32698C3.07354 2.6146 2.6146 3.07354 2.32698 3.63803C2.19279 3.90138 2.10062 4.24907 2.05118 4.85424C2.00078 5.47108 2 6.26339 2 7.4V8.6C2 9.73661 2.00078 10.5289 2.05118 11.1458C2.10062 11.7509 2.19279 12.0986 2.32698 12.362C2.6146 12.9265 3.07354 13.3854 3.63803 13.673C3.90138 13.8072 4.24907 13.8994 4.85424 13.9488C5.47108 13.9992 6.26339 14 7.4 14H8.6C9.73661 14 10.5289 13.9992 11.1458 13.9488C11.7509 13.8994 12.0986 13.8072 12.362 13.673C12.9265 13.3854 13.3854 12.9265 13.673 12.362C13.8072 12.0986 13.8994 11.7509 13.9488 11.1458C13.9992 10.5289 14 9.73661 14 8.6V7.4C14 6.26339 13.9992 5.47108 13.9488 4.85424C13.8994 4.24907 13.8072 3.90138 13.673 3.63803C13.3854 3.07354 12.9265 2.6146 12.362 2.32698C12.0986 2.19279 11.7509 2.10062 11.1458 2.05118C10.5289 2.00078 9.73661 2 8.6 2ZM1.43597 3.18404C1 4.03968 1 5.15979 1 7.4V8.6C1 10.8402 1 11.9603 1.43597 12.816C1.81947 13.5686 2.43139 14.1805 3.18404 14.564C4.03968 15 5.15979 15 7.4 15H8.6C10.8402 15 11.9603 15 12.816 14.564C13.5686 14.1805 14.1805 13.5686 14.564 12.816C15 11.9603 15 10.8402 15 8.6V7.4C15 5.15979 15 4.03968 14.564 3.18404C14.1805 2.43139 13.5686 1.81947 12.816 1.43597C11.9603 1 10.8402 1 8.6 1H7.4C5.15979 1 4.03968 1 3.18404 1.43597C2.43139 1.81947 1.81947 2.43139 1.43597 3.18404Z"
-                                    fill="#1C1C1C"
-                                    fill-opacity="0.2"
-                                  />
-                                </svg>
+                                  <input
+                                    type="checkbox"
+                                    onChange={(e) => {
+                                      if (!viewCompleted) {
+                                        completeTask(index, true);
+                                      } else {
+                                        completeTask(index, false);
+                                      }
+                                    }}
+                                    checked={viewCompleted}
+                                  ></input>
+
+                                  {/* {!viewCompleted && (
+                                    <input
+                                      type="checkbox"
+                                      onClick={async (e) => {
+                                        await completeTask(index, true);
+                                      }}
+                                    ></input>
+                                  )}
+                                  {viewCompleted && (
+                                    <input
+                                      type="checkbox"
+                                      onClick={async (e) => {
+                                        await completeTask(index, false);
+                                      }}
+                                      defaultChecked
+                                    ></input>
+                                  )} */}
+                                </div>
                               </div>
-                            </div>
-                          );
+                            );
+                          }
                         }
                       })}
                   </>

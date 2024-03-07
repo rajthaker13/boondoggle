@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
-  const {connection_id, contact, title, description} = await req.json()
+  const {connection_id, contact, title, description, user_id} = await req.json()
 
   const url = `https://api.unified.to/crm/${connection_id}/contact`;
   const options = {
@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     },
     company_ids: contactResponse.company_ids,
     contact_ids: [contactResponse.id],
-    user_id: "718171982",
+    user_id: user_id,
     // lead_ids: [],
   }
 

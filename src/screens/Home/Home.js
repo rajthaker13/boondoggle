@@ -73,7 +73,7 @@ function Home(props) {
     );
   }
 
-  async function sendToCRM(new_crm_data) {
+  async function sendToCRM(new_crm_data, source) {
     console.log("new_crm", new_crm_data);
     const connection_id = localStorage.getItem("connection_id");
 
@@ -105,6 +105,18 @@ function Home(props) {
           console.log("Rsults", results);
           const current_crm = results.data[0];
 
+          const idOptions = {
+            method: "GET",
+            url: `https://api.unified.to/hris/${connection_id}/employee`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+          };
+
+          const idResults = await axios.request(idOptions);
+          const user_crm_id = idResults.data[0].id;
+
           console.log(current_crm);
 
           if (current_crm != undefined) {
@@ -116,7 +128,7 @@ function Home(props) {
               },
               company_ids: current_crm.company_ids,
               contact_ids: [current_crm.id],
-              user_id: current_crm.user_id,
+              user_id: user_crm_id,
             };
             console.log("event", event);
             const { data, error } = await props.db.functions.invoke(
@@ -138,6 +150,7 @@ function Home(props) {
                   title: update.title,
                   description:
                     update.summary + "\n + Summarized by Boondoggle AI",
+                  user_id: user_crm_id,
                 },
               }
             );
@@ -305,6 +318,7 @@ function Home(props) {
           response: toDoResponse,
           date: date,
           source: "Twitter",
+          status: "Incomplete",
         };
         crm_update.push(obj);
         new_crm_data.push(obj);
@@ -444,6 +458,7 @@ function Home(props) {
   }
   async function checkLinks() {
     const id = localStorage.getItem("connection_id");
+    console.log("ID", id);
 
     const { data, error } = await props.db
       .from("data")
@@ -593,6 +608,7 @@ function Home(props) {
     const curData = await getCurrentData();
 
     let updated_CRM = curData.data;
+    let new_updates = [];
     let to_dos = curData.tasks;
 
     let new_emails = [];
@@ -751,7 +767,7 @@ function Home(props) {
             })
             .join("\n");
 
-          const emailContext = `I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context you are the user associated with ${userEmail} so use first person when that account is conversing..`;
+          const emailContext = `You are an automated CRM entry assistant. I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context you are the user associated with ${userEmail}.`;
 
           const titleCompletion = await openai.chat.completions.create({
             messages: [
@@ -787,6 +803,7 @@ function Home(props) {
           };
 
           updated_CRM.push(obj);
+          new_updates.push(obj);
 
           const toDoTitleCompletion = await openai.chat.completions.create({
             messages: [
@@ -827,6 +844,7 @@ function Home(props) {
             date: date,
             type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
             source: "Email",
+            status: "Incomplete",
           };
           to_dos.push(toDoObject);
         }
@@ -842,6 +860,7 @@ function Home(props) {
       })
       .eq("connection_id", connection_id);
     setEmailLinked(true);
+
     setIsLoading(false);
   }
 
@@ -896,9 +915,9 @@ function Home(props) {
                       new session cookie is created. When you log out or are
                       disconnected, the cookie expires. We will notify you if
                       any of your accounts disconnect.{" "}
-                      <span className="connected-apps-howto-text-2">
+                      {/* <span className="connected-apps-howto-text-2">
                         Learn More
-                      </span>
+                      </span> */}
                     </span>
                   </div>
                 </div>
@@ -1036,19 +1055,19 @@ function Home(props) {
                 </div>
               </div>
 
-              <div className="connected-apps-container">
+              {/* <div className="connected-apps-container">
                 <div className="connected-apps-header-container">
                   <p className="connected-apps-header">Connected CRM</p>
-                </div>
-                <div
+                </div> */}
+              {/* <div
                   style={{
                     flexDirection: "row",
                     display: "flex",
                     width: "95%",
                     gap: "30px",
                   }}
-                >
-                  <div className="connected-apps-cell">
+                > */}
+              {/* <div className="connected-apps-cell">
                     {crmType == "crm" && (
                       <>
                         <svg
@@ -1077,25 +1096,25 @@ function Home(props) {
                           src={require("../../assets/landing/integrations/crm/airtable.png")}
                         ></img>
                         <div className="connected-app-info-container">
-                          <p className="connected-app-info-1">Airtable</p>
-                          {/* <p className="connected-app-info-2">
+                          <p className="connected-app-info-1">Airtable</p> */}
+              {/* <p className="connected-app-info-2">
                           Connected Account: blake@boondoggle.ai
                         </p> */}
-                        </div>
+              {/* </div>
                       </>
-                    )}
+                    )} */}
 
-                    <button className="link-button" style={{ width: "auto" }}>
+              {/* <button className="link-button" style={{ width: "auto" }}>
                       <p
                         className="link-button-text"
                         style={{ color: "black" }}
                       >
                         Switch CRM
                       </p>
-                    </button>
-                  </div>
-                </div>
-              </div>
+                    </button> */}
+              {/* </div> */}
+              {/* </div> */}
+              {/* </div> */}
 
               <div className="connected-apps-container">
                 <div className="connected-apps-header-container">
@@ -1152,7 +1171,7 @@ function Home(props) {
                       </div>
                       <div className="integrations-table-column">
                         <p className="integrations-table-column-text">
-                          rajhacks
+                          {localStorage.getItem("uid")}
                         </p>
                       </div>
                       <div className="integrations-table-column">
@@ -1191,7 +1210,7 @@ function Home(props) {
                       </div>
                       <div className="integrations-table-column">
                         <p className="integrations-table-column-text">
-                          raj@boondoggle.ai
+                          {localStorage.getItem("connection_id")}
                         </p>
                       </div>
                       <div className="integrations-table-column">
