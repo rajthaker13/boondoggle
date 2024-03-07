@@ -29,13 +29,11 @@ function Login(props) {
   return (
     <div className="login-container">
       <div className="login-pic-container">
-        <p className="sign-up-text">Sign In</p>
-        <p className="trial-text">
-          Start your 7 day free trial, no card required.
-        </p>
+        <p className="sign-up-text">Sign in</p>
+        <p className="trial-text">Start your 2-week free trial today</p>
         <div className="or-with-email-text-container">
           <div className="line"></div>
-          <p className="or-with-email-text">Use Your Work Email</p>
+          <p className="or-with-email-text">Use your work email</p>
           <div className="line"></div>
         </div>
         <input
@@ -62,18 +60,18 @@ function Login(props) {
             await signIn();
           }}
         >
-          Sign In
+          Sign in
         </button>
         <div className="sign-in-text-container">
           <span className="sign-in-text-1">
-            Not a Member Yet?{" "}
+            Not a member yet?{" "}
             <span
               className="sign-in-text-2"
               onClick={() => {
                 navigation("/signup");
               }}
             >
-              Sign Up
+              Sign up
             </span>
           </span>
         </div>

@@ -29,13 +29,11 @@ function SignUp(props) {
         ></img>
       </div>
       <div className="login-pic-container" style={{ width: "30%" }}>
-        <p className="sign-up-text">Sign Up</p>
-        <p className="trial-text">
-          Start your 7 day free trial, no card required.
-        </p>
+        <p className="sign-up-text">Sign up</p>
+        <p className="trial-text">Start your 2-week free trial today</p>
         <div className="or-with-email-text-container">
           <div className="line"></div>
-          <p className="or-with-email-text">Use Your Work Email</p>
+          <p className="or-with-email-text">Use your work email</p>
           <div className="line"></div>
         </div>
         <input
@@ -62,18 +60,18 @@ function SignUp(props) {
             await signIn();
           }}
         >
-          Sign Up
+          Sign up
         </button>
         <div className="sign-in-text-container">
           <span className="sign-in-text-1">
-            Already have an Account?{" "}
+            Already have an account?{" "}
             <span
               className="sign-in-text-2"
               onClick={() => {
                 navigation("/login");
               }}
             >
-              Sign In
+              Sign in
             </span>
           </span>
         </div>

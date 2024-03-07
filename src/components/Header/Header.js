@@ -33,13 +33,13 @@ function Header(props) {
       </div> */}
       {!props.isMobile && (
         <div className="action-container">
-          {/* <button
+          <button
             className="sign-up-header-container"
             onClick={() => {
               navigation("/signup");
             }}
           >
-            <p className="action-text">Sign Up</p>
+            <p className="action-text">Sign up</p>
           </button>
           <button
             className="sign-in-header-container"
@@ -48,9 +48,9 @@ function Header(props) {
             }}
           >
             <p className="action-text" style={{ color: "#fff" }}>
-              Sign In
+              Sign in
             </p>
-          </button> */}
+          </button>
         </div>
       )}
     </div>

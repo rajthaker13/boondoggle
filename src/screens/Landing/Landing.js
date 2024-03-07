@@ -57,14 +57,10 @@ function Landing(props) {
               <button
                 className="get-started-button"
                 onClick={() => {
-                  // navigation("/signup");
-                  window.open(
-                    "https://ipk90u6jozo.typeform.com/to/dJcgJZAu",
-                    "_blank"
-                  );
+                  navigation("/signup");
                 }}
               >
-                <p className="landing-button-text">Join Waitlist</p>
+                <p className="landing-button-text">Start Free Trial</p>
               </button>
               <button className="demo-button">
                 <p
@@ -810,7 +806,7 @@ function Landing(props) {
               Built for teams of any size
             </p>
             <div className="pricing-container">
-              <div className="pricing-box-black">
+              {/* <div className="pricing-box-black">
                 <span className="pricing-box-header-small">STARTER</span>
                 <span className="pricing-box-subheader-small">
                   for individuals and startups
@@ -911,24 +907,24 @@ function Landing(props) {
                       Single social integration per user
                     </span>
                   </div>
-                </div>
-                {/* <button className="pricing-box-button-small">
+                </div> */}
+              {/* <button className="pricing-box-button-small">
               <p className="pricing-box-button-text-small">Get Started</p>
             </button> */}
-              </div>
+              {/* </div> */}
               <div className="pricing-box-white">
                 <span
                   className="pricing-box-header-small"
                   style={{ fontSize: "23.314px", color: "black" }}
                 >
-                  GROWTH
+                  STARTER
                 </span>
-                <span
+                {/* <span
                   className="pricing-box-subheader-small"
                   style={{ fontSize: "16.653px", color: "black" }}
                 >
                   for growing teams
-                </span>
+                </span> */}
                 <div className="pricing-box-price-container">
                   <span
                     className="pricing-box-price-small"
@@ -967,7 +963,7 @@ function Landing(props) {
                         fontSize: "16px",
                       }}
                     >
-                      Up to 10 user licenses
+                      Single user access
                     </span>
                   </div>
 
@@ -991,7 +987,7 @@ function Landing(props) {
                         fontSize: "16px",
                       }}
                     >
-                      Team management
+                      Generative tasks & responses
                     </span>
                   </div>
 
@@ -1015,7 +1011,7 @@ function Landing(props) {
                         fontSize: "16px",
                       }}
                     >
-                      Centralized billing
+                      Customer interaction summaries
                     </span>
                   </div>
 
@@ -1039,7 +1035,7 @@ function Landing(props) {
                         fontSize: "16px",
                       }}
                     >
-                      Meeting note platform integrations
+                      Email, Twitter, and CRM integrations
                     </span>
                   </div>
 
@@ -1063,26 +1059,29 @@ function Landing(props) {
                         fontSize: "16px",
                       }}
                     >
-                      Multiple social integrations per user
+                      Community support
                     </span>
                   </div>
                 </div>
-                {/* <button
-              className="pricing-box-button-small"
-              style={{ background: "var(--black-100, #1C1C1C)" }}
-            >
-              <p
-                className="pricing-box-button-text-small"
-                style={{
-                  fontSize: "19.984px",
-                  color: "var(--white-100, #FFF)",
-                }}
-              >
-                Get Started
-              </p>
-            </button> */}
+                <button
+                  className="pricing-box-button-small"
+                  style={{ background: "var(--black-100, #1C1C1C)" }}
+                  onClick={() => {
+                    navigation("/signup");
+                  }}
+                >
+                  <p
+                    className="pricing-box-button-text-small"
+                    style={{
+                      fontSize: "19.984px",
+                      color: "var(--white-100, #FFF)",
+                    }}
+                  >
+                    Start Free Trial
+                  </p>
+                </button>
               </div>
-              <div className="pricing-box-black">
+              {/* <div className="pricing-box-black">
                 <span className="pricing-box-header-small">ENTERPRISES</span>
                 <span className="pricing-box-subheader-small">
                   for larger teams
@@ -1184,11 +1183,11 @@ function Landing(props) {
                       Annual & quarterly billing available
                     </span>
                   </div>
-                </div>
-                {/* <button className="pricing-box-button-small">
+                </div> */}
+              {/* <button className="pricing-box-button-small">
               <p className="pricing-box-button-text-small">Book a demo</p>
             </button> */}
-              </div>
+              {/* </div> */}
             </div>
             <div className="upper-footer-container">
               <p className="upper-footer-header">
@@ -2645,7 +2644,7 @@ function Landing(props) {
               </p>
             </button> */}
               </div>
-              <div className="pricing-box-black" style={{ width: "80vw" }}>
+              {/* <div className="pricing-box-black" style={{ width: "80vw" }}>
                 <span className="pricing-box-header-small">ENTERPRISES</span>
                 <span className="pricing-box-subheader-small">
                   for larger teams
@@ -2747,11 +2746,11 @@ function Landing(props) {
                       Annual & quarterly billing available
                     </span>
                   </div>
-                </div>
-                {/* <button className="pricing-box-button-small">
+                </div> */}
+              {/* <button className="pricing-box-button-small">
               <p className="pricing-box-button-text-small">Book a demo</p>
             </button> */}
-              </div>
+              {/* </div> */}
             </div>
             <div
               className="upper-footer-container"

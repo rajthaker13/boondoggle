@@ -12,13 +12,13 @@ function Settings(props) {
     const { data, error } = await props.db.functions.invoke("stripe-portal", {
       body: {
         stripeId: stripe_id,
-        source: window.location.href,
+        source: window.location.origin + "/home",
       },
     });
 
     console.log(data);
 
-    window.open(JSON.parse(data).url, "_blank");
+    window.open(JSON.parse(data).url, "_self");
   }
 
   useEffect(() => {

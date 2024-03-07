@@ -1057,7 +1057,7 @@ function Home(props) {
                       <p className="connected-app-info-1">LinkedIn</p>
                       <p className="connected-app-info-2">Direct Messages</p>
                     </div>
-                    <button className="link-button" disabled={true}>
+                    <button className="link-button">
                       <p
                         className="link-button-text"
                         style={{ color: "black" }}
