@@ -81,10 +81,15 @@ function Home(props) {
       new_crm_data.map(async (update) => {
         if (update.customer != "") {
           console.log(update);
-          let regexCustomer = update.customer.replace(
-            /\s(?=[\uD800-\uDFFF])/g,
-            ""
-          );
+          let regexCustomer;
+          if (source == "Twitter") {
+            regexCustomer = update.customer.replace(
+              /\s(?=[\uD800-\uDFFF])/g,
+              ""
+            );
+          } else if (source == "Email") {
+            regexCustomer = update.email;
+          }
           console.log("REGES", regexCustomer);
           if (update.customer == "Blake Faulkner 🌉") {
             regexCustomer = "Blake Faulkner";
@@ -138,9 +143,22 @@ function Home(props) {
               }
             );
           } else {
-            const contact = {
-              name: regexCustomer,
-            };
+            let contact;
+            if (source == "Twitter") {
+              contact = {
+                name: regexCustomer,
+              };
+            } else if (source == "Email") {
+              contact = {
+                name: update.customer,
+                emails: [
+                  {
+                    email: regexCustomer,
+                    type: "WORK",
+                  },
+                ],
+              };
+            }
             const { data, error } = await props.db.functions.invoke(
               "new-contact-unified",
               {
@@ -243,6 +261,7 @@ function Home(props) {
             ],
           });
         }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       })
     );
 
@@ -340,7 +359,7 @@ function Home(props) {
       //   })
       // );
     } else {
-      await sendToCRM(new_crm_data);
+      await sendToCRM(new_crm_data, "Twitter");
     }
     // console.log(userData.messages);
     // console.log(connection_id);
@@ -681,6 +700,12 @@ function Home(props) {
           !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("luma") &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("receipt") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("automation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("automated") &&
           email.folders[0] != "DRAFT"
         ) {
           // const itemIndex = new_emails.findIndex(
@@ -707,6 +732,7 @@ function Home(props) {
               customer: email.latestDraftOrMessage?.to[0]?.name
                 ? email.latestDraftOrMessage?.to[0]?.name
                 : email.latestDraftOrMessage?.to[0]?.email,
+              email: email.latestDraftOrMessage.to[0].email,
               data: email,
               snippet: [
                 {
@@ -727,6 +753,7 @@ function Home(props) {
               customer: email.latestDraftOrMessage?.from[0]?.name
                 ? email.latestDraftOrMessage?.from[0]?.name
                 : email.latestDraftOrMessage?.from[0]?.email,
+              email: email.latestDraftOrMessage.from[0].email,
               data: email,
               snippet: [
                 {
@@ -795,6 +822,7 @@ function Home(props) {
           var obj = {
             id: email.id,
             customer: email.customer,
+            email: email.email,
             title: title,
             summary: summary,
             date: date,
@@ -860,6 +888,8 @@ function Home(props) {
       })
       .eq("connection_id", connection_id);
     setEmailLinked(true);
+
+    await sendToCRM(new_updates, "Email");
 
     setIsLoading(false);
   }
