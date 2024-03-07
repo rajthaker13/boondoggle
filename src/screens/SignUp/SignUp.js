@@ -21,13 +21,13 @@ function SignUp(props) {
 
   return (
     <div className="login-container">
-      <div className="login-pic-container">
+      {/* <div className="login-pic-container">
         <img
           className="login-pic"
           src={require("../../assets/login.png")}
           alt="Boondoggle: The AI CRM Entry/Analytics System"
         ></img>
-      </div>
+      </div> */}
       <div className="login-pic-container" style={{ width: "30%" }}>
         <p className="sign-up-text">Sign up</p>
         <p className="trial-text">Start your 2-week free trial today</p>
