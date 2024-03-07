@@ -15,7 +15,7 @@ function Payment(props) {
     });
 
     const stripe = await loadStripe(
-      "pk_test_51NO1SKGzsfuVxfRNsyxoUVdhyvJ7CC9M0VJLRF2yZ6N7yBCI99l4hxEVXWGQatwFchpFsoX968jOhmWLbBM2zQhL00jFCbL7XA"
+      "pk_live_51NO1SKGzsfuVxfRNWcPICBJ0Pvez9Vgwgplcxl7ecqh0W8Y0uArSM9HGOlXMnTgUx5ogyOFqFpWfga4B2SRZwbpr00yHjEviLE"
     );
 
     console.log(JSON.parse(data).id);
@@ -38,6 +38,16 @@ function Payment(props) {
       await handleSubscription(stripe_id, "prod_PgfUENZu6CBtgR");
     }
 
+    async function subscribe() {
+      const id = localStorage.getItem("uid");
+      await props.db
+        .from("user_data")
+        .update({
+          subscription_status: "STARTER",
+        })
+        .eq("id", id);
+    }
+
     console.log(window.location.pathname);
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -49,6 +59,8 @@ function Payment(props) {
           navigation("/payment");
           getStripe();
         } else if (result == "true") {
+          subscribe();
+
           navigation("/home");
         }
       } else {

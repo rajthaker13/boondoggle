@@ -6,7 +6,7 @@ import Stripe from "https://esm.sh/stripe?target=deno";
 import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@1.35.5";
 
-const stripe = Stripe("sk_test_51NO1SKGzsfuVxfRNZxN3U7oU5gMwVYXMdjgcrxFVx06lVBqQ6iLenrUnJIuVKZZKL7gvLIw0FG8j5PGpXNMeCD6u00HVtWE7Ri", {
+const stripe = Stripe("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", {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
