@@ -1,11 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./SignUp.css";
 import { useNavigate } from "react-router-dom";
+import { isMobile } from "react-device-detect";
 
 function SignUp(props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigate();
+
+  useEffect(() => {
+    if (isMobile) {
+      navigation("/");
+    }
+  });
 
   async function signIn() {
     console.log(email);

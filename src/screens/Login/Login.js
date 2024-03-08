@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
+import { isMobile } from "react-device-detect";
 
 function Login(props) {
   const [email, setEmail] = useState("");
@@ -12,6 +13,12 @@ function Login(props) {
     localStorage.setItem("connection_id", data[0].crm_id);
     navigation("/home");
   }
+
+  useEffect(() => {
+    if (isMobile) {
+      navigation("/");
+    }
+  });
 
   async function signIn() {
     console.log(email);
