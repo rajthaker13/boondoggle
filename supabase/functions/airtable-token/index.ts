@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     body: {
       code: code,
       client_id: id,
-      redirect_uri: 'http://localhost:3000/link',
+      redirect_uri: 'https://boondoggle.ai/link',
       grant_type: "authorization_code",
       code_verifier: verify
     }
