@@ -35,7 +35,7 @@ function SignUp(props) {
           alt="Boondoggle: The AI CRM Entry/Analytics System"
         ></img>
       </div> */}
-      <div className="login-pic-container" style={{ width: "30%" }}>
+      <div className="login-pic-container">
         <p className="sign-up-text">Sign up</p>
         <p className="trial-text">Start your 2-week free trial today</p>
         <div className="or-with-email-text-container">

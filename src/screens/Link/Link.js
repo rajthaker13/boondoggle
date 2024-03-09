@@ -7,7 +7,7 @@ import Stripe from "stripe";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "9455bca6-66a9-4ab8-88a0-164a93c89c52";
+  const client_id = "ab166dae-3201-4302-9801-4199859169e6";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 
@@ -145,7 +145,7 @@ function Link(props) {
             nostyle={true}
           />
         </div>
-        {/* <p className="crm-header-text">Utilize an Alternative CRM</p>
+        <p className="crm-header-text">Utilize an Alternative CRM</p>
         <div className="unified_vendors">
           <div
             className="unified_vendor"
@@ -159,7 +159,7 @@ function Link(props) {
             ></img>
             <p className="unified_vendor_name">Airtable</p>
           </div>
-        </div> */}
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import "./Airtable.css";
 import { useNavigate } from "react-router-dom";
 import OpenAI from "openai";
 import axios from "axios";
+import { fontWeight } from "@mui/system";
 
 function Airtable(props) {
   const [bases, setBases] = useState([]);
@@ -133,28 +134,27 @@ function Airtable(props) {
   }
 
   async function submitAirtable() {
-    const connection_id = localStorage.getItem("connection_id");
+    if (fullName != "" && email != "" && company != "" && summary != "") {
+      const connection_id = localStorage.getItem("connection_id");
 
-    const chosen_fields = {
-      id: entryID,
-      fullName: fullName,
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      company: company,
-      summary: summary,
-    };
+      const chosen_fields = {
+        fullName: fullName,
+        email: email,
+        company: company,
+        summary: summary,
+      };
 
-    await props.db
-      .from("data")
-      .update({
-        crm_data: [],
-        baseID: chosenBase.id,
-        tableID: chosenTable.id,
-        fieldOptions: chosen_fields,
-      })
-      .eq("connection_id", connection_id);
-    navigation("/home");
+      await props.db
+        .from("data")
+        .update({
+          crm_data: [],
+          baseID: chosenBase.id,
+          tableID: chosenTable.id,
+          fieldOptions: chosen_fields,
+        })
+        .eq("connection_id", connection_id);
+      navigation("/payment");
+    }
   }
   return (
     <div className="login-container">
@@ -183,7 +183,7 @@ function Airtable(props) {
                 );
               })}
             </div>
-            <button
+            {/* <button
               className="create-base-button"
               onClick={async () => {
                 await createAirtable();
@@ -203,7 +203,7 @@ function Airtable(props) {
                 />
               </svg>
               <p className="based-button-text">Create Airtable Base</p>
-            </button>
+            </button> */}
           </>
         )}
         {baseSet && !tableSet && (
@@ -242,24 +242,29 @@ function Airtable(props) {
               <p className="airtable-subheader">
                 Select which columns Boondoggle data entries should deploy to.
               </p>
+              <p className="airtable-subheader" style={{ fontWeight: 800 }}>
+                Boondoggle currently only supports text & email fields. <br />
+                Please request more functionality by emailing
+                support@boondoggle.ai
+              </p>
             </div>
             <div className="column-matching-table">
               <div className="column-matching-column">
                 <div className="column-matching-row">
                   <p className="column-matching-header">Column Name</p>
                 </div>
-                <div className="column-matching-row">
+                {/* <div className="column-matching-row">
                   <p className="column-matching-entry">Entry ID</p>
-                </div>
+                </div> */}
                 <div className="column-matching-row">
-                  <p className="column-matching-entry">Full Name</p>
+                  <p className="column-matching-entry">Name</p>
                 </div>
-                <div className="column-matching-row">
+                {/* <div className="column-matching-row">
                   <p className="column-matching-entry">First Name</p>
                 </div>
                 <div className="column-matching-row">
                   <p className="column-matching-entry">Last Name</p>
-                </div>
+                </div> */}
                 <div className="column-matching-row">
                   <p className="column-matching-entry">Email</p>
                 </div>
@@ -274,7 +279,7 @@ function Airtable(props) {
                 <div className="column-matching-row">
                   <p className="column-matching-header">Column Name</p>
                 </div>
-                <div className="column-matching-row">
+                {/* <div className="column-matching-row">
                   <select
                     value={entryID}
                     onChange={(e) => {
@@ -282,17 +287,16 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option>
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email"
+                      ) {
+                        return <option value={field.id}>{field.name}</option>;
+                      }
                     })}
                   </select>
-                </div>
+                </div> */}
                 <div className="column-matching-row">
                   <select
                     value={fullName}
@@ -301,18 +305,25 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
+                    {/* <option value="create" className="column-matching-entry">
                       CREATE FIELD
                     </option>
                     <option value="skip" className="column-matching-entry">
                       SKIP FIELD
-                    </option>
+                    </option> */}
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      console.log(field);
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email" ||
+                        field.type == "longText"
+                      ) {
+                        return <option value={field.name}>{field.name}</option>;
+                      }
                     })}
                   </select>
                 </div>
-                <div className="column-matching-row">
+                {/* <div className="column-matching-row">
                   <select
                     value={firstName}
                     onChange={(e) => {
@@ -320,18 +331,17 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option>
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email"
+                      ) {
+                        return <option value={field.id}>{field.name}</option>;
+                      }
                     })}
                   </select>
-                </div>
-                <div className="column-matching-row">
+                </div> */}
+                {/* <div className="column-matching-row">
                   <select
                     value={lastName}
                     onChange={(e) => {
@@ -339,17 +349,17 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option>
+
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email"
+                      ) {
+                        return <option value={field.id}>{field.name}</option>;
+                      }
                     })}
                   </select>
-                </div>
+                </div> */}
                 <div className="column-matching-row">
                   <select
                     value={email}
@@ -358,14 +368,20 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
+                    {/* <option value="create" className="column-matching-entry">
                       CREATE FIELD
                     </option>
                     <option value="skip" className="column-matching-entry">
                       SKIP FIELD
-                    </option>
+                    </option> */}
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email" ||
+                        field.type == "longText"
+                      ) {
+                        return <option value={field.name}>{field.name}</option>;
+                      }
                     })}
                   </select>
                 </div>
@@ -377,14 +393,20 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
+                    {/* <option value="create" className="column-matching-entry">
                       CREATE FIELD
                     </option>
                     <option value="skip" className="column-matching-entry">
                       SKIP FIELD
-                    </option>
+                    </option> */}
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email" ||
+                        field.type == "longText"
+                      ) {
+                        return <option value={field.name}>{field.name}</option>;
+                      }
                     })}
                   </select>
                 </div>
@@ -396,11 +418,17 @@ function Airtable(props) {
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    <option value="create" className="column-matching-entry">
+                    {/* <option value="create" className="column-matching-entry">
                       CREATE FIELD
-                    </option>
+                    </option> */}
                     {chosenTable.fields.map((field) => {
-                      return <option value={field.id}>{field.name}</option>;
+                      if (
+                        field.type == "singleLineText" ||
+                        field.type == "email" ||
+                        field.type == "longText"
+                      ) {
+                        return <option value={field.name}>{field.name}</option>;
+                      }
                     })}
                   </select>
                 </div>

@@ -8,6 +8,22 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import { HiOutlineMail } from "@react-icons/all-files/hi/HiOutlineMail";
 import Instagram from "../../assets/landing/integrations/social/Instagram.svg";
 import LoadingOverlay from "react-loading-overlay";
+import affinity from "../../assets/landing/integrations/crm_svg/affinity.svg";
+import airtable from "../../assets/landing/integrations/crm_svg/airtable.svg";
+import attio from "../../assets/landing/integrations/crm_svg/attio.svg";
+import close from "../../assets/landing/integrations/crm_svg/close.svg";
+import copper from "../../assets/landing/integrations/crm_svg/copper.svg";
+import freshsales from "../../assets/landing/integrations/crm_svg/freshsales.svg";
+import highlevel from "../../assets/landing/integrations/crm_svg/highlevel.svg";
+import hubspot from "../../assets/landing/integrations/crm_svg/hubspot.svg";
+import netsuite from "../../assets/landing/integrations/crm_svg/netsuite.svg";
+import pipedrive from "../../assets/landing/integrations/crm_svg/pipedrive.svg";
+import recruitcrm from "../../assets/landing/integrations/crm_svg/recruitcrm.svg";
+import salesflare from "../../assets/landing/integrations/crm_svg/salesflare.svg";
+import salesforce from "../../assets/landing/integrations/crm_svg/salesforce.svg";
+import salesloft from "../../assets/landing/integrations/crm_svg/salesloft.svg";
+import zendesksell from "../../assets/landing/integrations/crm_svg/zendesksell.svg";
+import zohocrm from "../../assets/landing/integrations/crm_svg/zohocrm.svg";
 
 function Home(props) {
   const navigation = useNavigate();
@@ -18,11 +34,125 @@ function Home(props) {
   const [crm, setCRM] = useState([]);
   const [toDos, setToDos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const client_id = "9455bca6-66a9-4ab8-88a0-164a93c89c52";
+  const [image, setImage] = useState();
+  const client_id = "ab166dae-3201-4302-9801-4199859169e6";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
   });
+
+  async function pushToAirtable(new_entries, source) {
+    const connection_id = await getAirtableRefreshToken();
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+
+    console.log(data);
+    const baseID = data[0].baseID;
+    const tableID = data[0].tableID;
+
+    const companyField = data[0].fieldOptions.company;
+    const emailField = data[0].fieldOptions.email;
+    const nameField = data[0].fieldOptions.fullName;
+    const notesField = data[0].fieldOptions.summary;
+
+    let new_contacts = [];
+
+    await Promise.all(
+      new_entries.map(async (entry) => {
+        let encodedFormula;
+        if (source == "Email") {
+          let formula = `({${emailField}} = "${entry.email}")`;
+          encodedFormula = encodeURIComponent(formula);
+        } else if (source == "Twitter") {
+          let formula = `({${nameField}} = "${entry.customer}")`;
+          encodedFormula = encodeURIComponent(formula);
+        }
+        const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+        let recordResponse;
+        try {
+          recordResponse = await axios.get(existingContactURL, {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+            },
+          });
+        } catch (error) {
+          if (error) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            recordResponse = await axios.get(existingContactURL, {
+              headers: {
+                Authorization: `Bearer ${connection_id}`,
+              },
+            });
+          }
+        }
+
+        if (recordResponse.data.records.length > 0) {
+          const currentNotes =
+            recordResponse.data.records[0].fields[`${notesField}`];
+          const recordID = recordResponse.data.records[0].id;
+          const updateContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${recordID}`;
+
+          await axios.patch(
+            updateContactURL,
+            {
+              fields: {
+                [notesField]:
+                  currentNotes + "\n" + entry.title + ":" + entry.summary,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${connection_id}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        } else {
+          new_contacts.push(entry);
+        }
+      })
+    );
+
+    console.log("NEW SHIT", new_contacts);
+
+    for (let i = 0; i < new_contacts.length; i += 10) {
+      const batch = new_contacts.slice(
+        i,
+        i + 10 > new_contacts.length ? new_contacts.length : i + 10
+      );
+
+      console.log(`BATCH: ${i}`, batch);
+
+      const newContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}`;
+      const records = batch.map((contact) => ({
+        fields: {
+          [nameField]: contact.customer,
+          [emailField]: source == "Email" ? contact.email : "",
+          [notesField]: contact.title + ":" + contact.summary,
+        },
+      }));
+
+      console.log(`RECORDS: ${i}`, records);
+
+      await axios.post(
+        newContactURL,
+        {
+          records,
+        },
+
+        {
+          headers: {
+            Authorization: `Bearer ${connection_id}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
 
   async function linkWithTwitter() {
     const url = window.location.href;
@@ -64,9 +194,7 @@ function Home(props) {
               Authorization: `Bearer ${id}`,
             },
           });
-          setTimeout(function () {
-            console.log("Executed after 1 second");
-          }, 2000);
+          await setTimeout(function () {}, 2000);
           console.log(regexCustomer, searchResult.data);
         }
       })
@@ -74,7 +202,6 @@ function Home(props) {
   }
 
   async function sendToCRM(new_crm_data, source) {
-    console.log("new_crm", new_crm_data);
     const connection_id = localStorage.getItem("connection_id");
 
     Promise.all(
@@ -348,16 +475,8 @@ function Home(props) {
 
     console.log("TODOS", to_dos);
 
-    if (type == "airtable") {
-      console.log("airtable");
-      await sendToAirtable(new_crm_data, baseID, tableID, fieldOptions);
-      // await Promise.all(
-      //   crm_update.map((update) => {
-      //     if (update.customer != "No Response") {
-      //       console.log("here");
-      //     }
-      //   })
-      // );
+    if (crmType == "Airtable") {
+      await pushToAirtable(new_crm_data, "Twitter");
     } else {
       await sendToCRM(new_crm_data, "Twitter");
     }
@@ -491,80 +610,108 @@ function Home(props) {
     localStorage.setItem("twitterLinked", data[0].twitterLinked);
     localStorage.setItem("crmType", data[0].type);
 
-    setCRMType(data[0].type);
+    const type = data[0].type;
 
-    // const options = {
-    //   method: "GET",
-    //   url: `https://api.unified.to/unified/connection/${id}`,
-    //   headers: {
-    //     authorization:
-    //       "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-    //   },
-    // };
+    if (type == "crm") {
+      const options = {
+        method: "GET",
+        url: `https://api.unified.to/unified/connection/${id}`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+      };
 
-    // const results = await axios.request(options);
-    // console.log("RESULTS", results);
+      const results = await axios.request(options);
 
-    // await linkedInTest();
+      const connected_crm = results.data.integration_type;
 
-    // await twitterTest();
-
-    // await extensionTest();
-
-    //testing
-    if (crmType == "airtable") {
-      // const baseID = data[0].baseID;
-      // const tableID = data[0].tableID;
-      // console.log("base", baseID);
-      // console.log(tableID);
-      // const formula = '({fld46Pr3RcS1A5pe5} = "Blake Faulkner")';
-      // const encodedFormula = encodeURIComponent(formula);
-      // const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
-      // axios
-      //   .get(url, {
-      //     headers: {I have
-      //       Authorization: `Bearer ${id}`,
-      //     },
-      //   })
-      //   .then(async (res) => {
-      //     let data = res.data.records;
-      //     console.log(data);
-      //   })
-      //   .catch(async (err) => {
-      //     if (err.response.status == 401) {
-      //       await getRefreshTokenAirtable(id);
-      //     }
-      //   });
+      if (connected_crm == "affinity") {
+        setImage(affinity);
+        setCRMType("Affinity");
+      } else if (connected_crm == "attio") {
+        setImage(attio);
+        setCRMType("Attio");
+      } else if (connected_crm == "close.io") {
+        setImage(close);
+        setCRMType("Close.io");
+      } else if (connected_crm == "copper") {
+        setImage(copper);
+        setCRMType("Copper");
+      } else if (connected_crm == "freshsalescrm") {
+        setImage(freshsales);
+        setCRMType("Freshales CRM");
+      } else if (connected_crm == "highlevel") {
+        setImage(highlevel);
+        setCRMType("HighLevel");
+      } else if (connected_crm == "hubspot") {
+        setImage(hubspot);
+        setCRMType("HubSpot");
+      } else if (connected_crm == "pipedrive") {
+        setImage(pipedrive);
+        setCRMType("Pipedrive");
+      } else if (connected_crm == "salesflare") {
+        setImage(salesflare);
+        setCRMType("Salesflare");
+      } else if (connected_crm == "salesforce") {
+        setImage(salesforce);
+        setCRMType("Salesforce");
+      } else if (connected_crm == "salesloft") {
+        setImage(salesloft);
+        setCRMType("Salesloft");
+      } else if (connected_crm == "zohocrm") {
+        setImage(zohocrm);
+        setCRMType("ZohoCRM");
+      }
+    } else if (type == "airtable") {
+      setImage(airtable);
+      setCRMType("Airtable");
     }
+  }
 
-    // const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
+  async function getAirtableRefreshToken() {
+    const id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("crm_id", id);
+    console.log(data[0].refresh_token);
 
-    // axios
-    //   .post(
-    //     url,
-    //     {
-    //       code: code,
-    //       client_id: client_id,
-    //       redirect_uri: "http://localhost:3000/link",
-    //       grant_type: "authorization_code",
-    //       code_verifier: verifier,
-    //     },
-    //     {
-    //       headers: {
-    //         "Content-Type": "application/x-www-form-urlencoded",
-    //       },
-    //     }
-    //   )
-    //   .then(async (res) => {
-    //     console.log(res.data.access_token);
-    //     await props.db.from("data").insert({
-    //       connection_id: res.data.access_token,
-    //       crm_data: [],
-    //       twitter_messages: [],
-    //       twitterLinked: false,
-    //       type: "airtable",
-    //     });
-    //   })
+    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
+    const refreshTokenResponse = await axios.post(
+      url,
+      {
+        client_id: client_id,
+        refresh_token: data[0].refresh_token,
+        grant_type: "refresh_token",
+      },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const new_access_token = refreshTokenResponse.data.access_token;
+    const new_refresh_token = refreshTokenResponse.data.refresh_token;
+
+    await props.db
+      .from("users")
+      .update({
+        crm_id: new_access_token,
+        refresh_token: new_refresh_token,
+      })
+      .eq("id", localStorage.getItem("uid"));
+
+    await props.db
+      .from("data")
+      .update({
+        connection_id: new_access_token,
+      })
+      .eq("connection_id", id);
+    localStorage.setItem("connection_id", new_access_token);
+
+    return new_access_token;
   }
 
   async function connectEmail() {
@@ -647,11 +794,6 @@ function Home(props) {
             },
           }
         );
-
-        console.log({
-          snip: email.snippet,
-          score: spamRespone,
-        });
 
         if (
           email.latestDraftOrMessage.from[0].name != "" &&
@@ -888,8 +1030,13 @@ function Home(props) {
       })
       .eq("connection_id", connection_id);
     setEmailLinked(true);
+    await pushToAirtable(new_updates, "Email");
 
-    await sendToCRM(new_updates, "Email");
+    // if (crmType == "Airtable") {
+    //   await pushToAirtable(new_updates, "Email");
+    // } else {
+    //   await sendToCRM(new_updates, "Email");
+    // }
 
     setIsLoading(false);
   }
@@ -1085,66 +1232,40 @@ function Home(props) {
                 </div>
               </div>
 
-              {/* <div className="connected-apps-container">
+              <div className="connected-apps-container">
                 <div className="connected-apps-header-container">
                   <p className="connected-apps-header">Connected CRM</p>
-                </div> */}
-              {/* <div
+                </div>
+                <div
                   style={{
                     flexDirection: "row",
                     display: "flex",
                     width: "95%",
                     gap: "30px",
                   }}
-                > */}
-              {/* <div className="connected-apps-cell">
-                    {crmType == "crm" && (
-                      <>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="33"
-                          height="35"
-                          viewBox="0 0 33 35"
-                          fill="none"
-                        >
-                          <path
-                            d="M25.33 12.1601V8.14209C25.8615 7.89326 26.3116 7.49882 26.6279 7.00453C26.9443 6.51025 27.114 5.93638 27.1174 5.34953V5.25494C27.1151 4.43473 26.7884 3.64874 26.2086 3.06863C25.6287 2.48852 24.8429 2.16145 24.0227 2.15884H23.9281C23.1079 2.16107 22.3219 2.48779 21.7418 3.06764C21.1617 3.64748 20.8346 4.43332 20.832 5.25353V5.34812C20.8346 5.93172 21.0018 6.50273 21.3145 6.99549C21.6272 7.48826 22.0727 7.88276 22.5996 8.13362L22.6179 8.14209V12.1686C21.0817 12.4033 19.6352 13.0415 18.4263 14.0181L18.4432 14.0053L7.39155 5.39895C7.60175 4.61057 7.53198 3.7737 7.19413 3.03102C6.85628 2.28834 6.27128 1.68584 5.53887 1.32627C4.80647 0.966689 3.97201 0.872294 3.17779 1.05918C2.38357 1.24606 1.67876 1.70265 1.18355 2.3511C0.688334 2.99954 0.433379 3.79968 0.462156 4.61509C0.490932 5.43049 0.801659 6.21067 1.34135 6.82259C1.88105 7.43451 2.61629 7.84028 3.42171 7.97071C4.22713 8.10114 5.05285 7.94815 5.75809 7.53784L5.74115 7.54631L16.6064 16.0045C15.6458 17.4447 15.1357 19.1383 15.141 20.8696C15.141 22.7656 15.741 24.5233 16.7603 25.9606L16.742 25.9337L13.4355 29.2402C13.1708 29.1548 12.8948 29.1095 12.6167 29.1061H12.6138C12.0462 29.1061 11.4912 29.2744 11.0192 29.5898C10.5472 29.9052 10.1794 30.3534 9.96211 30.8779C9.74487 31.4024 9.68803 31.9795 9.79878 32.5362C9.90953 33.093 10.1829 33.6044 10.5843 34.0058C10.9857 34.4072 11.4971 34.6806 12.0539 34.7914C12.6107 34.9021 13.1878 34.8453 13.7122 34.628C14.2367 34.4108 14.685 34.0429 15.0003 33.5709C15.3157 33.0989 15.4841 32.544 15.4841 31.9763C15.4807 31.6908 15.4335 31.4075 15.3443 31.1363L15.3499 31.156L18.6211 27.8849C19.6872 28.6989 20.925 29.2591 22.2402 29.5227C23.5554 29.7863 24.9134 29.7465 26.2109 29.4062C27.5084 29.0659 28.7111 28.4342 29.7277 27.559C30.7442 26.6839 31.5478 25.5884 32.0772 24.3559C32.6066 23.1234 32.8479 21.7864 32.7827 20.4466C32.7175 19.1069 32.3476 17.7996 31.7011 16.6243C31.0546 15.449 30.1486 14.4367 29.0519 13.6643C27.9552 12.892 26.6968 12.3799 25.3724 12.1672L25.3216 12.1601H25.33ZM23.969 25.3987C23.0743 25.3964 22.2003 25.1291 21.4575 24.6304C20.7146 24.1317 20.1362 23.424 19.7954 22.5967C19.4545 21.7695 19.3665 20.8597 19.5424 19.9825C19.7183 19.1052 20.1503 18.2998 20.7838 17.6679C21.4172 17.036 22.2237 16.606 23.1014 16.4323C23.9791 16.2586 24.8886 16.3489 25.7151 16.6918C26.5415 17.0347 27.2477 17.6148 27.7446 18.3589C28.2414 19.103 28.5066 19.9777 28.5066 20.8724V20.8752C28.5066 22.0757 28.0297 23.2269 27.1809 24.0758C26.332 24.9246 25.1808 25.4015 23.9803 25.4015L23.969 25.3987Z"
-                            fill="#FF9D2A"
-                          />
-                        </svg>
-                        <div className="connected-app-info-container">
-                          <p className="connected-app-info-1">HubSpot</p>
-                          <p className="connected-app-info-2">
-                            Connected Account: raj@boondoggle.ai
-                          </p>
-                        </div>
-                      </>
-                    )}
-                    {crmType == "airtable" && (
-                      <>
-                        <img
-                          src={require("../../assets/landing/integrations/crm/airtable.png")}
-                        ></img>
-                        <div className="connected-app-info-container">
-                          <p className="connected-app-info-1">Airtable</p> */}
-              {/* <p className="connected-app-info-2">
-                          Connected Account: blake@boondoggle.ai
-                        </p> */}
-              {/* </div>
-                      </>
-                    )} */}
+                >
+                  <div className="connected-apps-cell">
+                    <>
+                      <img src={image} />
+                      <div className="connected-app-info-container">
+                        <p className="connected-app-info-1">{crmType}</p>
+                      </div>
+                    </>
 
-              {/* <button className="link-button" style={{ width: "auto" }}>
+                    <button className="link-button" style={{ width: "auto" }}>
                       <p
                         className="link-button-text"
                         style={{ color: "black" }}
+                        onClick={async () => {
+                          await getAirtableRefreshToken();
+                        }}
                       >
                         Switch CRM
                       </p>
-                    </button> */}
-              {/* </div> */}
-              {/* </div> */}
-              {/* </div> */}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div className="connected-apps-container">
                 <div className="connected-apps-header-container">
@@ -1240,7 +1361,7 @@ function Home(props) {
                       </div>
                       <div className="integrations-table-column">
                         <p className="integrations-table-column-text">
-                          {localStorage.getItem("connection_id")}
+                          {localStorage.getItem("connection_id").slice(0, 20)}
                         </p>
                       </div>
                       <div className="integrations-table-column">
