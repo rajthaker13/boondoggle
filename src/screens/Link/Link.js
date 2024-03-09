@@ -7,7 +7,7 @@ import Stripe from "stripe";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "ab166dae-3201-4302-9801-4199859169e6";
+  const client_id = "626db426-e15c-45ff-8a39-1e2632f8ba1b";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 
@@ -73,7 +73,7 @@ function Link(props) {
           {
             code: code,
             client_id: client_id,
-            redirect_uri: "http://localhost:3000/link",
+            redirect_uri: "https://boondoggle.ai/link",
             grant_type: "authorization_code",
             code_verifier: verifier,
           },

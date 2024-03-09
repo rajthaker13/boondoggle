@@ -35,7 +35,8 @@ function Home(props) {
   const [toDos, setToDos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState();
-  const client_id = "ab166dae-3201-4302-9801-4199859169e6";
+
+  const client_id = "626db426-e15c-45ff-8a39-1e2632f8ba1b";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
