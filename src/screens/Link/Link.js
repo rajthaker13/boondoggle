@@ -7,7 +7,7 @@ import Stripe from "stripe";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "626db426-e15c-45ff-8a39-1e2632f8ba1b";
+  const client_id = "104a56bd-d7f4-4644-b7b0-de9f970e1040";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 
