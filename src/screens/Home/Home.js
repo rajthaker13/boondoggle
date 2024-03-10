@@ -1031,7 +1031,6 @@ function Home(props) {
       })
       .eq("connection_id", connection_id);
     setEmailLinked(true);
-    // await pushToAirtable(new_updates, "Email");
 
     if (crmType == "Airtable") {
       await pushToAirtable(new_updates, "Email");
