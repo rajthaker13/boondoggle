@@ -316,7 +316,7 @@ function Airtable(props) {
                       if (
                         field.type == "singleLineText" ||
                         field.type == "email" ||
-                        field.type == "longText"
+                        field.type == "multilineText"
                       ) {
                         return <option value={field.name}>{field.name}</option>;
                       }
@@ -378,7 +378,7 @@ function Airtable(props) {
                       if (
                         field.type == "singleLineText" ||
                         field.type == "email" ||
-                        field.type == "longText"
+                        field.type == "multilineText"
                       ) {
                         return <option value={field.name}>{field.name}</option>;
                       }
@@ -403,7 +403,7 @@ function Airtable(props) {
                       if (
                         field.type == "singleLineText" ||
                         field.type == "email" ||
-                        field.type == "longText"
+                        field.type == "multilineText"
                       ) {
                         return <option value={field.name}>{field.name}</option>;
                       }
@@ -425,7 +425,7 @@ function Airtable(props) {
                       if (
                         field.type == "singleLineText" ||
                         field.type == "email" ||
-                        field.type == "longText"
+                        field.type == "multilineText"
                       ) {
                         return <option value={field.name}>{field.name}</option>;
                       }
