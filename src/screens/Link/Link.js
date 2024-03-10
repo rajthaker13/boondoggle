@@ -52,18 +52,6 @@ function Link(props) {
       const state = urlParams.get("state");
       const code_challenge = urlParams.get("code_challenge");
       const verifier = localStorage.getItem("verifier");
-      console.log(verifier);
-
-      console.log("code", code);
-      console.log("state", state);
-      console.log("challenge", code_challenge);
-
-      // const { data, error } = await props.db.functions.invoke(
-      //   "airtable-token",
-      //   {
-      //     body: { code: code, id: client_id, verify: verifier },
-      //   }
-      // );
 
       const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
 
@@ -103,17 +91,9 @@ function Link(props) {
           localStorage.setItem("connection_id", res.data.access_token);
           navigation("/airtable");
         })
-        .catch((err) => {});
-
-      const options = {};
-
-      // await props.db.from("data").insert({
-      //   connection_id: code,
-      //   crm_data: [],
-      //   twitter_messages: [],
-      //   twitterLinked: false,
-      //   type: "airtable"
-      // });
+        .catch((err) => {
+          console.log(err);
+        });
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -145,7 +125,7 @@ function Link(props) {
             nostyle={true}
           />
         </div>
-        {/* <p className="crm-header-text">Utilize an Alternative CRM</p>
+        <p className="crm-header-text">Utilize an Alternative CRM</p>
         <div className="unified_vendors">
           <div
             className="unified_vendor"
@@ -159,7 +139,7 @@ function Link(props) {
             ></img>
             <p className="unified_vendor_name">Airtable</p>
           </div>
-        </div> */}
+        </div>
       </div>
     </div>
   );
