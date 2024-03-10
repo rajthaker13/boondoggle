@@ -79,7 +79,7 @@ function Home(props) {
         });
       } catch (error) {
         if (error) {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           recordResponse = await axios.get(existingContactURL, {
             headers: {
               Authorization: `Bearer ${connection_id}`,
