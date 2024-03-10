@@ -442,7 +442,9 @@ function Home(props) {
       })
     );
 
-    if (crmType == "Airtable") {
+    const type_crm = localStorage.getItem("crmType");
+
+    if (type_crm == "airtable") {
       await pushToAirtable(new_crm_data, "Twitter");
     } else {
       await sendToCRM(new_crm_data, "Twitter");
