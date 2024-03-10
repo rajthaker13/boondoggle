@@ -850,68 +850,88 @@ function Home(props) {
             .includes("automated") &&
           email.folders[0] != "DRAFT"
         ) {
-          // const itemIndex = new_emails.findIndex(
-          //   (item) => item.customer === email.latestDraftOrMessage.from[0].name
-          // );
+          const fromIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+          );
 
-          // if (itemIndex != -1) {
-          //   new_emails[itemIndex].snippet = [
-          //     ...new_emails[itemIndex].snippet,
-          //     {
-          //       message: email.snippet,
-          //       sender: email.latestDraftOrMessage.from[0].name,
-          //     },
-          //   ];
-          // } else {
-          if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
-            console.log("YOBLAKE", email);
-            console.log({
-              data: email,
-              customer: email.latestDraftOrMessage.to[0].name,
-            });
-            var obj = {
-              id: email.id,
-              customer: email.latestDraftOrMessage?.to[0]?.name
-                ? email.latestDraftOrMessage?.to[0]?.name
-                : email.latestDraftOrMessage?.to[0]?.email,
-              email: email.latestDraftOrMessage.to[0].email,
-              data: email,
-              snippet: [
-                {
-                  message: email.snippet,
-                  sender: email.latestDraftOrMessage?.from[0]?.name
-                    ? email.latestDraftOrMessage?.from[0]?.name
-                    : email.latestDraftOrMessage?.from[0]?.email,
-                },
-              ],
-              participants: email.participants,
-              type: "OUTBOUND",
-            };
+          const toIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+          );
 
-            new_emails.push(obj);
+          if (fromIndex != -1) {
+            new_emails[fromIndex].snippet = [
+              ...new_emails[fromIndex].snippet,
+              {
+                message: email.snippet,
+                sender: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+              },
+            ];
+          } else if (toIndex != -1) {
+            new_emails[toIndex].snippet = [
+              ...new_emails[toIndex].snippet,
+              {
+                message: email.snippet,
+                sender: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+              },
+            ];
           } else {
-            var obj = {
-              id: email.id,
-              customer: email.latestDraftOrMessage?.from[0]?.name
-                ? email.latestDraftOrMessage?.from[0]?.name
-                : email.latestDraftOrMessage?.from[0]?.email,
-              email: email.latestDraftOrMessage.from[0].email,
-              data: email,
-              snippet: [
-                {
-                  message: email.snippet,
-                  sender: email.latestDraftOrMessage?.from[0]?.name
-                    ? email.latestDraftOrMessage?.from[0]?.name
-                    : email.latestDraftOrMessage?.from[0]?.email,
-                },
-              ],
-              participants: email.participants,
-              type: "INBOUND",
-            };
+            // if (itemIndex != -1) {
+            // new_emails[itemIndex].snippet = [
+            //   ...new_emails[itemIndex].snippet,
+            //   {
+            //     message: email.snippet,
+            //     sender: email.latestDraftOrMessage.from[0].name,
+            //   },
+            // ];
+            // } else {
+            if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
+              var obj = {
+                id: email.id,
+                customer: email.latestDraftOrMessage?.to[0]?.name
+                  ? email.latestDraftOrMessage?.to[0]?.name
+                  : email.latestDraftOrMessage?.to[0]?.email,
+                email: email.latestDraftOrMessage.to[0].email,
+                data: email,
+                snippet: [
+                  {
+                    message: email.snippet,
+                    sender: email.latestDraftOrMessage?.from[0]?.name
+                      ? email.latestDraftOrMessage?.from[0]?.name
+                      : email.latestDraftOrMessage?.from[0]?.email,
+                  },
+                ],
+                participants: email.participants,
+                type: "OUTBOUND",
+              };
 
-            new_emails.push(obj);
+              new_emails.push(obj);
+            } else {
+              var obj = {
+                id: email.id,
+                customer: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+                email: email.latestDraftOrMessage.from[0].email,
+                data: email,
+                snippet: [
+                  {
+                    message: email.snippet,
+                    sender: email.latestDraftOrMessage?.from[0]?.name
+                      ? email.latestDraftOrMessage?.from[0]?.name
+                      : email.latestDraftOrMessage?.from[0]?.email,
+                  },
+                ],
+                participants: email.participants,
+                type: "INBOUND",
+              };
+
+              new_emails.push(obj);
+            }
           }
-          // }
         }
       })
     );
