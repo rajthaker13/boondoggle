@@ -49,7 +49,6 @@ function Home(props) {
       .select()
       .eq("connection_id", connection_id);
 
-    console.log(data);
     const baseID = data[0].baseID;
     const tableID = data[0].tableID;
 
@@ -115,15 +114,11 @@ function Home(props) {
       }
     }
 
-    console.log("NEW SHIT", new_contacts);
-
     for (let i = 0; i < new_contacts.length; i += 10) {
       const batch = new_contacts.slice(
         i,
         i + 10 > new_contacts.length ? new_contacts.length : i + 10
       );
-
-      console.log(`BATCH: ${i}`, batch);
 
       const newContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}`;
       const records = batch.map((contact) => ({
@@ -133,8 +128,6 @@ function Home(props) {
           [notesField]: contact.title + ":" + contact.summary,
         },
       }));
-
-      console.log(`RECORDS: ${i}`, records);
 
       await axios.post(
         newContactURL,
@@ -155,11 +148,9 @@ function Home(props) {
 
   async function linkWithTwitter() {
     const url = window.location.href;
-    console.log(url);
     const { data, error } = await props.db.functions.invoke("twitter-login-3", {
       body: { url },
     });
-    console.log(data);
     localStorage.setItem("oauth_token", data.url.oauth_token);
     localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
     window.open(data.url.url, "_self");
@@ -167,12 +158,7 @@ function Home(props) {
 
   async function sendToAirtable(new_crm_data, baseID, tableID, fieldOptions) {
     const id = localStorage.getItem("connection_id");
-    console.log("Update", new_crm_data);
-    console.log("base", baseID);
-    console.log("tableID", tableID);
-    console.log(fieldOptions);
-    console.log("test", fieldOptions.fullName);
-    console.log("test2", fieldOptions["fullName"]);
+
     Promise.all(
       new_crm_data.map(async (update) => {
         if (update.customer != "") {
@@ -180,12 +166,10 @@ function Home(props) {
             /\s(?=[\uD800-\uDFFF])/g,
             ""
           );
-          console.log(regexCustomer);
 
           const formula = `({${fieldOptions.fullName}} = "${regexCustomer}")`;
           // const formula = '({fld46Pr3RcS1A5pe5} = "Blake Faulkner")';
-          console.log("FORMULA", formula);
-          // console.log("FORMULA 2 ", formula2);
+
           const encodedFormula = encodeURIComponent(formula);
           const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
           const searchResult = await axios.get(url, {
@@ -194,7 +178,6 @@ function Home(props) {
             },
           });
           await setTimeout(function () {}, 2000);
-          console.log(regexCustomer, searchResult.data);
         }
       })
     );
@@ -206,7 +189,6 @@ function Home(props) {
     Promise.all(
       new_crm_data.map(async (update) => {
         if (update.customer != "") {
-          console.log(update);
           let regexCustomer;
           if (source == "Twitter") {
             regexCustomer = update.customer.replace(
@@ -216,7 +198,7 @@ function Home(props) {
           } else if (source == "Email") {
             regexCustomer = update.email;
           }
-          console.log("REGES", regexCustomer);
+
           if (update.customer == "Blake Faulkner 🌉") {
             regexCustomer = "Blake Faulkner";
           }
@@ -233,7 +215,6 @@ function Home(props) {
             },
           };
           const results = await axios.request(options);
-          console.log("Rsults", results);
           const current_crm = results.data[0];
 
           const idOptions = {
@@ -248,8 +229,6 @@ function Home(props) {
           const idResults = await axios.request(idOptions);
           const user_crm_id = idResults.data[0].id;
 
-          console.log(current_crm);
-
           if (current_crm != undefined) {
             const event = {
               id: current_crm.id,
@@ -261,7 +240,6 @@ function Home(props) {
               contact_ids: [current_crm.id],
               user_id: user_crm_id,
             };
-            console.log("event", event);
             const { data, error } = await props.db.functions.invoke(
               "update-crm-unified",
               {
@@ -313,15 +291,12 @@ function Home(props) {
     //   model: "gpt-3.5-turbo",
     // });
 
-    // console.log(arraySearch);
     // const number = parseInt(
     //   arraySearch.choices[0].message.content.match(/\d+/)[0]
     // );
-    // console.log(current_crm[number]);
   }
 
   async function updateCRM(userData) {
-    console.log(userData);
     const connection_id = localStorage.getItem("connection_id");
     const { data, error } = await props.db
       .from("data")
@@ -336,15 +311,12 @@ function Home(props) {
     let tableID;
     let fieldOptions;
     if (type == "airtable") {
-      console.log("LOCAL STORAGE FTW");
       baseID = data[0].baseID;
       tableID = data[0].tableID;
       fieldOptions = data[0].fieldOptions;
     }
     let twitter_messages = [];
-    console.log(crm_update);
 
-    console.log(userData);
     const meUser = userData.meUser.data.username;
     const meName = userData.meUser.data.name;
 
@@ -390,8 +362,6 @@ function Home(props) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       })
     );
-
-    console.log(twitter_messages);
 
     await Promise.all(
       twitter_messages.map(async (dm) => {
@@ -472,15 +442,11 @@ function Home(props) {
       })
     );
 
-    console.log("TODOS", to_dos);
-
     if (crmType == "Airtable") {
       await pushToAirtable(new_crm_data, "Twitter");
     } else {
       await sendToCRM(new_crm_data, "Twitter");
     }
-    // console.log(userData.messages);
-    // console.log(connection_id);
 
     await props.db
       .from("data")
@@ -505,15 +471,11 @@ function Home(props) {
     const oauthVerifier = urlParams.get("oauth_verifier");
 
     // Now oauthVerifier contains the value of oauth_verifier parameter
-    console.log("Verifier " + oauthVerifier);
     const token = localStorage.getItem("oauth_token");
     const secret = localStorage.getItem("oauth_secret");
-    console.log(token);
-    console.log(secret);
     const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
       body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
     });
-    console.log(data);
     if (data) {
       await updateCRM(data);
     }
@@ -543,7 +505,6 @@ function Home(props) {
         }
       )
       .then(async (res) => {
-        console.log(res.data);
         await props.db
           .from("users")
           .update({
@@ -595,7 +556,6 @@ function Home(props) {
   }
   async function checkLinks() {
     const id = localStorage.getItem("connection_id");
-    console.log("ID", id);
 
     const { data, error } = await props.db
       .from("data")
@@ -675,7 +635,6 @@ function Home(props) {
       .from("users")
       .select("")
       .eq("crm_id", id);
-    console.log(data[0].refresh_token);
 
     const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
     const refreshTokenResponse = await axios.post(
@@ -720,7 +679,6 @@ function Home(props) {
     const { data, error } = await props.db.functions.invoke("email-auth", {
       body: { source: urlWithoutParams },
     });
-    console.log(data);
     window.open(data.url, "_self");
   }
 
@@ -729,7 +687,6 @@ function Home(props) {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
 
-    console.log("CODE", code);
     const currentUrl = window.location.href;
     const urlWithoutParams = currentUrl.split("?")[0];
 
@@ -737,10 +694,7 @@ function Home(props) {
       body: { code: code, source: urlWithoutParams },
     });
 
-    console.log("ERROR", error);
-
     if (error == null) {
-      console.log("HERE");
       localStorage.setItem("email_grant_id", data.id);
 
       const connection_id = localStorage.getItem("connection_id");
@@ -766,10 +720,7 @@ function Home(props) {
 
     const connection_id = localStorage.getItem("connection_id");
 
-    console.log(data);
-
     const emails = data.data.data;
-    console.log(emails);
 
     const curData = await getCurrentData();
 
@@ -1084,7 +1035,6 @@ function Home(props) {
       getEmailData();
     }
     loadCheck();
-    console.log(window.location);
   }, []);
 
   return (
