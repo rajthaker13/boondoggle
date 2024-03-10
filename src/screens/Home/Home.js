@@ -144,7 +144,6 @@ function Home(props) {
       );
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-    window.location.reload();
   }
 
   async function linkWithTwitter() {
@@ -254,7 +253,6 @@ function Home(props) {
         }
       })
     );
-    window.location.reload();
   }
 
   async function updateCRM(userData) {
@@ -426,6 +424,7 @@ function Home(props) {
     setCRM(crm_update);
     setToDos(to_dos);
     localStorage.setItem("to_dos", to_dos);
+    window.location.open("https://boondoggle.ai/home", "_self");
   }
 
   async function captureOauthVerifier() {
@@ -751,15 +750,6 @@ function Home(props) {
               },
             ];
           } else {
-            // if (itemIndex != -1) {
-            // new_emails[itemIndex].snippet = [
-            //   ...new_emails[itemIndex].snippet,
-            //   {
-            //     message: email.snippet,
-            //     sender: email.latestDraftOrMessage.from[0].name,
-            //   },
-            // ];
-            // } else {
             if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
               var obj = {
                 id: email.id,
@@ -932,6 +922,7 @@ function Home(props) {
     }
 
     setIsLoading(false);
+    window.location.open("https://boondoggle.ai/home", "_self");
   }
 
   useEffect(() => {
