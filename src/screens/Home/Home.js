@@ -424,7 +424,8 @@ function Home(props) {
     setCRM(crm_update);
     setToDos(to_dos);
     localStorage.setItem("to_dos", to_dos);
-    window.location.open("https://boondoggle.ai/home", "_self");
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 
   async function captureOauthVerifier() {
@@ -922,7 +923,9 @@ function Home(props) {
     }
 
     setIsLoading(false);
-    window.location.open("https://boondoggle.ai/home", "_self");
+
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 
   useEffect(() => {
