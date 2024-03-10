@@ -60,62 +60,60 @@ function Home(props) {
 
     let new_contacts = [];
 
-    await Promise.all(
-      new_entries.map(async (entry) => {
-        let encodedFormula;
-        if (source == "Email") {
-          let formula = `({${emailField}} = "${entry.email}")`;
-          encodedFormula = encodeURIComponent(formula);
-        } else if (source == "Twitter") {
-          let formula = `({${nameField}} = "${entry.customer}")`;
-          encodedFormula = encodeURIComponent(formula);
-        }
-        const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
-        let recordResponse;
-        try {
+    for (const entry of new_entries) {
+      let encodedFormula;
+      if (source == "Email") {
+        let formula = `({${emailField}} = "${entry.email}")`;
+        encodedFormula = encodeURIComponent(formula);
+      } else if (source == "Twitter") {
+        let formula = `({${nameField}} = "${entry.customer}")`;
+        encodedFormula = encodeURIComponent(formula);
+      }
+      const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+      let recordResponse;
+      try {
+        recordResponse = await axios.get(existingContactURL, {
+          headers: {
+            Authorization: `Bearer ${connection_id}`,
+          },
+        });
+      } catch (error) {
+        if (error) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           recordResponse = await axios.get(existingContactURL, {
             headers: {
               Authorization: `Bearer ${connection_id}`,
             },
           });
-        } catch (error) {
-          if (error) {
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-            recordResponse = await axios.get(existingContactURL, {
-              headers: {
-                Authorization: `Bearer ${connection_id}`,
-              },
-            });
-          }
         }
+      }
 
-        if (recordResponse.data.records.length > 0) {
-          const currentNotes =
-            recordResponse.data.records[0].fields[`${notesField}`];
-          const recordID = recordResponse.data.records[0].id;
-          const updateContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${recordID}`;
+      if (recordResponse.data.records.length > 0) {
+        const currentNotes =
+          recordResponse.data.records[0].fields[`${notesField}`];
+        const recordID = recordResponse.data.records[0].id;
+        const updateContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${recordID}`;
 
-          await axios.patch(
-            updateContactURL,
-            {
-              fields: {
-                [notesField]:
-                  currentNotes + "\n" + entry.title + ":" + entry.summary,
-              },
+        await axios.patch(
+          updateContactURL,
+          {
+            fields: {
+              [notesField]:
+                currentNotes + "\n" + entry.title + ":" + entry.summary,
             },
-            {
-              headers: {
-                Authorization: `Bearer ${connection_id}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        } else {
-          new_contacts.push(entry);
-        }
-      })
-    );
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        new_contacts.push(entry);
+      }
+    }
 
     console.log("NEW SHIT", new_contacts);
 
