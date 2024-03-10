@@ -667,6 +667,7 @@ function Home(props) {
     } else if (type == "airtable") {
       setImage(airtable);
       setCRMType("Airtable");
+      localStorage.setItem("crmType", "airtable");
     }
   }
 
@@ -1032,7 +1033,9 @@ function Home(props) {
       .eq("connection_id", connection_id);
     setEmailLinked(true);
 
-    if (crmType == "Airtable") {
+    const type = localStorage.getItem("crmType");
+
+    if (type == "airtable") {
       await pushToAirtable(new_updates, "Email");
     } else {
       await sendToCRM(new_updates, "Email");
