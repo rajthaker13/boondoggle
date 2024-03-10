@@ -144,6 +144,7 @@ function Home(props) {
       );
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
+    window.location.reload();
   }
 
   async function linkWithTwitter() {
@@ -154,33 +155,6 @@ function Home(props) {
     localStorage.setItem("oauth_token", data.url.oauth_token);
     localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
     window.open(data.url.url, "_self");
-  }
-
-  async function sendToAirtable(new_crm_data, baseID, tableID, fieldOptions) {
-    const id = localStorage.getItem("connection_id");
-
-    Promise.all(
-      new_crm_data.map(async (update) => {
-        if (update.customer != "") {
-          const regexCustomer = update.customer.replace(
-            /\s(?=[\uD800-\uDFFF])/g,
-            ""
-          );
-
-          const formula = `({${fieldOptions.fullName}} = "${regexCustomer}")`;
-          // const formula = '({fld46Pr3RcS1A5pe5} = "Blake Faulkner")';
-
-          const encodedFormula = encodeURIComponent(formula);
-          const url = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
-          const searchResult = await axios.get(url, {
-            headers: {
-              Authorization: `Bearer ${id}`,
-            },
-          });
-          await setTimeout(function () {}, 2000);
-        }
-      })
-    );
   }
 
   async function sendToCRM(new_crm_data, source) {
@@ -280,20 +254,7 @@ function Home(props) {
         }
       })
     );
-
-    // const arraySearch = await openai.chat.completions.create({
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: `I have an array of objects as follows: ${current_crm} (This is the dataset I will be reffering to for this question). I want you to output the index where the object's property customer = "Blake Faulkner" and if does not exist then output -1. I don't want any code, I just want you to output the index where the object's property of customer is equal to "Blake Faulkner".`,
-    //     },
-    //   ],
-    //   model: "gpt-3.5-turbo",
-    // });
-
-    // const number = parseInt(
-    //   arraySearch.choices[0].message.content.match(/\d+/)[0]
-    // );
+    window.location.reload();
   }
 
   async function updateCRM(userData) {
@@ -481,48 +442,6 @@ function Home(props) {
     if (data) {
       await updateCRM(data);
     }
-  }
-
-  async function getRefreshTokenAirtable(id) {
-    const { data, error } = await props.db
-      .from("users")
-      .select("")
-      .eq("crm_id", id);
-    console.log(data[0].refresh_token);
-
-    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
-
-    axios
-      .post(
-        url,
-        {
-          client_id: client_id,
-          refresh_token: data[0].refresh_token,
-          grant_type: "refresh_token",
-        },
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      )
-      .then(async (res) => {
-        await props.db
-          .from("users")
-          .update({
-            crm_id: res.data.access_token,
-            refresh_token: res.data.refresh_token,
-          })
-          .eq("id", localStorage.getItem("uid"));
-        await props.db
-          .from("data")
-          .update({
-            connection_id: res.data.access_token,
-          })
-          .eq("connection_id", id);
-        localStorage.setItem("connection_id", res.data.access_token);
-        window.location.reload();
-      });
   }
 
   async function linkedInTest() {
