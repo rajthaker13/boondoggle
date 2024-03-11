@@ -20,6 +20,17 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify(contact)
   }
+
+  contactResults
+
+  try {
+    contactResults = await fetch(url, options);
+  }
+  catch {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    contactResults = await fetch(url, options);
+
+  }
   const contactResults = await fetch(url, options);
   const contactResponse = await contactResults.json()
   console.log(contactResponse)
@@ -45,6 +56,20 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json", // Set Content-Type header
     },
     body: JSON.stringify(event)
+  }
+
+  let updateResults
+
+  try {
+    updateResults = await fetch(updateURL, updateOptions);
+    
+
+  }
+  catch {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    updateResults = await fetch(updateURL, updateOptions);
+    
+
   }
 
   const updateResults = await fetch(updateURL, updateOptions);

@@ -23,7 +23,18 @@ const options = {
   body: JSON.stringify(event)
 }
 
-const results = await fetch(url, options);
+let results 
+
+try {
+  results = await fetch(url, options);
+
+}
+catch {
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  results = await fetch(url, options);
+}
+
+
 const response = await results.json()
 
 const data = {

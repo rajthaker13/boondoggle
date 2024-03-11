@@ -187,7 +187,13 @@ function Home(props) {
               query: regexCustomer,
             },
           };
-          const results = await axios.request(options);
+          let results;
+          try {
+            results = await axios.request(options);
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            results = await axios.request(options);
+          }
           const current_crm = results.data[0];
 
           const idOptions = {
@@ -199,7 +205,14 @@ function Home(props) {
             },
           };
 
-          const idResults = await axios.request(idOptions);
+          let idResults;
+
+          try {
+            idResults = await axios.request(idOptions);
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            idResults = await axios.request(idOptions);
+          }
           const user_crm_id = idResults.data[0].id;
 
           if (current_crm != undefined) {
