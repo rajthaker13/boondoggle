@@ -71,8 +71,7 @@ Deno.serve(async (req) => {
     
 
   }
-
-  const updateResults = await fetch(updateURL, updateOptions);
+  
   const updateResponse = await updateResults.json()
 
   console.log(updateResponse)
