@@ -653,19 +653,37 @@ function Home(props) {
 
     await Promise.all(
       emails.map(async (email) => {
-        const spamRespone = await axios.post(
-          "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
-          {
-            email: email.latestDraftOrMessage.body,
-            options: "short",
-          },
-          {
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
+        let spamRespone;
+        try {
+          spamRespone = await axios.post(
+            "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+            {
+              email: email.latestDraftOrMessage.body,
+              options: "short",
             },
-          }
-        );
+            {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          spamRespone = await axios.post(
+            "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+            {
+              email: email.latestDraftOrMessage.body,
+              options: "short",
+            },
+            {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        }
 
         if (
           email.latestDraftOrMessage.from[0].name != "" &&
