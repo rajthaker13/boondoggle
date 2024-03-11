@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     body: JSON.stringify(contact)
   }
 
-  contactResults
+  let contactResults
 
   try {
     contactResults = await fetch(url, options);
@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
     contactResults = await fetch(url, options);
 
   }
-  const contactResults = await fetch(url, options);
   const contactResponse = await contactResults.json()
   console.log(contactResponse)
 
@@ -71,7 +70,7 @@ Deno.serve(async (req) => {
     
 
   }
-  
+
   const updateResponse = await updateResults.json()
 
   console.log(updateResponse)
