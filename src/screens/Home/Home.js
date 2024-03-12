@@ -38,7 +38,7 @@ function Home(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
-  const client_id = "33f95190-161e-4a38-8d4c-82939914cda9";
+  const client_id = "dfc2486e-39b5-4f7a-98be-1ee8e377bfcf";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
