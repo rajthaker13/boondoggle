@@ -512,7 +512,7 @@ function Entries(props) {
                 </button>
               </div>
             )}
-            {isOnboarding && onboardingStep == 9 && (
+            {isOnboarding && onboardingStep == 9 && viewTasks && (
               <div className="onboarding-tooltip" style={{ width: "15vw" }}>
                 <p
                   className="link-button-text"
