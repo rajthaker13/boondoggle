@@ -1,7 +1,7 @@
 /*global chrome*/
 import React, { useEffect, useState } from "react";
 import "./Home.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import OpenAI from "openai";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -35,6 +35,8 @@ function Home(props) {
   const [toDos, setToDos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState();
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   const client_id = "33f95190-161e-4a38-8d4c-82939914cda9";
   const openai = new OpenAI({
@@ -147,6 +149,16 @@ function Home(props) {
   }
 
   async function linkWithTwitter() {
+    if (isOnboarding) {
+      const uid = localStorage.getItem("uid");
+      await props.db
+        .from("user_data")
+        .update({
+          onboardingStep: 4,
+        })
+        .eq("id", uid);
+    }
+
     const url = window.location.href;
     const { data, error } = await props.db.functions.invoke("twitter-login-3", {
       body: { url },
@@ -190,9 +202,11 @@ function Home(props) {
           let results;
           try {
             results = await axios.request(options);
-          } catch {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            results = await axios.request(options);
+          } catch (error) {
+            if (error) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              results = await axios.request(options);
+            }
           }
           const current_crm = results.data[0];
 
@@ -488,78 +502,105 @@ function Home(props) {
       tasks: data[0].tasks,
     };
   }
-  async function checkLinks() {
-    const id = localStorage.getItem("connection_id");
 
+  async function checkOnBoarding() {
+    console.log("HERE?");
+    const uid = localStorage.getItem("uid");
     const { data, error } = await props.db
-      .from("data")
+      .from("user_data")
       .select("")
-      .eq("connection_id", id);
+      .eq("id", uid);
+    const onboardingValues = {
+      hasOnboarded: data[0].hasOnboarded,
+      onboardingStep: data[0].onboardingStep,
+      subscription_status: data[0].subscription_status,
+    };
 
-    setTwitterLinked(data[0].twitterLinked);
-    setEmailLinked(data[0].emailLinked);
-    setCRM(data[0].crm_data);
-    setToDos(data[0].tasks);
-    localStorage.setItem("twitterLinked", data[0].twitterLinked);
-    localStorage.setItem("crmType", data[0].type);
+    return onboardingValues;
+  }
 
-    const type = data[0].type;
+  async function checkLinks() {
+    const onboardingValues = await checkOnBoarding();
 
-    if (type == "crm") {
-      const options = {
-        method: "GET",
-        url: `https://api.unified.to/unified/connection/${id}`,
-        headers: {
-          authorization:
-            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-        },
-      };
+    if (onboardingValues.onboardingStep > 1) {
+      const id = localStorage.getItem("connection_id");
 
-      const results = await axios.request(options);
+      const { data, error } = await props.db
+        .from("data")
+        .select("")
+        .eq("connection_id", id);
 
-      const connected_crm = results.data.integration_type;
+      setTwitterLinked(data[0].twitterLinked);
+      setEmailLinked(data[0].emailLinked);
+      setCRM(data[0].crm_data);
+      setToDos(data[0].tasks);
+      setIsOnboarding(!onboardingValues.hasOnboarded);
+      setOnboardingStep(onboardingValues.onboardingStep);
 
-      if (connected_crm == "affinity") {
-        setImage(affinity);
-        setCRMType("Affinity");
-      } else if (connected_crm == "attio") {
-        setImage(attio);
-        setCRMType("Attio");
-      } else if (connected_crm == "close.io") {
-        setImage(close);
-        setCRMType("Close.io");
-      } else if (connected_crm == "copper") {
-        setImage(copper);
-        setCRMType("Copper");
-      } else if (connected_crm == "freshsalescrm") {
-        setImage(freshsales);
-        setCRMType("Freshales CRM");
-      } else if (connected_crm == "highlevel") {
-        setImage(highlevel);
-        setCRMType("HighLevel");
-      } else if (connected_crm == "hubspot") {
-        setImage(hubspot);
-        setCRMType("HubSpot");
-      } else if (connected_crm == "pipedrive") {
-        setImage(pipedrive);
-        setCRMType("Pipedrive");
-      } else if (connected_crm == "salesflare") {
-        setImage(salesflare);
-        setCRMType("Salesflare");
-      } else if (connected_crm == "salesforce") {
-        setImage(salesforce);
-        setCRMType("Salesforce");
-      } else if (connected_crm == "salesloft") {
-        setImage(salesloft);
-        setCRMType("Salesloft");
-      } else if (connected_crm == "zohocrm") {
-        setImage(zohocrm);
-        setCRMType("ZohoCRM");
+      localStorage.setItem("twitterLinked", data[0].twitterLinked);
+      localStorage.setItem("crmType", data[0].type);
+
+      const type = data[0].type;
+
+      if (type == "crm") {
+        const options = {
+          method: "GET",
+          url: `https://api.unified.to/unified/connection/${id}`,
+          headers: {
+            authorization:
+              "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+          },
+        };
+
+        const results = await axios.request(options);
+
+        const connected_crm = results.data.integration_type;
+
+        if (connected_crm == "affinity") {
+          setImage(affinity);
+          setCRMType("Affinity");
+        } else if (connected_crm == "attio") {
+          setImage(attio);
+          setCRMType("Attio");
+        } else if (connected_crm == "close.io") {
+          setImage(close);
+          setCRMType("Close.io");
+        } else if (connected_crm == "copper") {
+          setImage(copper);
+          setCRMType("Copper");
+        } else if (connected_crm == "freshsalescrm") {
+          setImage(freshsales);
+          setCRMType("Freshales CRM");
+        } else if (connected_crm == "highlevel") {
+          setImage(highlevel);
+          setCRMType("HighLevel");
+        } else if (connected_crm == "hubspot") {
+          setImage(hubspot);
+          setCRMType("HubSpot");
+        } else if (connected_crm == "pipedrive") {
+          setImage(pipedrive);
+          setCRMType("Pipedrive");
+        } else if (connected_crm == "salesflare") {
+          setImage(salesflare);
+          setCRMType("Salesflare");
+        } else if (connected_crm == "salesforce") {
+          setImage(salesforce);
+          setCRMType("Salesforce");
+        } else if (connected_crm == "salesloft") {
+          setImage(salesloft);
+          setCRMType("Salesloft");
+        } else if (connected_crm == "zohocrm") {
+          setImage(zohocrm);
+          setCRMType("ZohoCRM");
+        }
+      } else if (type == "airtable") {
+        setImage(airtable);
+        setCRMType("Airtable");
+        localStorage.setItem("crmType", "airtable");
       }
-    } else if (type == "airtable") {
-      setImage(airtable);
-      setCRMType("Airtable");
-      localStorage.setItem("crmType", "airtable");
+    } else if (!onboardingValues.hasOnboarded) {
+      setIsOnboarding(true);
+      setOnboardingStep(onboardingValues.onboardingStep);
     }
   }
 
@@ -608,6 +649,15 @@ function Home(props) {
   }
 
   async function connectEmail() {
+    if (isOnboarding) {
+      const uid = localStorage.getItem("uid");
+      await props.db
+        .from("user_data")
+        .update({
+          onboardingStep: 4,
+        })
+        .eq("id", uid);
+    }
     const currentUrl = window.location.href;
     const urlWithoutParams = currentUrl.split("?")[0];
     const { data, error } = await props.db.functions.invoke("email-auth", {
@@ -681,26 +731,28 @@ function Home(props) {
               },
             }
           );
-        } catch {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          spamRespone = await axios.post(
-            "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
-            {
-              email: email.latestDraftOrMessage.body,
-              options: "short",
-            },
-            {
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
+        } catch (error) {
+          if (error) {
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            spamRespone = await axios.post(
+              "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+              {
+                email: email.latestDraftOrMessage.body,
+                options: "short",
               },
-            }
-          );
+              {
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+          }
         }
 
         if (
           email.latestDraftOrMessage.from[0].name != "" &&
-          spamRespone.data.score >= 7 &&
+          spamRespone.data.score >= 8 &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
           !email.latestDraftOrMessage.body
             .toLowerCase()
@@ -983,12 +1035,175 @@ function Home(props) {
     loadCheck();
   }, []);
 
+  async function nextOnboardingStep() {
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("user_data")
+      .update({
+        onboardingStep: onboardingStep + 1,
+      })
+      .eq("id", uid);
+
+    setOnboardingStep(onboardingStep + 1);
+  }
+
+  async function completeOnboarding() {
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("user_data")
+      .update({
+        hasOnboarded: true,
+        onboardingStep: 12,
+      })
+      .eq("id", uid);
+
+    setOnboardingStep(onboardingStep + 1);
+    setIsOnboarding(false);
+  }
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div className="container">
         <div className="content-container">
-          <Sidebar selectedTab={0} />
-          <div style={{ flexDirection: "column" }}>
+          {isOnboarding && onboardingStep == 0 && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <p
+                  style={{
+                    textAlign: "center",
+                    fontSize: "20px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Welcome to Boondoggle Beta
+                </p>
+                <br />
+                <p style={{ textAlign: "left" }}>
+                  This is our first public release, & we're excited to share a
+                  glimpse into the early tech we've been working on over the
+                  past few weeks. <br /> <br /> Our goal for this beta is to get
+                  feedback on your user experience, the integrations/features
+                  most important to your workday, and any other improvements
+                  you'd love to see.
+                </p>
+                <p style={{ textAlign: "left" }}>Beta features include:</p>
+                <ul style={{ textAlign: "left" }}>
+                  <li>
+                    <p>Summarize your emails and twitter direct messages.</p>
+                  </li>
+                  <li>
+                    <p>Push those summaries/contacts to a CRM of choice.</p>
+                  </li>
+                  <li>
+                    <p>
+                      Automatically create completable to-do tasks with
+                      AI-generated responses.
+                    </p>
+                  </li>
+                </ul>
+                <p style={{ textAlign: "left" }}>
+                  We're excited to continue building new integrations and
+                  features. Stay tuned for updates! For any feedback, bugs, or
+                  feature requests, please email{" "}
+                  <span style={{ color: "blue" }}>support@boondoggle.ai</span>,
+                  and thanks again for supporting Boondoggle!
+                </p>
+                <br />
+                <div
+                  style={{
+                    justifyContent: "center",
+                    display: "flex",
+                    marginTop: "2vh",
+                  }}
+                >
+                  <button
+                    className="linked-button"
+                    onClick={async () => {
+                      await nextOnboardingStep();
+                    }}
+                  >
+                    <p className="link-button-text">Get Started</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isOnboarding && onboardingStep == 11 && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <p
+                  style={{
+                    textAlign: "center",
+                    fontSize: "20px",
+                    fontWeight: "600",
+                  }}
+                >
+                  You are officialy a Boondoggler!
+                </p>
+                <br />
+                <p style={{ textAlign: "left" }}>
+                  You're ready to start automating your entries and saving time
+                  everyday.
+                </p>
+                <p style={{ textAlign: "left" }}>
+                  Here's a quick refreshser...Boondogggle:
+                </p>
+                <ul style={{ textAlign: "left" }}>
+                  <li>
+                    <p>Summarizes your emails and twitter direct messages.</p>
+                  </li>
+                  <li>
+                    <p>Pushes those summaries/contacts to a CRM of choice.</p>
+                  </li>
+                  <li>
+                    <p>
+                      Automatically creates completable to-do tasks with
+                      AI-generated responses.
+                    </p>
+                  </li>
+                </ul>
+                <p style={{ textAlign: "left" }}>
+                  We're excited to continue building new integrations and
+                  features. Stay tuned for updates! For any feedback, bugs, or
+                  feature requests, please email{" "}
+                  <span style={{ color: "blue" }}>support@boondoggle.ai</span>,
+                  and thanks again for supporting Boondoggle!
+                </p>
+                <br />
+                <div
+                  style={{
+                    justifyContent: "center",
+                    display: "flex",
+                    marginTop: "2vh",
+                  }}
+                >
+                  <button
+                    className="linked-button"
+                    onClick={async () => {
+                      await completeOnboarding();
+                    }}
+                  >
+                    <p className="link-button-text">Enter Boondogle</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Sidebar
+            selectedTab={0}
+            isOnboarding={isOnboarding}
+            onboardingStep={onboardingStep}
+            db={props.db}
+          />
+          <div
+            style={
+              isOnboarding && onboardingStep == 5
+                ? { flexDirection: "column", filter: "blur(5px)" }
+                : { flexDirection: "column" }
+            }
+          >
             <div className="dashboard-header">
               <div className="header-text-container">
                 <span className="header-text-1">
@@ -997,24 +1212,57 @@ function Home(props) {
               </div>
             </div>
             <div className="dashboard">
-              <div className="connected-apps-container">
+              <div
+                className="connected-apps-container"
+                style={
+                  isOnboarding &&
+                  (onboardingStep == 1 ||
+                    onboardingStep == 2 ||
+                    onboardingStep == 4)
+                    ? { filter: "blur(5px)" }
+                    : isOnboarding && onboardingStep == 3
+                    ? { border: "5px solid red" }
+                    : {}
+                }
+              >
                 <div className="connected-apps-header-container">
                   <p className="connected-apps-header">Connected Apps</p>
                 </div>
-                <div className="connected-apps-howto-container">
-                  <div className="connected-apps-howto-text-container">
-                    <span className="connected-apps-howto-text-1">
-                      To automate access to your social accounts, Boondoggle
-                      uses your session cookie. When you log into an account, a
-                      new session cookie is created. When you log out or are
-                      disconnected, the cookie expires. We will notify you if
-                      any of your accounts disconnect.{" "}
-                      {/* <span className="connected-apps-howto-text-2">
-                        Learn More
-                      </span> */}
-                    </span>
+                {isOnboarding && onboardingStep == 3 && (
+                  <div
+                    className="connected-apps-howto-container"
+                    style={{ background: "#1c1c1c" }}
+                  >
+                    <div className="connected-apps-howto-text-container">
+                      <span
+                        className="connected-apps-howto-text-1"
+                        style={{
+                          color: "white",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Connect your first social app to start automating
+                        entries into your connected CRM. Currently Twitter &
+                        Email are available.
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
+                {!isOnboarding ||
+                  (onboardingStep > 3 && (
+                    <div className="connected-apps-howto-container">
+                      <div className="connected-apps-howto-text-container">
+                        <span className="connected-apps-howto-text-1">
+                          To automate access to your social accounts, Boondoggle
+                          uses your session cookie. When you log into an
+                          account, a new session cookie is created. When you log
+                          out or are disconnected, the cookie expires. We will
+                          notify you if any of your accounts disconnect.
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
                 <div
                   style={{
                     flexDirection: "row",
@@ -1048,6 +1296,11 @@ function Home(props) {
                       className={
                         twitterLinked ? "linked-button" : "link-button"
                       }
+                      style={
+                        isOnboarding && onboardingStep == 3
+                          ? { border: "5px solid red" }
+                          : {}
+                      }
                       onClick={async () => {
                         if (!twitterLinked) {
                           await linkWithTwitter();
@@ -1077,6 +1330,11 @@ function Home(props) {
                           await connectEmail();
                         }
                       }}
+                      style={
+                        isOnboarding && onboardingStep == 3
+                          ? { border: "5px solid red" }
+                          : {}
+                      }
                     >
                       <p
                         className="link-button-text"
@@ -1149,7 +1407,14 @@ function Home(props) {
                 </div>
               </div>
 
-              <div className="connected-apps-container">
+              <div
+                className="connected-apps-container"
+                style={
+                  isOnboarding && (onboardingStep == 3 || onboardingStep == 4)
+                    ? { filter: "blur(5px)" }
+                    : {}
+                }
+              >
                 <div className="connected-apps-header-container">
                   <p className="connected-apps-header">Connected CRM</p>
                 </div>
@@ -1162,29 +1427,107 @@ function Home(props) {
                   }}
                 >
                   <div className="connected-apps-cell">
-                    <>
-                      <img src={image} />
+                    <div
+                      style={
+                        isOnboarding && onboardingStep == 2
+                          ? {
+                              display: "flex",
+                              flex: "1 0 0",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              border: "5px solid red",
+                            }
+                          : {
+                              display: "flex",
+                              flex: "1 0 0",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }
+                      }
+                    >
+                      <img src={image} style={{ marginRight: "1vw" }} />
                       <div className="connected-app-info-container">
                         <p className="connected-app-info-1">{crmType}</p>
                       </div>
-                    </>
-
-                    <button className="link-button" style={{ width: "auto" }}>
-                      <p
-                        className="link-button-text"
-                        style={{ color: "black" }}
-                        onClick={async () => {
-                          await getAirtableRefreshToken();
-                        }}
+                    </div>
+                    {isOnboarding && onboardingStep == 2 && (
+                      <div
+                        className="onboarding-tooltip"
+                        style={{ width: "15vw" }}
                       >
-                        Switch CRM
-                      </p>
-                    </button>
+                        <p
+                          className="link-button-text"
+                          style={{ lineHeight: "100%" }}
+                        >
+                          Congratulations! You just connected your CRM to
+                          Boondoggle.
+                        </p>
+                        <button
+                          className="onboarding-tooltip-button"
+                          style={{ marginBottom: "1vh" }}
+                          onClick={async () => {
+                            await nextOnboardingStep();
+                          }}
+                        >
+                          {" "}
+                          <p
+                            className="link-button-text"
+                            style={{
+                              color: "black",
+                              fontSize: "12px",
+                            }}
+                          >
+                            Continue
+                          </p>
+                        </button>
+                      </div>
+                    )}
+                    {isOnboarding && onboardingStep == 1 && (
+                      <div className="onboarding-tooltip">
+                        <p
+                          className="link-button-text"
+                          style={{ lineHeight: "100%" }}
+                        >
+                          Begin by connecting <br /> your CRM
+                        </p>
+                      </div>
+                    )}
+
+                    {isOnboarding && onboardingStep < 2 && (
+                      <button
+                        className="link-button"
+                        style={
+                          isOnboarding && onboardingStep == 1
+                            ? { width: "auto", border: "5px solid red" }
+                            : { width: "auto" }
+                        }
+                      >
+                        <p
+                          className="link-button-text"
+                          style={{ color: "black" }}
+                          onClick={() => {
+                            navigation("/link");
+                          }}
+                        >
+                          {isOnboarding ? "Connect CRM" : "Switch CRM"}
+                        </p>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="connected-apps-container">
+              <div
+                className="connected-apps-container"
+                style={
+                  isOnboarding &&
+                  (onboardingStep == 1 ||
+                    onboardingStep == 2 ||
+                    onboardingStep == 3)
+                    ? { filter: "blur(5px)" }
+                    : {}
+                }
+              >
                 <div className="connected-apps-header-container">
                   <p className="connected-apps-header">Integrations</p>
 
@@ -1221,13 +1564,24 @@ function Home(props) {
                   </div>
                   {twitterLinked && (
                     <div
-                      style={{
-                        flexDirection: "row",
-                        display: "flex",
-                        width: "95%",
-                        alignItems: "flex-start",
-                        alignSelf: "stretch",
-                      }}
+                      style={
+                        isOnboarding && onboardingStep == 4
+                          ? {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                              border: "5px solid red",
+                            }
+                          : {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                            }
+                      }
                     >
                       <div className="integrations-table-column">
                         <p
@@ -1260,13 +1614,24 @@ function Home(props) {
 
                   {emailLinked && (
                     <div
-                      style={{
-                        flexDirection: "row",
-                        display: "flex",
-                        width: "95%",
-                        alignItems: "flex-start",
-                        alignSelf: "stretch",
-                      }}
+                      style={
+                        isOnboarding && onboardingStep == 4
+                          ? {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                              border: "5px solid red",
+                            }
+                          : {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                            }
+                      }
                     >
                       <div className="integrations-table-column">
                         <p
@@ -1298,6 +1663,37 @@ function Home(props) {
                   )}
                 </div>
               </div>
+              {isOnboarding &&
+                onboardingStep == 4 &&
+                (emailLinked || twitterLinked) && (
+                  <div className="onboarding-tooltip" style={{ width: "15vw" }}>
+                    <p
+                      className="link-button-text"
+                      style={{ lineHeight: "100%", paddingInline: "1vw" }}
+                    >
+                      Amazing! You just connected your first social connection
+                      to Boondoggle...here's to many more 🥂.
+                    </p>
+                    <button
+                      className="onboarding-tooltip-button"
+                      style={{ marginBottom: "1vh" }}
+                      onClick={async () => {
+                        await nextOnboardingStep();
+                      }}
+                    >
+                      {" "}
+                      <p
+                        className="link-button-text"
+                        style={{
+                          color: "black",
+                          fontSize: "12px",
+                        }}
+                      >
+                        Continue
+                      </p>
+                    </button>
+                  </div>
+                )}
             </div>
           </div>
         </div>

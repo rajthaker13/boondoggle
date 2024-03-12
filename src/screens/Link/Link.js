@@ -40,10 +40,17 @@ function Link(props) {
       });
 
       const uid = localStorage.getItem("uid");
-      const { error } = await props.db
-        .from("users")
-        .insert({ id: uid, crm_id: connection_id });
-      navigation("/payment");
+
+      await props.db.from("users").insert({ id: uid, crm_id: connection_id });
+
+      await props.db
+        .from("user_data")
+        .update({
+          onboardingStep: 2,
+        })
+        .eq("id", uid);
+
+      navigation("/home");
     }
 
     async function connectAirTable() {

@@ -24,6 +24,9 @@ function Performance(props) {
 
   const [pushed, setPushed] = useState(false);
 
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
   const monthNames = [
     "January",
     "February",
@@ -39,69 +42,17 @@ function Performance(props) {
     "December",
   ];
 
-  // async function updateTabs(id) {
-  //   console.log(id);
-  //   if (id == "Daily" && selectedTab != 0) {
-  //     const currentDate = new Date();
+  async function nextOnboardingStep() {
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("user_data")
+      .update({
+        onboardingStep: onboardingStep + 1,
+      })
+      .eq("id", uid);
 
-  //     // Array to store the dates
-  //     const labels = [];
-  //     const tableDates = [];
-
-  //     // Loop to get the last 12 days
-  //     for (let i = 11; i >= 0; i--) {
-  //       // Get the date for the current iteration
-  //       const date = new Date(currentDate);
-  //       // Subtract 'i' days from the current date
-  //       date.setDate(currentDate.getDate() - i);
-  //       console.log("test", date.getMonth());
-  //       // Push the formatted date (month/day) to the array
-  //       labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
-  //       tableDates.push(date);
-  //     }
-  //     const performance_data = [];
-
-  //     tableDates.map((date) => {
-  //       const currentDay = new Date(date);
-  //       currentDay.setHours(0, 0, 0, 0);
-
-  //       let counter = 0;
-
-  //       crmData.map((update) => {
-  //         const dataDate = new Date(update.date);
-  //         dataDate.setHours(0, 0, 0, 0);
-  //         if (dataDate.getTime() == currentDay.getTime()) {
-  //           counter += 1;
-  //         }
-  //       });
-  //       performance_data.push(counter);
-  //     });
-
-  //     setPerformanceLabels(labels);
-  //     setPerformanceData(performance_data);
-  //     setSelectedTab(0);
-  //   } else if (id == "Monthly" && selectedTab != 1) {
-  //     // Get the current date
-  //     const currentDate = new Date();
-
-  //     // Array to store the dates
-  //     const labels = [];
-  //     const tableDates = [];
-
-  //     // Loop to get the last 12 months
-  //     for (let i = 11; i >= 0; i--) {
-  //       // Get the date for the current iteration
-  //       const date = new Date(currentDate);
-  //       // Subtract 'i' months from the current date
-  //       date.setMonth(currentDate.getMonth() - i);
-  //       // Push the formatted date (month/year) to the array
-  //       labels.push(`${date.getMonth()}`);
-  //       tableDates.push(date);
-  //     }
-  //     setPerformanceLabels(labels);
-  //     setSelectedTab(1);
-  //   }
-  // }
+    setOnboardingStep(onboardingStep + 1);
+  }
 
   useEffect(() => {
     async function getData() {
@@ -198,49 +149,22 @@ function Performance(props) {
       setMonthlyData(monthlyData);
       setYearData(yearlyData);
       setSelectedTab(0);
-
-      // if (!pushed) {
-      //   await testPushCRM();
-      // }
-      console.log(pushed);
-
-      // const connection_id = localStorage.getItem("connection_id");
-      // const options = {
-      //   method: "GET",
-      //   url: `https://api.unified.to/crm/${connection_id}/contact`,
-      //   headers: {
-      //     authorization:
-      //       "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-      //   },
-      //   params: {
-      //     query: "Blake",
-      //   },
-      // };
-      // const results = await axios.request(options);
-      // const customer = results.data[0];
-      // console.log(customer["id"]);
-      // const { data, error } = await props.db.functions.invoke("airtable-login");
-      // const url =
-      //   "https://airtable.com/oauth2/v1/authorize?client_id=e193ec31-2ca6-4c1b-8e01-94093e5c4cef&redirect_uri=http://localhost:3000/link&response_type=code&scope=data.records:read%20data.records:write%20schema.bases:read%20schema.bases:write%20user.email:read&state=aR58Klz4zGfK7P05&code_challenge=kXzBSrKLf7W-9JjVGAOLuHLOp48JVN1U8MokoIoJdzk&code_challenge_method=S256";
-      // window.open(url, "_self");
     }
 
-    async function test() {
-      const connection_id = localStorage.getItem("connection_id");
-      const options = {
-        method: "GET",
-        url: `https://api.unified.to/hris/${connection_id}/employee`,
-        headers: {
-          authorization:
-            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-        },
-      };
-      const results = await axios.request(options);
-      console.log(results);
+    async function checkOnBoarding() {
+      console.log("HERE?");
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("user_data")
+        .select("")
+        .eq("id", uid);
+      setIsOnboarding(!data[0].hasOnboarded);
+      setOnboardingStep(data[0].onboardingStep);
     }
+
+    checkOnBoarding();
 
     getData();
-    test();
   }, []);
 
   async function testPushCRM() {
@@ -316,8 +240,18 @@ function Performance(props) {
   return (
     <div className="container">
       <div className="content-container">
-        <Sidebar selectedTab={1} />
-        <div style={{ flexDirection: "column" }}>
+        <Sidebar
+          selectedTab={1}
+          db={props.db}
+          onboardingStep={onboardingStep}
+        />
+        <div
+          style={
+            isOnboarding && onboardingStep == 7
+              ? { flexDirection: "column", filter: "blur(5px)" }
+              : { flexDirection: "column" }
+          }
+        >
           <div className="dashboard-header">
             <div className="header-text-container">
               <span className="header-text-1">
@@ -433,6 +367,36 @@ function Performance(props) {
                 />
               </div>
             </div>
+            {isOnboarding && onboardingStep == 6 && (
+              <div className="onboarding-tooltip" style={{ width: "15vw" }}>
+                <p
+                  className="link-button-text"
+                  style={{ lineHeight: "100%", paddingInline: "1vw" }}
+                >
+                  Here you can see how many entries Boondoggle automatically
+                  deployed to your CRM. We use spam filters to make sure that
+                  every entry is relevent to your work!
+                </p>
+                <button
+                  className="onboarding-tooltip-button"
+                  style={{ marginBottom: "1vh" }}
+                  onClick={async () => {
+                    await nextOnboardingStep();
+                  }}
+                >
+                  {" "}
+                  <p
+                    className="link-button-text"
+                    style={{
+                      color: "black",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Continue
+                  </p>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

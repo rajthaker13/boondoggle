@@ -136,6 +136,7 @@ function Airtable(props) {
   async function submitAirtable() {
     if (fullName != "" && email != "" && company != "" && summary != "") {
       const connection_id = localStorage.getItem("connection_id");
+      const uid = localStorage.getItem("uid");
 
       const chosen_fields = {
         fullName: fullName,
@@ -153,7 +154,13 @@ function Airtable(props) {
           fieldOptions: chosen_fields,
         })
         .eq("connection_id", connection_id);
-      navigation("/payment");
+      await props.db
+        .from("user_data")
+        .update({
+          onboardingStep: 2,
+        })
+        .eq("id", uid);
+      navigation("/home");
     }
   }
   return (
