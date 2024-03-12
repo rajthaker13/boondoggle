@@ -62,57 +62,62 @@ function Home(props) {
     let new_contacts = [];
 
     for (const entry of new_entries) {
-      let encodedFormula;
-      if (source == "Email") {
-        let formula = `({${emailField}} = "${entry.email}")`;
-        encodedFormula = encodeURIComponent(formula);
-      } else if (source == "Twitter") {
-        let formula = `({${nameField}} = "${entry.customer}")`;
-        encodedFormula = encodeURIComponent(formula);
-      }
-      const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
-      let recordResponse;
-      try {
-        recordResponse = await axios.get(existingContactURL, {
-          headers: {
-            Authorization: `Bearer ${connection_id}`,
-          },
-        });
-      } catch (error) {
-        if (error) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (
+        (source == "Email" && entry.status == "Completed") ||
+        source == "Twitter"
+      ) {
+        let encodedFormula;
+        if (source == "Email") {
+          let formula = `({${emailField}} = "${entry.email}")`;
+          encodedFormula = encodeURIComponent(formula);
+        } else if (source == "Twitter") {
+          let formula = `({${nameField}} = "${entry.customer}")`;
+          encodedFormula = encodeURIComponent(formula);
+        }
+        const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+        let recordResponse;
+        try {
           recordResponse = await axios.get(existingContactURL, {
             headers: {
               Authorization: `Bearer ${connection_id}`,
             },
           });
-        }
-      }
-
-      if (recordResponse.data.records.length > 0) {
-        const currentNotes =
-          recordResponse.data.records[0].fields[`${notesField}`];
-        const recordID = recordResponse.data.records[0].id;
-        const updateContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${recordID}`;
-
-        await axios.patch(
-          updateContactURL,
-          {
-            fields: {
-              [notesField]:
-                currentNotes + "\n" + entry.title + ":" + entry.summary,
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${connection_id}`,
-              "Content-Type": "application/json",
-            },
+        } catch (error) {
+          if (error) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            recordResponse = await axios.get(existingContactURL, {
+              headers: {
+                Authorization: `Bearer ${connection_id}`,
+              },
+            });
           }
-        );
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      } else {
-        new_contacts.push(entry);
+        }
+
+        if (recordResponse.data.records.length > 0) {
+          const currentNotes =
+            recordResponse.data.records[0].fields[`${notesField}`];
+          const recordID = recordResponse.data.records[0].id;
+          const updateContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${recordID}`;
+
+          await axios.patch(
+            updateContactURL,
+            {
+              fields: {
+                [notesField]:
+                  currentNotes + "\n" + entry.title + ":" + entry.summary,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${connection_id}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        } else {
+          new_contacts.push(entry);
+        }
       }
     }
 
@@ -173,109 +178,114 @@ function Home(props) {
 
     Promise.all(
       new_crm_data.map(async (update) => {
-        if (update.customer != "") {
-          let regexCustomer;
-          if (source == "Twitter") {
-            regexCustomer = update.customer.replace(
-              /\s(?=[\uD800-\uDFFF])/g,
-              ""
-            );
-          } else if (source == "Email") {
-            regexCustomer = update.email;
-          }
-
-          if (update.customer == "Blake Faulkner 🌉") {
-            regexCustomer = "Blake Faulkner";
-          }
-          const options = {
-            method: "GET",
-            url: `https://api.unified.to/crm/${connection_id}/contact`,
-            headers: {
-              authorization:
-                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-            },
-            params: {
-              limit: 1000,
-              query: regexCustomer,
-            },
-          };
-          let results;
-          try {
-            results = await axios.request(options);
-          } catch (error) {
-            if (error) {
-              await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
-            }
-          }
-          const current_crm = results.data[0];
-
-          const idOptions = {
-            method: "GET",
-            url: `https://api.unified.to/hris/${connection_id}/employee`,
-            headers: {
-              authorization:
-                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-            },
-          };
-
-          let idResults;
-
-          try {
-            idResults = await axios.request(idOptions);
-          } catch {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            idResults = await axios.request(idOptions);
-          }
-          const user_crm_id = idResults.data[0].id;
-
-          if (current_crm != undefined) {
-            const event = {
-              id: current_crm.id,
-              type: "NOTE",
-              note: {
-                description: update.title + "\n" + update.summary,
-              },
-              company_ids: current_crm.company_ids,
-              contact_ids: [current_crm.id],
-              user_id: user_crm_id,
-            };
-            const { data, error } = await props.db.functions.invoke(
-              "update-crm-unified",
-              {
-                body: { connection_id: connection_id, event: event },
-              }
-            );
-          } else {
-            let contact;
+        if (
+          (source == "Email" && update.status == "Completed") ||
+          source == "Twitter"
+        ) {
+          if (update.customer != "") {
+            let regexCustomer;
             if (source == "Twitter") {
-              contact = {
-                name: regexCustomer,
-              };
+              regexCustomer = update.customer.replace(
+                /\s(?=[\uD800-\uDFFF])/g,
+                ""
+              );
             } else if (source == "Email") {
-              contact = {
-                name: update.customer,
-                emails: [
-                  {
-                    email: regexCustomer,
-                    type: "WORK",
-                  },
-                ],
-              };
+              regexCustomer = update.email;
             }
-            const { data, error } = await props.db.functions.invoke(
-              "new-contact-unified",
-              {
-                body: {
-                  connection_id: connection_id,
-                  contact: contact,
-                  title: update.title,
-                  description:
-                    update.summary + "\n + Summarized by Boondoggle AI",
-                  user_id: user_crm_id,
-                },
+
+            if (update.customer == "Blake Faulkner 🌉") {
+              regexCustomer = "Blake Faulkner";
+            }
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${connection_id}/contact`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+              params: {
+                limit: 1000,
+                query: regexCustomer,
+              },
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (error) {
+              if (error) {
+                await new Promise((resolve) => setTimeout(resolve, 5000));
+                results = await axios.request(options);
               }
-            );
+            }
+            const current_crm = results.data[0];
+
+            const idOptions = {
+              method: "GET",
+              url: `https://api.unified.to/hris/${connection_id}/employee`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+            };
+
+            let idResults;
+
+            try {
+              idResults = await axios.request(idOptions);
+            } catch {
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              idResults = await axios.request(idOptions);
+            }
+            const user_crm_id = idResults.data[0].id;
+
+            if (current_crm != undefined) {
+              const event = {
+                id: current_crm.id,
+                type: "NOTE",
+                note: {
+                  description: update.title + "\n" + update.summary,
+                },
+                company_ids: current_crm.company_ids,
+                contact_ids: [current_crm.id],
+                user_id: user_crm_id,
+              };
+              const { data, error } = await props.db.functions.invoke(
+                "update-crm-unified",
+                {
+                  body: { connection_id: connection_id, event: event },
+                }
+              );
+            } else {
+              let contact;
+              if (source == "Twitter") {
+                contact = {
+                  name: regexCustomer,
+                };
+              } else if (source == "Email") {
+                contact = {
+                  name: update.customer,
+                  emails: [
+                    {
+                      email: regexCustomer,
+                      type: "WORK",
+                    },
+                  ],
+                };
+              }
+              const { data, error } = await props.db.functions.invoke(
+                "new-contact-unified",
+                {
+                  body: {
+                    connection_id: connection_id,
+                    contact: contact,
+                    title: update.title,
+                    description:
+                      update.summary + "\n + Summarized by Boondoggle AI",
+                    user_id: user_crm_id,
+                  },
+                }
+              );
+            }
           }
         }
       })
@@ -763,7 +773,6 @@ function Home(props) {
 
         if (
           email.latestDraftOrMessage.from[0].name != "" &&
-          spamRespone.data.score >= 8 &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
           !email.latestDraftOrMessage.body
             .toLowerCase()
@@ -824,6 +833,15 @@ function Home(props) {
             (item) => item.customer === email.latestDraftOrMessage.to[0].name
           );
 
+          let status;
+          if (spamRespone.data.score >= 8) {
+            status = "Completed";
+          } else if (spamRespone.data.score >= 6) {
+            status = "Pending";
+          } else {
+            status = "Rejected";
+          }
+
           if (fromIndex != -1) {
             new_emails[fromIndex].snippet = [
               ...new_emails[fromIndex].snippet,
@@ -863,6 +881,7 @@ function Home(props) {
                 ],
                 participants: email.participants,
                 type: "OUTBOUND",
+                status: status,
               };
 
               new_emails.push(obj);
@@ -884,6 +903,7 @@ function Home(props) {
                 ],
                 participants: email.participants,
                 type: "INBOUND",
+                status: status,
               };
 
               new_emails.push(obj);
@@ -946,7 +966,7 @@ function Home(props) {
             summary: summary,
             date: date,
             source: "Email",
-            status: "Completed",
+            status: email.status,
           };
 
           updated_CRM.push(obj);
@@ -992,6 +1012,7 @@ function Home(props) {
             type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
             source: "Email",
             status: "Incomplete",
+            emailStatus: email.status,
           };
           to_dos.push(toDoObject);
         }
