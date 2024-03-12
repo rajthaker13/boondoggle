@@ -1,11 +1,44 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Sidebar(props) {
   const navigation = useNavigate();
   const [selectedTab, setSelectedTab] = useState(props.selectedTab);
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
+  useEffect(() => {
+    async function checkOnBoarding() {
+      console.log("HERE?");
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("user_data")
+        .select("")
+        .eq("id", uid);
+      setIsOnboarding(!data[0].hasOnboarded);
+      setOnboardingStep(data[0].onboardingStep);
+    }
+    checkOnBoarding();
+  });
+
+  async function nextOnboardingStep() {
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("user_data")
+      .update({
+        onboardingStep: onboardingStep + 1,
+      })
+      .eq("id", uid);
+  }
   return (
-    <div className="sidebar">
+    <div
+      className="sidebar"
+      style={
+        isOnboarding && onboardingStep > 0 && onboardingStep < 5
+          ? { filter: "blur(5px)" }
+          : {}
+      }
+    >
       {/* <div className="name-badge">
         <img
           src={require("../../assets/IconSet.png")}
@@ -15,7 +48,16 @@ function Sidebar(props) {
       </div> */}
 
       <div className="tabs-container">
-        <div className="sidebar-tabs">
+        <div
+          className="sidebar-tabs"
+          style={
+            isOnboarding && onboardingStep > 4 && onboardingStep != 10
+              ? { filter: "blur(5px)" }
+              : isOnboarding && onboardingStep == 10
+              ? { border: "1px solid red" }
+              : {}
+          }
+        >
           <svg
             width="20"
             height="20"
@@ -41,14 +83,28 @@ function Sidebar(props) {
           <p
             className="tabs-text"
             style={selectedTab == 0 ? { fontWeight: 700 } : {}}
-            onClick={() => {
-              navigation("/home");
+            onClick={async () => {
+              if (!isOnboarding || onboardingStep == 10) {
+                if (isOnboarding) {
+                  await nextOnboardingStep();
+                }
+                navigation("/home");
+              }
             }}
           >
             Integrations
           </p>
         </div>
-        <div className="sidebar-tabs">
+        <div
+          className="sidebar-tabs"
+          style={
+            isOnboarding && onboardingStep == 5
+              ? { border: "1px solid red" }
+              : isOnboarding && onboardingStep > 5
+              ? { filter: "blur(5px)" }
+              : {}
+          }
+        >
           <svg
             width="20"
             height="20"
@@ -74,7 +130,11 @@ function Sidebar(props) {
           <p
             className="tabs-text"
             style={selectedTab == 1 ? { fontWeight: 700 } : {}}
-            onClick={() => {
+            onClick={async () => {
+              if (!isOnboarding || onboardingStep == 5)
+                if (isOnboarding) {
+                  await nextOnboardingStep();
+                }
               navigation("/performance");
             }}
           >
@@ -82,7 +142,16 @@ function Sidebar(props) {
           </p>
         </div>
 
-        <div className="sidebar-tabs">
+        <div
+          className="sidebar-tabs"
+          style={
+            isOnboarding && onboardingStep > 4 && onboardingStep != 7
+              ? { filter: "blur(5px)" }
+              : isOnboarding && onboardingStep == 7
+              ? { border: "1px solid red" }
+              : {}
+          }
+        >
           <svg
             width="20"
             height="20"
@@ -108,15 +177,20 @@ function Sidebar(props) {
           <p
             className="tabs-text"
             style={selectedTab == 2 ? { fontWeight: 700 } : {}}
-            onClick={() => {
-              navigation("/entries");
+            onClick={async () => {
+              if (!isOnboarding || onboardingStep == 7) {
+                if (isOnboarding) {
+                  await nextOnboardingStep();
+                }
+                navigation("/entries");
+              }
             }}
           >
             Entries
           </p>
         </div>
 
-        <div className="sidebar-tabs">
+        {/* <div className="sidebar-tabs">
           <svg
             width="20"
             height="20"
@@ -147,9 +221,14 @@ function Sidebar(props) {
           >
             Billing
           </p>
-        </div>
+        </div> */}
 
-        <div className="sidebar-tabs">
+        <div
+          className="sidebar-tabs"
+          style={
+            isOnboarding && onboardingStep > 4 ? { filter: "blur(5px)" } : {}
+          }
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"

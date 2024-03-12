@@ -14,9 +14,24 @@ function Entries(props) {
   const [viewTasks, setViewTasks] = useState(false);
   const [viewCompleted, setViewCompleted] = useState(false);
 
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
   let renderedData = [];
 
   let renderedTasks = [];
+
+  async function nextOnboardingStep() {
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("user_data")
+      .update({
+        onboardingStep: onboardingStep + 1,
+      })
+      .eq("id", uid);
+
+    setOnboardingStep(onboardingStep + 1);
+  }
 
   async function completeTask(index, isCompleted) {
     let reverseTasks = tasks.reverse();
@@ -48,12 +63,20 @@ function Entries(props) {
         .eq("connection_id", connection_id);
       setTableData(data[0].crm_data);
       setTasks(data[0].tasks);
-
-      // const client = new Unified({ api_token: "65c02dbec9810ed1f215c33b" });
-
-      // const results = client.crm(connection_id).contact.create(tableData[0]);
-      // console.log(results);
     }
+
+    async function checkOnBoarding() {
+      console.log("HERE?");
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("user_data")
+        .select("")
+        .eq("id", uid);
+      setIsOnboarding(!data[0].hasOnboarded);
+      setOnboardingStep(data[0].onboardingStep);
+    }
+
+    checkOnBoarding();
 
     getData();
   }, []);
@@ -85,8 +108,18 @@ function Entries(props) {
   return (
     <div className="container">
       <div className="content-container">
-        <Sidebar selectedTab={2} />
-        <div style={{ flexDirection: "column" }}>
+        <Sidebar
+          selectedTab={2}
+          db={props.db}
+          onboardingStep={onboardingStep}
+        />
+        <div
+          style={
+            isOnboarding && onboardingStep == 10
+              ? { flexDirection: "column", filter: "blur(5px)" }
+              : { flexDirection: "column" }
+          }
+        >
           <div className="dashboard-header">
             <div className="header-text-container">
               <span className="header-text-1">
@@ -100,8 +133,15 @@ function Entries(props) {
             {!viewTasks && (
               <button
                 className="entries-tasks-button"
+                style={
+                  isOnboarding && onboardingStep == 9
+                    ? { border: "5px solid red" }
+                    : {}
+                }
                 onClick={() => {
-                  setViewTasks(true);
+                  if (!isOnboarding || onboardingStep == 9) {
+                    setViewTasks(true);
+                  }
                 }}
               >
                 <svg
@@ -125,7 +165,9 @@ function Entries(props) {
                 <button
                   className="entries-tasks-button"
                   onClick={() => {
-                    setViewTasks(false);
+                    if (!isOnboarding) {
+                      setViewTasks(false);
+                    }
                   }}
                 >
                   <svg
@@ -152,7 +194,11 @@ function Entries(props) {
                 </button>
                 <button
                   className="entries-tasks-button"
-                  onClick={() => setViewCompleted(!viewCompleted)}
+                  onClick={() => {
+                    if (!isOnboarding) {
+                      setViewCompleted(!viewCompleted);
+                    }
+                  }}
                 >
                   <p className="entries-tasks-button-text">
                     {viewCompleted ? "View To-Dos" : "View Completed"}
@@ -436,6 +482,65 @@ function Entries(props) {
                 )}
               </div>
             </div>
+            {isOnboarding && onboardingStep == 8 && (
+              <div className="onboarding-tooltip" style={{ width: "15vw" }}>
+                <p
+                  className="link-button-text"
+                  style={{ lineHeight: "100%", paddingInline: "1vw" }}
+                >
+                  On the Entries tab, Boondoggle shows you which entries have
+                  been deployed to your CRM and summaries of those
+                  conversations.
+                </p>
+                <button
+                  className="onboarding-tooltip-button"
+                  style={{ marginBottom: "1vh" }}
+                  onClick={async () => {
+                    await nextOnboardingStep();
+                  }}
+                >
+                  {" "}
+                  <p
+                    className="link-button-text"
+                    style={{
+                      color: "black",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Continue
+                  </p>
+                </button>
+              </div>
+            )}
+            {isOnboarding && onboardingStep == 9 && (
+              <div className="onboarding-tooltip" style={{ width: "15vw" }}>
+                <p
+                  className="link-button-text"
+                  style={{ lineHeight: "100%", paddingInline: "1vw" }}
+                >
+                  Boondoggle also creates to-dos based on your conversations for
+                  you to save time on your work everyday!
+                </p>
+                <button
+                  className="onboarding-tooltip-button"
+                  style={{ marginBottom: "1vh" }}
+                  onClick={async () => {
+                    await nextOnboardingStep();
+                  }}
+                >
+                  {" "}
+                  <p
+                    className="link-button-text"
+                    style={{
+                      color: "black",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Got It!
+                  </p>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

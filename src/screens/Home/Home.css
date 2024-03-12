@@ -20,7 +20,7 @@
 
 .sidebar {
   display: flex;
-  width: 10%;
+  min-width: 10vw;
   height: 100%;
   /* padding: var(--20, 20px) var(--16, 16px); */
   flex-direction: column;
@@ -94,8 +94,8 @@
   align-items: center;
   gap: 4px var(--4, 4px);
   min-width: 100px;
-  flex-wrap: wrap;
   border-radius: var(--8, 8px);
+  flex-wrap: nowrap;
 }
 
 .tabs-text {
@@ -380,4 +380,61 @@
   font-style: normal;
   font-weight: 400;
   line-height: 18px; /* 150% */
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: #e2e7eb;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  width: 30vw;
+  text-align: left;
+  color: var(--black-100, #1c1c1c);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  border-radius: 20px;
+
+  /* 14 Semibold */
+  font-family: Inter;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.onboarding-tooltip {
+  width: 10vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #1c1c1c;
+  z-index: 1;
+  border-radius: 10px;
+  flex-direction: column;
+}
+
+.onboarding-tooltip-button {
+  display: flex;
+  padding: var(--4, 4px) var(--12, 12px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--4, 4px);
+  border-radius: var(--8, 8px);
+  border: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.onboarding-tooltip-button:hover {
+  background: lightgray;
 }

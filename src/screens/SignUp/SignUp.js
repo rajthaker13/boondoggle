@@ -23,7 +23,7 @@ function SignUp(props) {
     });
     localStorage.setItem("email", data.user.email);
     localStorage.setItem("uid", data.user.id);
-    navigation("/link");
+    navigation("/home");
   }
 
   return (
