@@ -68,6 +68,16 @@
   margin-top: 1.5vw;
 }
 
+.entries-filter-label {
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 18px; /* 180% */
+}
+
 .entries-tasks-button {
   display: flex;
   padding: 2px;
@@ -84,8 +94,96 @@
   border: 0;
 }
 
+.entries-task-button-selected svg {
+  fill: white;
+}
+
+.entries-tasks-button:hover {
+  background: black;
+  color: white;
+}
+
+.entries-tasks-button svg {
+  fill: black;
+}
+
+.entries-tasks-button:hover svg {
+  fill: white;
+}
+
+.entries-task-button-selected {
+  display: flex;
+  padding: 2px;
+  padding-inline: 20px;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  align-self: stretch;
+  flex-wrap: wrap;
+  border-radius: 5px;
+  background: black;
+  color: white;
+  border: 0;
+}
+
+/* .entries-task-button-selected:hover {
+  background: var(--Primary-Light, #f7f9fb);
+  color: black;
+}
+
+.entries-task-button-selected:hover svg {
+  fill: black;
+} */
+
+.entries-task-left-button-container {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  flex: 1 0 0;
+  align-self: stretch;
+}
+
+.entries-table-deploy-button {
+  display: flex;
+  padding: 2px;
+  padding-inline: 20px;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 5px;
+  align-self: stretch;
+  flex-wrap: wrap;
+  border-radius: 5px;
+  border: 1px solid var(--Secondary-Green, #a1e3cb);
+  background: white;
+}
+
+.entries-table-deploy-button:hover {
+  background: var(--Secondary-Green, #a1e3cb);
+}
+
+.entries-table-reject-button {
+  display: flex;
+  padding: 2px;
+  padding-inline: 20px;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 5px;
+  align-self: stretch;
+  flex-wrap: wrap;
+  border-radius: 5px;
+  background: white;
+  border: 1px solid var(--Secondary-Red, #ff4747);
+}
+
+.entries-table-reject-button:hover {
+  background: var(--Secondary-Red, #ff4747);
+}
+
 .entries-tasks-button-text {
-  color: var(--black-100, #1c1c1c);
   text-align: center;
   font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
 
@@ -226,7 +324,7 @@
   align-self: stretch;
   border-radius: var(--0, 0px);
   border-bottom: 1px solid var(--black-20, rgba(28, 28, 28, 0.2));
-  width: 30%;
+  width: 9.5vw;
 }
 
 .integrations-table-column-checkbox {
