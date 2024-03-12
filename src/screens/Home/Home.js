@@ -531,9 +531,9 @@ function Home(props) {
 
   async function checkLinks() {
     const onboardingValues = await checkOnBoarding();
-    await getConnections();
 
     if (onboardingValues.onboardingStep > 1) {
+      await getConnections();
       const id = localStorage.getItem("connection_id");
 
       const { data, error } = await props.db
