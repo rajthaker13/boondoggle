@@ -327,6 +327,22 @@
   width: 9.5vw;
 }
 
+.to-do-table-column {
+  display: flex;
+  /* height: 40px; */
+  height: auto;
+  min-height: 40px;
+  padding: var(--8, 8px) var(--12, 12px) var(--8, 8px) 0px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--4, 4px);
+  align-self: stretch;
+  border-radius: var(--0, 0px);
+  border-bottom: 1px solid var(--black-20, rgba(28, 28, 28, 0.2));
+  width: 11vw;
+}
+
 .integrations-table-column-checkbox {
   display: flex;
   width: var(--24, 24px);
