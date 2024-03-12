@@ -519,8 +519,19 @@ function Home(props) {
     return onboardingValues;
   }
 
+  async function getConnections() {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("id", uid);
+
+    localStorage.setItem("connection_id", data[0].crm_id);
+  }
+
   async function checkLinks() {
     const onboardingValues = await checkOnBoarding();
+    await getConnections();
 
     if (onboardingValues.onboardingStep > 1) {
       const id = localStorage.getItem("connection_id");
