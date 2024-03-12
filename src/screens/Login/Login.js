@@ -29,8 +29,8 @@ function Login(props) {
     });
     console.log(data);
     localStorage.setItem("email", data.user.email);
+    localStorage.setItem("uid", data.user.id);
     navigation("/home");
-    // localStorage.setItem("uid", data.user.id);
     // await redirect(data.user.id);
   }
 
