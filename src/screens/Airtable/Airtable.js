@@ -249,7 +249,10 @@ function Airtable(props) {
               <p className="airtable-subheader">
                 Select which columns Boondoggle data entries should deploy to.
               </p>
-              <p className="airtable-subheader" style={{ fontWeight: 800 }}>
+              <p
+                className="airtable-subheader"
+                style={{ fontWeight: 800, paddingInline: "5%" }}
+              >
                 Boondoggle currently only supports text & email fields. <br />
                 Please request more functionality by emailing
                 support@boondoggle.ai
