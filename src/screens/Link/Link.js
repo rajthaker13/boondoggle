@@ -7,7 +7,7 @@ import Stripe from "stripe";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "dfc2486e-39b5-4f7a-98be-1ee8e377bfcf";
+  const client_id = "86ab6cfd-cc01-455b-b1f6-2b8fb6056b95";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 
@@ -68,7 +68,7 @@ function Link(props) {
           {
             code: code,
             client_id: client_id,
-            redirect_uri: "https://boondoggle.ai/link",
+            redirect_uri: "http://localhost:3000/link",
             grant_type: "authorization_code",
             code_verifier: verifier,
           },
@@ -94,7 +94,7 @@ function Link(props) {
             crm_id: res.data.access_token,
             refresh_token: res.data.refresh_token,
           });
-          localStorage.setItem("twitterLinked", false);
+          // localStorage.setItem("twitterLinked", false);
           localStorage.setItem("connection_id", res.data.access_token);
           navigation("/airtable");
         })

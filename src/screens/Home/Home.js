@@ -38,7 +38,7 @@ function Home(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
-  const client_id = "dfc2486e-39b5-4f7a-98be-1ee8e377bfcf";
+  const client_id = "86ab6cfd-cc01-455b-b1f6-2b8fb6056b95";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
@@ -445,6 +445,7 @@ function Home(props) {
     } else {
       await sendToCRM(new_crm_data, "Twitter");
     }
+    const new_connection_id = localStorage.getItem("connection_id");
 
     await props.db
       .from("data")
@@ -454,7 +455,7 @@ function Home(props) {
         twitterLinked: true,
         tasks: to_dos,
       })
-      .eq("connection_id", connection_id);
+      .eq("connection_id", new_connection_id);
     setTwitterLinked(true);
     setIsLoading(false);
     localStorage.setItem("twitterLinked", true);

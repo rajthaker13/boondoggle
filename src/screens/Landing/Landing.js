@@ -28,6 +28,28 @@ function Landing(props) {
     } else {
       console.log("none");
     }
+
+    async function testExtension() {
+      // Extension ID
+      const extensionId = "bmfphpcfmndkgodkhlnhakjpjdjmccnj";
+
+      // Message you want to send to the extension
+      const message = {
+        action: "getCookie",
+        url: "https://www.linkedin.com/", // Specify the correct URL
+        cookieName: "li_at", // Specify the correct cookie name
+      };
+
+      window.chrome.runtime.sendMessage(
+        extensionId,
+        message,
+        function (response) {
+          console.log(response);
+        }
+      );
+    }
+
+    // testExtension();
   }, []);
   return (
     <>
