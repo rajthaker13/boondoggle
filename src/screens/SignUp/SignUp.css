@@ -27,13 +27,14 @@
   background-color: #fff;
   border-radius: 30px;
   margin-right: 5%;
-  width: 40%;
+  width: auto;
   height: 80vh;
   object-fit: contain;
   flex-direction: column;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-inline: 10%;
 }
 
 .login-pic {
