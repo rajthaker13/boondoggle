@@ -6,6 +6,7 @@ import axios from "axios";
 import Stripe from "stripe";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
+import LoadingOverlay from "react-loading-overlay";
 
 function Link(props) {
   const navigation = useNavigate();
@@ -25,6 +26,8 @@ function Link(props) {
   const [airTableState, setAirTableState] = useState("");
   const [airTableVerifier, setAirTableVerifier] = useState("");
   const [airTableCodeChallene, setAirTableCodeChallenge] = useState("");
+
+  const [isLoading, setIsLoading] = useState(false);
 
   async function airTableLogin() {
     const { data, error } = await props.db.functions.invoke("airtable-login");
@@ -222,6 +225,7 @@ function Link(props) {
 
   useEffect(() => {
     async function storeData() {
+      setIsLoading(true);
       const urlParams = new URLSearchParams(window.location.search);
       const connection_id = urlParams.get("id");
 
@@ -247,6 +251,8 @@ function Link(props) {
           onboardingStep: 2,
         })
         .eq("id", uid);
+
+      setIsLoading(false);
 
       navigation("/home");
     }
@@ -310,43 +316,45 @@ function Link(props) {
     }
   }, []);
   return (
-    <div className="login-container">
-      <div className="crm-container">
-        <div className="crm-header-container">
-          <p className="crm-header-text">Choose your CRM</p>
-          <p className="crm-subheader-text">
-            Boondoggle will read your CRM structure to match <br /> your entries
-            to your team’s existing structure.
-          </p>
-          <p className="crm-subheader-text">
-            Learn more about our data access at Privacy Policy
-          </p>
-        </div>
-        <div className="crm-link">
-          <UnifiedDirectory
-            workspace_id={"65c02dbec9810ed1f215c33b"}
-            categories={["crm"]}
-            success_redirect={window.location.href}
-            nostyle={true}
-          />
-        </div>
-        <p className="crm-header-text">Utilize an Alternative CRM</p>
-        <div className="unified_vendors">
-          <div
-            className="unified_vendor"
-            onClick={async () => {
-              await airTableLogin();
-            }}
-          >
-            <img
-              src={require("../../assets/airtable.png")}
-              className="unified_image"
-            ></img>
-            <p className="unified_vendor_name">Airtable</p>
+    <LoadingOverlay active={isLoading} spinner text="Please wait...">
+      <div className="login-container">
+        <div className="crm-container">
+          <div className="crm-header-container">
+            <p className="crm-header-text">Choose your CRM</p>
+            <p className="crm-subheader-text">
+              Boondoggle will read your CRM structure to match <br /> your
+              entries to your team’s existing structure.
+            </p>
+            <p className="crm-subheader-text">
+              Learn more about our data access at Privacy Policy
+            </p>
+          </div>
+          <div className="crm-link">
+            <UnifiedDirectory
+              workspace_id={"65c02dbec9810ed1f215c33b"}
+              categories={["crm"]}
+              success_redirect={window.location.href}
+              nostyle={true}
+            />
+          </div>
+          <p className="crm-header-text">Utilize an Alternative CRM</p>
+          <div className="unified_vendors">
+            <div
+              className="unified_vendor"
+              onClick={async () => {
+                await airTableLogin();
+              }}
+            >
+              <img
+                src={require("../../assets/airtable.png")}
+                className="unified_image"
+              ></img>
+              <p className="unified_vendor_name">Airtable</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </LoadingOverlay>
   );
 }
 
