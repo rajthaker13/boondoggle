@@ -28,6 +28,13 @@ function BoondogggleAI(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
+  const [messages, setMessages] = useState([
+    {
+      role: "system",
+      content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. I will provide you with a user-generated  query related to data in their CRM as well as the most relevent data from their vector database. Your job is to use the provided data to answer their question based on their query.`,
+    },
+  ]);
+
   async function checkOnBoarding() {
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db
@@ -257,18 +264,24 @@ function BoondogggleAI(props) {
         .map((item) => `${JSON.stringify(item)}`)
         .join("\n");
 
+      let temp_messages = messages;
+      console.log("TEMP", temp_messages);
+
       const queryCompletion = await openai.chat.completions.create({
         messages: [
+          ...temp_messages,
           {
             role: "user",
-            content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. A user  made this query related to data in their CRM: ${searchQuery}. After finding relevent in their vector database, I got these results which are most relevent to query ${queryArrayString}. Using this data, formulate an answer and use only the data that is provided to you. You may not say that you don't know the answer or ask for any more context than what is provided.`,
+            content: `The query is ${searchQuery}. And the relevent data is ${queryArrayString}`,
           },
         ],
         model: "gpt-4",
       });
+      temp_messages.push({
+        role: "user",
+        content: `The query is ${searchQuery}`,
+      });
       const answer = queryCompletion.choices[0].message.content;
-
-      console.log("Answer", answer);
 
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
@@ -311,6 +324,10 @@ function BoondogggleAI(props) {
       // svgElement.appendChild(path2);
       const aiAnswerText = document.createElement("p");
       aiAnswerText.className = "boondoggle-ai-chat-text";
+      temp_messages.push({
+        role: "assistant",
+        content: answer,
+      });
       const answerLines = answer.split("\n");
       // aiAnswerContainer.appendChild(svgElement);
       answerLines.forEach((line, index) => {
@@ -324,6 +341,7 @@ function BoondogggleAI(props) {
       aiAnswerContainer.appendChild(aiAnswerText);
       setIsLoading(false);
       boondoggleAiChatContent.appendChild(aiAnswerContainer);
+      setMessages(temp_messages);
     }
   }
   return (
