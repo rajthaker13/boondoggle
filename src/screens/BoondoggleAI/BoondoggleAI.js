@@ -123,6 +123,9 @@ function BoondogggleAI(props) {
 
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter" || isOnboarding) {
+      if (isOnboarding) {
+        await nextOnboardingStep();
+      }
       setIsLoading(true);
       const searchQuery = isOnboarding
         ? "What people in my CRM have I contacted recently?"
@@ -321,9 +324,6 @@ function BoondogggleAI(props) {
       aiAnswerContainer.appendChild(aiAnswerText);
       setIsLoading(false);
       boondoggleAiChatContent.appendChild(aiAnswerContainer);
-      if (isOnboarding) {
-        await nextOnboardingStep();
-      }
     }
   }
   return (
@@ -372,7 +372,7 @@ function BoondogggleAI(props) {
                       fontSize: "12px",
                     }}
                   >
-                    Try a Test Query
+                    Run a Test Query
                   </p>
                 </button>
               </div>
@@ -381,12 +381,14 @@ function BoondogggleAI(props) {
               className="boondoggle-ai-chat-content"
               id="boondoggle-ai-chat-content"
               style={
-                isOnboarding && (onboardingStep == 11 || onboardingStep == 12)
+                isOnboarding &&
+                (onboardingStep == 11 || onboardingStep == 12) &&
+                !isLoading
                   ? { height: "69vh" }
                   : {}
               }
             />
-            {isOnboarding && onboardingStep == 12 && (
+            {isOnboarding && onboardingStep == 12 && !isLoading && (
               <div
                 className="onboarding-tooltip"
                 style={{ width: "80vw", marginBottom: "5vh" }}
@@ -422,7 +424,7 @@ function BoondogggleAI(props) {
               className="boondoggleai-query-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              disabled={isOnboarding && onboardingStep == 11 ? true : false}
+              disabled={isOnboarding ? true : false}
             ></input>
             <p>Press Enter to Query</p>
           </div>
