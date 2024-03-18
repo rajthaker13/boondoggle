@@ -31,7 +31,7 @@ function Landing(props) {
 
     async function testExtension() {
       // Extension ID
-      const extensionId = "bmfphpcfmndkgodkhlnhakjpjdjmccnj";
+      const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
 
       // Message you want to send to the extension
       const message = {
