@@ -38,7 +38,7 @@ function Home(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
-  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
+  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
@@ -835,9 +835,9 @@ function Home(props) {
           );
 
           let status;
-          if (spamRespone.data.score >= 8) {
+          if (spamRespone.data.score >= 7) {
             status = "Completed";
-          } else if (spamRespone.data.score >= 6) {
+          } else if (spamRespone.data.score >= 5) {
             status = "Pending";
           } else {
             status = "Rejected";
