@@ -17,6 +17,7 @@ import Terms from "./screens/Terms/Terms";
 import Manager from "./screens/Manager/Manager";
 import Payment from "./screens/Payment/Payment";
 import Settings from "./screens/Settings/Settings";
+import BoondogggleAI from "./screens/BoondoggleAI/BoondoggleAI";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/home" element={<Home db={supabase} />} />
         <Route path="/entries" element={<Entries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />
+        <Route path="/boondoggleai" element={<BoondogggleAI db={supabase} />} />
         <Route path="/manager" element={<Manager db={supabase} />} />
         <Route path="/settings" element={<Settings db={supabase} />} />
         <Route path="/airtable" element={<Airtable db={supabase} />} />

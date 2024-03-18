@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import boondogggleai from ".././../assets/boondoggleai.svg";
 
 function Sidebar(props) {
   const navigation = useNavigate();
@@ -51,9 +52,9 @@ function Sidebar(props) {
         <div
           className="sidebar-tabs"
           style={
-            isOnboarding && onboardingStep > 4 && onboardingStep != 10
+            isOnboarding && onboardingStep > 4 && onboardingStep != 13
               ? { filter: "blur(5px)" }
-              : isOnboarding && onboardingStep == 10
+              : isOnboarding && onboardingStep == 13
               ? { border: "1px solid red" }
               : {}
           }
@@ -84,7 +85,7 @@ function Sidebar(props) {
             className="tabs-text"
             style={selectedTab == 0 ? { fontWeight: 700 } : {}}
             onClick={async () => {
-              if (!isOnboarding || onboardingStep == 10) {
+              if (!isOnboarding || onboardingStep == 13) {
                 if (isOnboarding) {
                   await nextOnboardingStep();
                 }
@@ -187,6 +188,34 @@ function Sidebar(props) {
             }}
           >
             Entries
+          </p>
+        </div>
+
+        <div
+          className="sidebar-tabs"
+          style={
+            isOnboarding && onboardingStep > 4 && onboardingStep != 10
+              ? { filter: "blur(5px)" }
+              : isOnboarding && onboardingStep == 10
+              ? { border: "1px solid red" }
+              : {}
+          }
+        >
+          <img src={boondogggleai} style={{ height: "20px", width: "20px" }} />
+
+          <p
+            className="tabs-text"
+            style={selectedTab == 3 ? { fontWeight: 700 } : {}}
+            onClick={async () => {
+              if (!isOnboarding || onboardingStep == 10) {
+                if (isOnboarding) {
+                  await nextOnboardingStep();
+                }
+                navigation("/boondoggleai");
+              }
+            }}
+          >
+            Boondoggle AI
           </p>
         </div>
 

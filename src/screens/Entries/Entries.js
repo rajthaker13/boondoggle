@@ -256,7 +256,6 @@ function Entries(props) {
     }
 
     async function checkOnBoarding() {
-      console.log("HERE?");
       const uid = localStorage.getItem("uid");
       const { data, error } = await props.db
         .from("user_data")
@@ -769,8 +768,10 @@ function Entries(props) {
                           if (itemIndex == -1) {
                             renderedTasks.push(lead.customer);
                             if (
-                              lead.status == status &&
-                              lead.emailStatus == "Completed"
+                              (lead.status == status &&
+                                lead.emailStatus == "Completed" &&
+                                lead.source == "Email") ||
+                              lead.status == status
                             ) {
                               return (
                                 <div
