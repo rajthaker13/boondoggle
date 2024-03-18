@@ -10,7 +10,7 @@ import LoadingOverlay from "react-loading-overlay";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
+  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
 
@@ -272,7 +272,7 @@ function Link(props) {
           {
             code: code,
             client_id: client_id,
-            redirect_uri: "http://localhost:3000/link",
+            redirect_uri: "https://boondoggle.ai/link",
             grant_type: "authorization_code",
             code_verifier: verifier,
           },

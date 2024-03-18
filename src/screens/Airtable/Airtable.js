@@ -7,7 +7,7 @@ import { fontWeight } from "@mui/system";
 import { Pinecone } from "@pinecone-database/pinecone";
 
 function Airtable(props) {
-  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
+  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const [bases, setBases] = useState([]);
   const [tables, setTables] = useState([]);
   const [baseSet, setBaseSet] = useState(false);

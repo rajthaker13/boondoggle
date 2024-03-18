@@ -12,7 +12,7 @@ import LoadingOverlay from "react-loading-overlay";
 //65eb615fb3dfb5cfb7c939c5
 
 function BoondogggleAI(props) {
-  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
+  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const pinecone = new Pinecone({
     apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
   });
