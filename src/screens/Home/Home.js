@@ -38,7 +38,7 @@ function Home(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
-  const client_id = "86ab6cfd-cc01-455b-b1f6-2b8fb6056b95";
+  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
@@ -1162,7 +1162,7 @@ function Home(props) {
             </div>
           )}
 
-          {isOnboarding && onboardingStep == 11 && (
+          {isOnboarding && onboardingStep == 14 && (
             <div className="modal-overlay">
               <div className="modal-content">
                 <p

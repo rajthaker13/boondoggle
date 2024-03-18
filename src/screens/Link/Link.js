@@ -4,12 +4,23 @@ import { useLocation, useNavigate } from "react-router-dom";
 import UnifiedDirectory from "@unified-api/react-directory";
 import axios from "axios";
 import Stripe from "stripe";
+import { Pinecone } from "@pinecone-database/pinecone";
+import OpenAI from "openai";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "86ab6cfd-cc01-455b-b1f6-2b8fb6056b95";
+  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
   const redirect_uri = window.location.href;
   let airtableConnected = false;
+
+  const pinecone = new Pinecone({
+    apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
+  });
+
+  const openai = new OpenAI({
+    apiKey: "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",
+    dangerouslyAllowBrowser: true,
+  });
 
   const [airTableState, setAirTableState] = useState("");
   const [airTableVerifier, setAirTableVerifier] = useState("");
@@ -24,12 +35,199 @@ function Link(props) {
     const url = `https://airtable.com/oauth2/v1/authorize?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code&scope=data.records:read%20data.records:write%20schema.bases:read%20schema.bases:write%20user.email:read&state=${data.state}&code_challenge=${data.codeChallenge}&code_challenge_method=S256`;
     window.open(url, "_self");
   }
+
+  async function createPineconeIndexes(connection_id) {
+    const index = pinecone.index("boondoggle-data");
+
+    const id = connection_id;
+
+    const contactOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${id}/contact`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+    };
+
+    const dealOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${id}/deal`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+    };
+
+    const companyOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${id}/company`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+    };
+
+    const eventOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${id}/event`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+    };
+    const leadOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${id}/lead`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+    };
+
+    const contactResults = await axios.request(contactOptions);
+
+    const contactData = contactResults.data;
+
+    const dealResults = await axios.request(dealOptions);
+
+    const dealData = dealResults.data;
+
+    const companyResults = await axios.request(companyOptions);
+
+    const companyData = companyResults.data;
+
+    const eventResults = await axios.request(eventOptions);
+
+    const eventData = eventResults.data;
+
+    const leadResults = await axios.request(leadOptions);
+
+    const leadData = leadResults.data;
+
+    let contacts = [];
+    let deals = [];
+    let companies = [];
+    let events = [];
+    let leads = [];
+
+    const ns1 = index.namespace(id);
+
+    if (contactData.length > 0) {
+      await Promise.all(
+        contactData.map(async (item) => {
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Contact" },
+          };
+          contacts.push(obj);
+        })
+      );
+    }
+
+    if (dealData.length > 0) {
+      await Promise.all(
+        dealData.map(async (item) => {
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Deal" },
+          };
+          deals.push(obj);
+        })
+      );
+    }
+
+    if (companyData.length > 0) {
+      await Promise.all(
+        companyData.map(async (item) => {
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Company" },
+          };
+          companies.push(obj);
+        })
+      );
+    }
+
+    if (eventData.length > 0) {
+      await Promise.all(
+        eventData.map(async (item) => {
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Event" },
+          };
+          events.push(obj);
+        })
+      );
+    }
+
+    if (leadData.length > 0) {
+      await Promise.all(
+        leadData.map(async (item) => {
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Lead" },
+          };
+          leads.push(obj);
+        })
+      );
+    }
+
+    if (contacts.length > 0) {
+      await ns1.upsert(contacts);
+    }
+    if (deals.length > 0) {
+      await ns1.upsert(deals);
+    }
+    if (companies.length > 0) {
+      await ns1.upsert(companies);
+    }
+    if (events.length > 0) {
+      await ns1.upsert(events);
+    }
+    if (leads.length > 0) {
+      await ns1.upsert(leads);
+    }
+  }
+
   useEffect(() => {
     async function storeData() {
       const urlParams = new URLSearchParams(window.location.search);
       const connection_id = urlParams.get("id");
-      console.log(connection_id);
+
       localStorage.setItem("connection_id", connection_id);
+
+      await createPineconeIndexes(connection_id);
 
       await props.db.from("data").insert({
         connection_id: connection_id,

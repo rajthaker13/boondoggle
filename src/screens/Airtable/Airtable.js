@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import OpenAI from "openai";
 import axios from "axios";
 import { fontWeight } from "@mui/system";
+import { Pinecone } from "@pinecone-database/pinecone";
 
 function Airtable(props) {
+  const client_id = "d3ad66d9-3d30-465f-b9c1-ffe594f16077";
   const [bases, setBases] = useState([]);
   const [tables, setTables] = useState([]);
   const [baseSet, setBaseSet] = useState(false);
@@ -22,6 +24,16 @@ function Airtable(props) {
   const [summary, setSummary] = useState("");
 
   const navigation = useNavigate();
+
+  const pinecone = new Pinecone({
+    apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
+  });
+
+  const openai = new OpenAI({
+    apiKey: "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",
+    dangerouslyAllowBrowser: true,
+  });
+
   useEffect(() => {
     async function getData() {
       const connection_id = localStorage.getItem("connection_id");
@@ -42,6 +54,91 @@ function Airtable(props) {
     }
     getData();
   }, []);
+
+  async function getAirtableRefreshToken() {
+    const id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("crm_id", id);
+
+    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
+    const refreshTokenResponse = await axios.post(
+      url,
+      {
+        client_id: client_id,
+        refresh_token: data[0].refresh_token,
+        grant_type: "refresh_token",
+      },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const new_access_token = refreshTokenResponse.data.access_token;
+    const new_refresh_token = refreshTokenResponse.data.refresh_token;
+
+    await props.db
+      .from("users")
+      .update({
+        crm_id: new_access_token,
+        refresh_token: new_refresh_token,
+      })
+      .eq("id", localStorage.getItem("uid"));
+
+    await props.db
+      .from("data")
+      .update({
+        connection_id: new_access_token,
+      })
+      .eq("connection_id", id);
+    localStorage.setItem("connection_id", new_access_token);
+
+    return new_access_token;
+  }
+
+  async function createPineconeIndexesAirtable(baseID, tableID) {
+    const index = pinecone.index("boondoggle-data");
+    const uid = localStorage.getItem("uid");
+    const connection_id = await getAirtableRefreshToken();
+
+    const recordsURL = `https://api.airtable.com/v0/${baseID}/${tableID}`;
+    const recordResponse = await axios.get(recordsURL, {
+      headers: {
+        Authorization: `Bearer ${connection_id}`,
+      },
+    });
+
+    const recordData = recordResponse.data.records;
+
+    let airtableEmbeddings = [];
+
+    if (recordData.length > 0) {
+      await Promise.all(
+        recordData.map(async (item) => {
+          console.log(item);
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: `${item}`,
+          });
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: { type: "Contact" },
+          };
+          airtableEmbeddings.push(obj);
+        })
+      );
+
+      const ns1 = index.namespace(uid);
+
+      if (airtableEmbeddings.length > 0) {
+        await ns1.upsert(airtableEmbeddings);
+      }
+    }
+  }
 
   async function connectExistingAirtable(base) {
     const connection_id = localStorage.getItem("connection_id");
@@ -160,6 +257,7 @@ function Airtable(props) {
           onboardingStep: 2,
         })
         .eq("id", uid);
+      await createPineconeIndexesAirtable(chosenBase.id, chosenTable.id);
       navigation("/home");
     }
   }
