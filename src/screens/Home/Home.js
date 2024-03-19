@@ -1275,8 +1275,7 @@ function Home(props) {
                         }}
                       >
                         Connect your first social app to start automating
-                        entries into your connected CRM. Currently Twitter &
-                        Email are available.
+                        entries into your connected CRM.
                       </span>
                     </div>
                   </div>
@@ -1417,7 +1416,7 @@ function Home(props) {
                         className="link-button-text"
                         style={{ color: "black" }}
                       >
-                        Coming Soon
+                        Connect
                       </p>
                     </button>
                   </div>
@@ -1433,7 +1432,7 @@ function Home(props) {
                         className="link-button-text"
                         style={{ color: "black" }}
                       >
-                        Coming Soon
+                        Connect
                       </p>
                     </button>
                   </div>
