@@ -439,3 +439,185 @@
 .onboarding-tooltip-button:hover {
   background: lightgray;
 }
+
+.cookie-modal-logo-row {
+  display: flex;
+  min-width: 475px;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.cookie-modal-logo-info-container {
+  display: flex;
+  width: 142.5px;
+  padding-right: 14.25px;
+  align-items: center;
+  align-content: center;
+  gap: 19px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  flex: 1 0 0;
+}
+
+.cookie-modal-logo-pic-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 9.5px;
+}
+
+.cookie-modal-logo-text-container {
+  display: flex;
+  width: 71.25px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  flex-shrink: 0;
+  border-radius: var(--8, 8px);
+}
+
+.cookie-modal-logo-text-header {
+  align-self: stretch;
+  color: var(--black-100, #1c1c1c);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 16.625px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 23.75px; /* 142.857% */
+}
+
+.cookie-modal-logo-text-subheader {
+  overflow: hidden;
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  text-overflow: ellipsis;
+  font-family: Inter;
+  font-size: 14.25px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 21.375px; /* 150% */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  align-self: stretch;
+}
+
+.cookie-modal-cookie-input-container {
+  display: flex;
+  width: 333.688px;
+  padding: var(--4, 4.75px) var(--12, 14.25px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--4, 4.75px);
+  flex-shrink: 0;
+  border-radius: var(--8, 9.5px);
+  border: 1.188px solid var(--black-10, rgba(28, 28, 28, 0.1));
+  background: var(--Primary-Brand, #1c1c1c);
+}
+
+.cookie-modal-cookie-input-text {
+  color: var(--white-100, #fff);
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 16.625px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 23.75px; /* 142.857% */
+  align-self: stretch;
+}
+
+.cookie-modal-connect-cookie-button {
+  display: flex;
+  padding: var(--4, 5.012px) var(--12, 15.036px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--4, 5.012px);
+  border-radius: var(--8, 10.024px);
+  border: 1.253px solid var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.cookie-modal-connect-cookie-button:hover {
+  background: var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.cookie-modal-connect-cookie-button-text {
+  color: var(--black-100, #1c1c1c);
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 17.542px;
+  font-style: normal;
+  font-weight: 400;
+
+  overflow: hidden;
+}
+
+.cookie-modal-info-text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  border-radius: var(--8, 8px);
+}
+
+.cookie-modal-info-text {
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 16.625px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 23.75px; /* 142.857% */
+}
+
+.download-extension-button {
+  display: flex;
+  width: 80%;
+  padding: var(--4, 4px) var(--12, 12px);
+  justify-content: center;
+  align-items: center;
+  gap: var(--4, 4px);
+  flex-shrink: 0;
+  border-radius: var(--8, 8px);
+  border: 1.253px solid var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.download-extension-button-text {
+  color: var(--black-100, #1c1c1c);
+  text-align: center;
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 17.542px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 25.06px; /* 142.857% */
+  align-self: stretch;
+}
+
+.modal-error-container {
+  display: flex;
+  width: 80vw;
+  padding: var(--16, 16px);
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 16px var(--16, 16px);
+  flex-wrap: wrap;
+  border-radius: var(--8, 8px);
+  background: var(--primary-purple-50, rgba(229, 236, 246, 0.5));
+}
+
+.modal-error-container-text {
+  color: var(--black-40, rgba(28, 28, 28, 0.4));
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+  font-family: Inter;
+  font-size: 15.036px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 22.554px; /* 150% */
+  align-self: stretch;
+}

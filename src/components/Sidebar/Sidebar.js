@@ -10,7 +10,6 @@ function Sidebar(props) {
 
   useEffect(() => {
     async function checkOnBoarding() {
-      console.log("HERE?");
       const uid = localStorage.getItem("uid");
       const { data, error } = await props.db
         .from("user_data")

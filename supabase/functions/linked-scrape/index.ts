@@ -10,11 +10,14 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const { session_cookie } = await req.json()
+
+  console.log("SESSION COOKIE", session_cookie)
+
   const browser = await puppeteer.connect({
     browserWSEndpoint: `wss://chrome.browserless.io?token=c751be2b-0d3d-4e26-8516-f4c774e0df6f`
   });
 
-  const session_cookie = "AQEDATM8nvYClQ4aAAABjdfzId8AAAGN-_-l31YAraw4kzupwgwiwrEej49v4_Uns3LpZLEcFwiPmELQnwFHEV1f7_fkqs700cCKnbsD8KS-TcPeCo2NuxKcOPxDIWTZHIo0-Y7y3bEl8oNFII4Hph76"
   const page = await browser.newPage();
   const url = "https://www.linkedin.com/"
   // const cookies = await page.cookies()
@@ -60,19 +63,28 @@ Deno.serve(async (req) => {
       return spans.map(span => span.textContent.trim());
     });
 
-    console.log("Name", name)
+    let messageData = []
+
+    messages.map((message, index) => {
+
+      var messageObject = {
+        text: message,
+        sender: senders[index]
+      }
+    
+      messageData.push(messageObject)
+
+    })
 
     const data = {
       name: name[0],
       url: profileURL[0],
-      messages: messages,
-      senders: senders
+      messages: messageData,
     }
     result.push(data)
   }
 
   const data = {
-    message: conversationContents,
     text: result
   }
   await browser.close();
