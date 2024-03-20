@@ -2125,7 +2125,7 @@ function Home(props) {
                           className="integrations-table-column-text"
                           style={{ fontWeight: 700 }}
                         >
-                          Email
+                          LinkedIn
                         </p>
                       </div>
                       <div className="integrations-table-column">
