@@ -30,6 +30,7 @@ function Home(props) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [twitterLinked, setTwitterLinked] = useState(false);
   const [emailLinked, setEmailLinked] = useState(false);
+  const [linkedInLinked, setLinkedInLinked] = useState(false);
   const [crmType, setCRMType] = useState("");
   const [crm, setCRM] = useState([]);
   const [toDos, setToDos] = useState([]);
@@ -37,12 +38,21 @@ function Home(props) {
   const [image, setImage] = useState();
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [openCookieModal, setOpenCookieModal] = useState(false);
+  const [cookieError, setCookieError] = useState("");
 
   const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
   });
+
+  function generateUniqueId() {
+    const timestamp = Date.now().toString(); // Get current timestamp as string
+    const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
+    const uniqueId = timestamp + randomString; // Concatenate timestamp and random string
+    return uniqueId; // Extract first 10 characters to ensure 10-digit length
+  }
 
   async function pushToAirtable(new_entries, source) {
     const connection_id = await getAirtableRefreshToken();
@@ -64,13 +74,14 @@ function Home(props) {
     for (const entry of new_entries) {
       if (
         (source == "Email" && entry.status == "Completed") ||
-        source == "Twitter"
+        source == "Twitter" ||
+        source == "LinkedIn"
       ) {
         let encodedFormula;
         if (source == "Email") {
           let formula = `({${emailField}} = "${entry.email}")`;
           encodedFormula = encodeURIComponent(formula);
-        } else if (source == "Twitter") {
+        } else if (source == "Twitter" || source == "LinkedIn") {
           let formula = `({${nameField}} = "${entry.customer}")`;
           encodedFormula = encodeURIComponent(formula);
         }
@@ -176,11 +187,12 @@ function Home(props) {
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
 
-    Promise.all(
+    await Promise.all(
       new_crm_data.map(async (update) => {
         if (
           (source == "Email" && update.status == "Completed") ||
-          source == "Twitter"
+          source == "Twitter" ||
+          source == "LinkedIn"
         ) {
           if (update.customer != "") {
             let regexCustomer;
@@ -191,6 +203,8 @@ function Home(props) {
               );
             } else if (source == "Email") {
               regexCustomer = update.email;
+            } else if (source == "LinkedIn") {
+              regexCustomer = update.customer;
             }
 
             if (update.customer == "Blake Faulkner 🌉") {
@@ -204,18 +218,16 @@ function Home(props) {
                   "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
               },
               params: {
-                limit: 1000,
+                limit: 10,
                 query: regexCustomer,
               },
             };
             let results;
             try {
               results = await axios.request(options);
-            } catch (error) {
-              if (error) {
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-                results = await axios.request(options);
-              }
+            } catch {
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              results = await axios.request(options);
             }
             const current_crm = results.data[0];
 
@@ -243,7 +255,11 @@ function Home(props) {
                 id: current_crm.id,
                 type: "NOTE",
                 note: {
-                  description: update.title + "\n" + update.summary,
+                  description:
+                    update.title +
+                    "\n" +
+                    update.summary +
+                    "\n Summarized by Boondoggle AI",
                 },
                 company_ids: current_crm.company_ids,
                 contact_ids: [current_crm.id],
@@ -271,6 +287,10 @@ function Home(props) {
                     },
                   ],
                 };
+              } else if (source == "LinkedIn") {
+                contact = {
+                  name: update.customer,
+                };
               }
               const { data, error } = await props.db.functions.invoke(
                 "new-contact-unified",
@@ -280,7 +300,7 @@ function Home(props) {
                     contact: contact,
                     title: update.title,
                     description:
-                      update.summary + "\n + Summarized by Boondoggle AI",
+                      update.summary + "\n Summarized by Boondoggle AI",
                     user_id: user_crm_id,
                   },
                 }
@@ -290,6 +310,34 @@ function Home(props) {
         }
       })
     );
+  }
+
+  async function getCRMData() {
+    const connection_id = localStorage.getItem("connection_id");
+    console.log("CONNECTIONID", connection_id);
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+    const crm_data = data[0].crm_data;
+    const to_dos = data[0].tasks;
+    const type = data[0].type;
+    let baseID;
+    let tableID;
+    let fieldOptions;
+    if (type == "airtable") {
+      baseID = data[0].baseID;
+      tableID = data[0].tableID;
+      fieldOptions = data[0].fieldOptions;
+    }
+    return {
+      crm_data: crm_data,
+      to_dos: to_dos,
+      type: type,
+      baseID: baseID,
+      tableID: tableID,
+      fieldOptions: fieldOptions,
+    };
   }
 
   async function updateCRM(userData) {
@@ -482,26 +530,6 @@ function Home(props) {
     }
   }
 
-  async function linkedInTest() {
-    const { data, error } = await props.db.functions.invoke("linked-scrape");
-    console.log("SHIT", data);
-  }
-
-  async function twitterTest() {
-    const { data, error } = await props.db.functions.invoke("twitter-scrape");
-    console.log("SHITTWEET", data);
-  }
-
-  async function extensionTest() {
-    chrome.runtime.sendMessage(
-      "lgeokfaihmdoipgmajekijkfppdmcnib",
-      { action: "getCookie", url: "https://linkedin.com", cookieName: "li_at" },
-      (response) => {
-        console.log("Response from extension:", response);
-      }
-    );
-  }
-
   async function getCurrentData() {
     const id = localStorage.getItem("connection_id");
     const { data, error } = await props.db
@@ -515,7 +543,6 @@ function Home(props) {
   }
 
   async function checkOnBoarding() {
-    console.log("HERE?");
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db
       .from("user_data")
@@ -554,12 +581,14 @@ function Home(props) {
 
       setTwitterLinked(data[0].twitterLinked);
       setEmailLinked(data[0].emailLinked);
+      setLinkedInLinked(data[0].linkedinLinked);
       setCRM(data[0].crm_data);
       setToDos(data[0].tasks);
       setIsOnboarding(!onboardingValues.hasOnboarded);
       setOnboardingStep(onboardingValues.onboardingStep);
 
       localStorage.setItem("twitterLinked", data[0].twitterLinked);
+      localStorage.setItem("linkedInLinked", data[0].linkedinLinked);
       localStorage.setItem("crmType", data[0].type);
 
       const type = data[0].type;
@@ -1094,10 +1123,361 @@ function Home(props) {
     setIsOnboarding(false);
   }
 
+  async function getSessionCookie() {
+    // Extension ID
+    setIsLoading(true);
+    const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
+
+    // Message you want to send to the extension
+    const message = {
+      action: "getCookie",
+      url: "https://www.linkedin.com/", // Specify the correct URL
+      cookieName: "li_at", // Specify the correct cookie name
+    };
+
+    try {
+      window.chrome.runtime.sendMessage(
+        extensionId,
+        message,
+        async function (response) {
+          if (response && response.cookie != null) {
+            const fetch_crm = await getCRMData();
+            const cookie = response.cookie;
+            console.log("COOKIE", cookie);
+            const { data, error } = await props.db.functions.invoke(
+              "linked-scrape",
+              {
+                body: { session_cookie: cookie },
+              }
+            );
+            console.log("DATA", data);
+            const messageArray = data.text;
+            let crm_update = fetch_crm.crm_data;
+            let new_crm_data = [];
+            let to_dos = fetch_crm.to_dos;
+            let type = fetch_crm.type;
+            let baseID = fetch_crm.baseID;
+            let tableID = fetch_crm.tableID;
+            let fieldOptions = fetch_crm.fieldOptions;
+            await Promise.all(
+              messageArray.map(async (messageData) => {
+                const customer = messageData.name;
+                const messagesString = messageData.messages
+                  .map(
+                    (messageObject) =>
+                      `${messageObject.sender}: ${messageObject.text}`
+                  )
+                  .join("\n");
+                const titleCompletion = await openai.chat.completions.create({
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about.",
+                    },
+                    {
+                      role: "user",
+                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+                    },
+                  ],
+                  model: "gpt-4",
+                });
+                const title = titleCompletion.choices[0].message.content;
+                const summaryCompletion = await openai.chat.completions.create({
+                  messages: [
+                    {
+                      role: "system",
+                      content:
+                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.",
+                    },
+                    {
+                      role: "user",
+                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+                    },
+                  ],
+                  model: "gpt-4",
+                });
+                const summary = summaryCompletion.choices[0].message.content;
+
+                const toDoTitleCompletion =
+                  await openai.chat.completions.create({
+                    messages: [
+                      {
+                        role: "system",
+                        content:
+                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.",
+                      },
+                      {
+                        role: "user",
+                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+                      },
+                    ],
+                    model: "gpt-4",
+                  });
+                const toDoTitle =
+                  toDoTitleCompletion.choices[0].message.content;
+
+                const responseCompletion = await openai.chat.completions.create(
+                  {
+                    messages: [
+                      {
+                        role: "system",
+                        content:
+                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.",
+                      },
+                      {
+                        role: "user",
+                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+                      },
+                    ],
+                    model: "gpt-4",
+                  }
+                );
+                const toDoResponse =
+                  responseCompletion.choices[0].message.content;
+                const date = Date.now();
+                const uniqueId = generateUniqueId();
+
+                var obj = {
+                  id: uniqueId,
+                  customer: customer,
+                  title: title,
+                  summary: summary,
+                  date: date,
+                  source: "LinkedIn",
+                  status: "Completed",
+                };
+
+                var toDoObject = {
+                  id: uniqueId,
+                  customer: customer,
+                  title: toDoTitle,
+                  response: toDoResponse,
+                  date: date,
+                  source: "LinkedIn",
+                  status: "Incomplete",
+                };
+                crm_update.push(obj);
+                new_crm_data.push(obj);
+                to_dos.push(toDoObject);
+              })
+            );
+            const type_crm = localStorage.getItem("crmType");
+
+            if (type_crm == "airtable") {
+              await pushToAirtable(new_crm_data, "LinkedIn");
+            } else {
+              await sendToCRM(new_crm_data, "LinkedIn");
+            }
+            const new_connection_id = localStorage.getItem("connection_id");
+            await props.db
+              .from("data")
+              .update({
+                crm_data: crm_update,
+                linkedinLinked: true,
+                tasks: to_dos,
+              })
+              .eq("connection_id", new_connection_id);
+            setLinkedInLinked(true);
+            setIsLoading(false);
+            localStorage.setItem("linkedInLinked", true);
+            setCRM(crm_update);
+            setToDos(to_dos);
+            localStorage.setItem("to_dos", to_dos);
+            setOpenCookieModal(false);
+          } else {
+            console.log(cookieError);
+            setCookieError("LoggedIn");
+            setIsLoading(false);
+          }
+        }
+      );
+    } catch (error) {
+      setCookieError("Extension");
+      setIsLoading(false);
+    }
+  }
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div className="container">
         <div className="content-container">
+          {openCookieModal && (
+            <div className="modal-overlay">
+              <div
+                className="modal-content"
+                style={{
+                  width: "40vw",
+                  width: "auto",
+                  maxWidth: "60vw",
+                  display: "flex",
+                  flexDirection: "column",
+                  background: "#fff",
+                }}
+              >
+                <div className="cookie-modal-logo-row">
+                  <div className="cookie-modal-logo-info-container">
+                    <div className="cookie-modal-logo-pic-container">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="39"
+                        height="39"
+                        viewBox="0 0 39 39"
+                        fill="none"
+                      >
+                        <path
+                          d="M0.46875 19.5625C0.46875 9.06909 8.97534 0.5625 19.4688 0.5625C29.9622 0.5625 38.4688 9.06909 38.4688 19.5625C38.4688 30.0559 29.9622 38.5625 19.4688 38.5625C8.97534 38.5625 0.46875 30.0559 0.46875 19.5625Z"
+                          fill="#0077B5"
+                        />
+                        <path
+                          fill-rule="evenodd"
+                          clip-rule="evenodd"
+                          d="M14.179 12.2971C14.179 13.5393 13.2439 14.5333 11.7426 14.5333H11.7151C10.2695 14.5333 9.33496 13.5393 9.33496 12.2971C9.33496 11.0287 10.298 10.0625 11.7709 10.0625C13.2439 10.0625 14.151 11.0287 14.179 12.2971ZM13.8959 16.2991V29.2363H9.59009V16.2991H13.8959ZM29.4239 29.2363L29.4241 21.8185C29.4241 17.8448 27.2999 15.9953 24.4665 15.9953C22.1804 15.9953 21.1569 17.251 20.5854 18.1319V16.2995H16.2791C16.3358 17.5134 16.2791 29.2367 16.2791 29.2367H20.5854V22.0115C20.5854 21.6248 20.6133 21.2391 20.7272 20.9623C21.0384 20.1898 21.7469 19.3901 22.9365 19.3901C24.4952 19.3901 25.1183 20.5764 25.1183 22.3149V29.2363H29.4239Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </div>
+                    <div className="cookie-modal-logo-text-container">
+                      <span className="cookie-modal-logo-text-header">
+                        LinkedIn
+                      </span>
+                      <span className="cookie-modal-logo-text-subheader">
+                        Messages
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    className="cookie-modal-connect-cookie-button"
+                    onClick={async () => {
+                      await getSessionCookie();
+                    }}
+                  >
+                    <span className="cookie-modal-connect-cookie-button-text">
+                      Pull Messages
+                    </span>
+                  </button>
+                </div>
+                <br />
+                <div className="cookie-modal-info-text-container">
+                  <span className="cookie-modal-info-text">
+                    Every time you log into LinkedIn on your browser, a new
+                    cookie is created for that “session”. If you log out or are
+                    disconnected, the cookie expires.
+                  </span>
+                </div>
+                <br />
+                <div className="cookie-modal-info-text-container">
+                  <span className="cookie-modal-info-text">
+                    If you have Boondoggle AI’s extension installed, just click
+                    on the "Pull Messages" button.
+                  </span>
+                </div>
+                {cookieError == "Extension" && (
+                  <>
+                    <div
+                      style={{
+                        justifyContent: "center",
+                        display: "flex",
+                        marginTop: "2vh",
+                      }}
+                    >
+                      <div className="modal-error-container">
+                        <span className="modal-error-container-text">
+                          You have not downloaded the Boondoggle Chrome
+                          extension, please make sure that you are currently
+                          logged in to LinkedIn and have the Boondoggle AI
+                          extension downloaded by clicking the button below then
+                          trying again.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        justifyContent: "center",
+                        display: "flex",
+                        marginTop: "2vh",
+                      }}
+                    >
+                      <button
+                        className="download-extension-button"
+                        onClick={() => {
+                          window.open(
+                            "https://chromewebstore.google.com/detail/boondoggle/lgeokfaihmdoipgmajekijkfppdmcnib",
+                            "_blank"
+                          );
+                          setCookieError("");
+                        }}
+                      >
+                        <span className="download-extension-button-text">
+                          Download extension
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {cookieError == "LoggedIn" && (
+                  <>
+                    <div
+                      style={{
+                        justifyContent: "center",
+                        display: "flex",
+                        marginTop: "2vh",
+                      }}
+                    >
+                      <div className="modal-error-container">
+                        <span className="modal-error-container-text">
+                          You are not currently logged into LinkedIn on your
+                          browser, please make sure that you are currently
+                          logged in to LinkedIn by clicking the button below,
+                          logging in, then trying again.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        justifyContent: "center",
+                        display: "flex",
+                        marginTop: "2vh",
+                      }}
+                    >
+                      <button
+                        className="download-extension-button"
+                        onClick={() => {
+                          window.open("https://www.linkedin.com/", "_blank");
+                          setCookieError("");
+                        }}
+                      >
+                        <span className="download-extension-button-text">
+                          Log into LinkedIn
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                <div
+                  style={{
+                    justifyContent: "center",
+                    display: "flex",
+                    marginTop: "2vh",
+                  }}
+                >
+                  <button
+                    className="linked-button"
+                    onClick={() => {
+                      setOpenCookieModal(false);
+                    }}
+                  >
+                    <p className="link-button-text">Close</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isOnboarding && onboardingStep == 0 && (
             <div className="modal-overlay">
               <div className="modal-content">
@@ -1411,12 +1791,21 @@ function Home(props) {
                       <p className="connected-app-info-1">LinkedIn</p>
                       <p className="connected-app-info-2">Direct Messages</p>
                     </div>
-                    <button className="link-button">
+                    <button
+                      className={
+                        linkedInLinked ? "linked-button" : "link-button"
+                      }
+                      onClick={() => {
+                        if (!linkedInLinked) {
+                          setOpenCookieModal(true);
+                        }
+                      }}
+                    >
                       <p
                         className="link-button-text"
-                        style={{ color: "black" }}
+                        style={!linkedInLinked ? { color: "black" } : {}}
                       >
-                        Connect
+                        {linkedInLinked == true ? "Connected" : "Connect"}
                       </p>
                     </button>
                   </div>
@@ -1693,11 +2082,61 @@ function Home(props) {
                       </div>
                     </div>
                   )}
+
+                  {linkedInLinked && (
+                    <div
+                      style={
+                        isOnboarding && onboardingStep == 4
+                          ? {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                              border: "5px solid red",
+                            }
+                          : {
+                              flexDirection: "row",
+                              display: "flex",
+                              width: "95%",
+                              alignItems: "flex-start",
+                              alignSelf: "stretch",
+                            }
+                      }
+                    >
+                      <div className="integrations-table-column">
+                        <p
+                          className="integrations-table-column-text"
+                          style={{ fontWeight: 700 }}
+                        >
+                          Email
+                        </p>
+                      </div>
+                      <div className="integrations-table-column">
+                        <p className="integrations-table-column-text">
+                          {localStorage.getItem("connection_id").slice(0, 20)}
+                        </p>
+                      </div>
+                      <div className="integrations-table-column">
+                        <p className="integrations-table-column-text">
+                          Just now
+                        </p>
+                      </div>
+                      <div className="integrations-table-column">
+                        <p
+                          className="integrations-table-column-text"
+                          style={{ color: "#4AA785" }}
+                        >
+                          Approved
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               {isOnboarding &&
                 onboardingStep == 4 &&
-                (emailLinked || twitterLinked) && (
+                (emailLinked || twitterLinked || linkedInLinked) && (
                   <div className="onboarding-tooltip" style={{ width: "15vw" }}>
                     <p
                       className="link-button-text"
