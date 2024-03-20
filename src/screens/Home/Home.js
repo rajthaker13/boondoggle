@@ -54,6 +54,22 @@ function Home(props) {
     return uniqueId; // Extract first 10 characters to ensure 10-digit length
   }
 
+  async function searchCRMforContact(options) {
+    try {
+      // Attempt the request
+      const results = await axios.request(options);
+      return results;
+    } catch (error) {
+      if (error.response && error.response.status === 429) {
+        // If rate limited, wait for 2 seconds and retry the request
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return searchCRMforContact(options); // Retry the request
+      } else {
+        // For other errors, throw the error
+        throw error;
+      }
+    }
+  }
   async function pushToAirtable(new_entries, source) {
     const connection_id = await getAirtableRefreshToken();
     const { data, error } = await props.db
@@ -222,13 +238,14 @@ function Home(props) {
                 query: regexCustomer,
               },
             };
-            let results;
-            try {
-              results = await axios.request(options);
-            } catch {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              results = await axios.request(options);
-            }
+            // let results;
+            // try {
+            //   results = await axios.request(options);
+            // } catch {
+            //   await new Promise((resolve) => setTimeout(resolve, 2000));
+            //   results = await axios.request(options);
+            // }
+            const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
 
             const idOptions = {
@@ -1150,7 +1167,6 @@ function Home(props) {
                 body: { session_cookie: cookie },
               }
             );
-            console.log("DATA", data);
             const messageArray = data.text;
             let crm_update = fetch_crm.crm_data;
             let new_crm_data = [];
@@ -1173,7 +1189,7 @@ function Home(props) {
                     {
                       role: "system",
                       content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about.",
+                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
                     },
                     {
                       role: "user",
@@ -1188,7 +1204,7 @@ function Home(props) {
                     {
                       role: "system",
                       content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.",
+                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
                     },
                     {
                       role: "user",
@@ -1205,7 +1221,7 @@ function Home(props) {
                       {
                         role: "system",
                         content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.",
+                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
                       },
                       {
                         role: "user",
@@ -1223,7 +1239,7 @@ function Home(props) {
                       {
                         role: "system",
                         content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.",
+                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
                       },
                       {
                         role: "user",
