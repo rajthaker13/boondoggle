@@ -243,7 +243,17 @@ function Link(props) {
 
       const uid = localStorage.getItem("uid");
 
-      await props.db.from("users").insert({ id: uid, crm_id: connection_id });
+      await props.db.from("users").insert({
+        id: uid,
+        crm_id: connection_id,
+        teamMembers: [
+          {
+            email: localStorage.getItem("email"),
+            uid: localStorage.getItem("uid"),
+            isAdmin: true,
+          },
+        ],
+      });
 
       await props.db
         .from("user_data")

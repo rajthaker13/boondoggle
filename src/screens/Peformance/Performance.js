@@ -92,13 +92,25 @@ function Performance(props) {
         yearDates.push(year);
       }
 
+      const uid = localStorage.getItem("uid");
       const connection_id = localStorage.getItem("connection_id");
-      const { data, error } = await props.db
-        .from("data")
-        .select()
-        .eq("connection_id", connection_id);
+      const isAdmin = localStorage.getItem("isAdmin");
 
-      const crm_data = data[0].crm_data;
+      let crm_data;
+
+      if (isAdmin == "true") {
+        const { data, error } = await props.db
+          .from("data")
+          .select()
+          .eq("connection_id", connection_id);
+        crm_data = data[0].crm_data;
+      } else {
+        const { data, error } = await props.db
+          .from("users")
+          .select()
+          .eq("id", uid);
+        crm_data = data[0].crm_data;
+      }
 
       const dailyData = [];
       const monthlyData = [];
