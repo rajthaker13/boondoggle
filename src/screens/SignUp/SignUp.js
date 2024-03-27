@@ -15,14 +15,13 @@ function SignUp(props) {
   });
 
   async function signIn() {
-    console.log(email);
-    console.log(password);
     const { data } = await props.db.auth.signUp({
       email: email,
       password: password,
     });
     localStorage.setItem("email", data.user.email);
     localStorage.setItem("uid", data.user.id);
+    localStorage.setItem("isAdmin", true);
     navigation("/home");
   }
 

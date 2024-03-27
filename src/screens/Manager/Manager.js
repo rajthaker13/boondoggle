@@ -7,11 +7,97 @@ import axios from "axios";
 
 function Manager(props) {
   const percentage = (98 / 150) * 100;
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [emailInvite, setEmailInvite] = useState("");
+  const [isValidEmail, setIsValidEmail] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("Press Enter to Invite");
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  const type = localStorage.getItem("crmType");
+  const invite_id =
+    type == "crm"
+      ? localStorage.getItem("connection_id")
+      : localStorage.getItem("uid");
+  const invite_link = `https://www.boondoggle.ai/${invite_id}`;
+
+  useEffect(() => {
+    async function checkOnBoarding() {
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("user_data")
+        .select("")
+        .eq("id", uid);
+      setIsOnboarding(!data[0].hasOnboarded);
+      setOnboardingStep(data[0].onboardingStep);
+    }
+
+    async function getTeamMembers() {
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("users")
+        .select("")
+        .eq("id", uid);
+      setTeamMembers(data[0].teamMembers);
+    }
+
+    checkOnBoarding();
+    getTeamMembers();
+  }, []);
+
+  async function inviteMember(event) {
+    if (event.key == "Enter" || isOnboarding) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isValidEmailTest = emailRegex.test(emailInvite);
+      if (isValidEmailTest) {
+        const { data, error } = await props.db.auth.admin.inviteUserByEmail(
+          emailInvite
+        );
+        if (error) {
+          setErrorMessage("A User with this Email has Already been Registered");
+          setIsValidEmail(false);
+        } else {
+          const uid = localStorage.getItem("uid");
+          await props.db.from("users").insert({
+            id: data.user.id,
+            crm_id: invite_id,
+            manager_id: uid,
+            isAdmin: false,
+          });
+          let new_member_array = [
+            ...teamMembers,
+            {
+              uid: data.user.id,
+              email: emailInvite,
+              isAdmin: false,
+            },
+          ];
+          await props.db
+            .from("users")
+            .update({
+              teamMembers: new_member_array,
+            })
+            .eq("id", uid);
+          setEmailInvite("");
+          setTeamMembers(new_member_array);
+          setIsValidEmail(true);
+          setErrorMessage("Press Enter to Invite");
+        }
+      } else {
+        setIsValidEmail(false);
+        setErrorMessage("Please Enter a Valid Email");
+      }
+    }
+  }
 
   return (
     <div className="container">
       <div className="content-container">
-        <Sidebar selectedTab={3} />
+        <Sidebar
+          selectedTab={4}
+          db={props.db}
+          onboardingStep={onboardingStep}
+        />
         <div
           style={{
             flexDirection: "column",
@@ -28,26 +114,22 @@ function Manager(props) {
                 <div className="manager-info-header-text-container">
                   <span className="manager-info-header">Overview</span>
                 </div>
-                <div className="manager-info-header-button-container">
-                  {/* <button className="manager-info-header-button-1">
-                    <p className="manager-info-header-button-text">
-                      Cancel Subscription
-                    </p>
-                  </button>
-                  <button className="manager-info-header-button-1">
-                    <p className="manager-info-header-button-text">
-                      Cancel Subscription
-                    </p>
-                  </button> */}
-                </div>
+                <div className="manager-info-header-button-container"></div>
               </div>
 
-              <div className="manager-info-members-header-container">
+              {/* <div className="manager-info-members-header-container">
                 <span className="manager-info-members-header-text">
-                  Team Members
+                  Increase credits via add-ons
                 </span>
                 <span className="manager-info-members-subheader-text">
                   2 of 10 Used
+                </span>
+              </div>
+
+              <div className="team-members-count-text-container">
+                <span className="team-members-count-text">
+                  Growth Subscription, unlimited team members. Avg. member
+                  usage: 1500/credits/mo
                 </span>
               </div>
 
@@ -60,53 +142,31 @@ function Manager(props) {
                 <div className="unfilled-member" />
                 <div className="unfilled-member" />
                 <div className="unfilled-member" />
-              </div>
-
-              <div className="team-members-count-text-container">
-                <span className="team-members-count-text">
-                  8 Users remaining until your plan requires upgrade.
-                </span>
-              </div>
+              </div> */}
 
               <div className="manager-info-members-header-container">
                 <span className="manager-info-members-header-text">
-                  Connected Integrations
-                </span>
-                <span className="manager-info-members-subheader-text">
-                  98 of 150 Used
-                </span>
-              </div>
-
-              <div className="manager-integration-bar">
-                <div
-                  className="manager-integration-progress-bar"
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-
-              <div className="team-members-count-text-container">
-                <span className="team-members-count-text">
-                  52 integrations left until your plan requires upgrade.
-                </span>
-              </div>
-
-              <div className="manager-info-members-header-container">
-                <span className="manager-info-members-header-text">
-                  Team Invite Link
+                  Invite Team Members
                 </span>
               </div>
 
               <div
                 className="manager-invite-link-container"
-                placeholder="https://www.boondoggle.ai/redteam"
+                style={!isValidEmail ? { border: "1px solid red" } : {}}
               >
                 <div className="manager-invite-link-content">
-                  <div className="manager-invite-link-text-container">
-                    <span className="manager-invite-link-text">
-                      https://www.boondoggle.ai/redteam
-                    </span>
-                  </div>
-                  <svg
+                  <input
+                    className="manager-invite-link-text-container"
+                    placeholder="Enter Email of Invitee"
+                    value={emailInvite}
+                    onChange={(event) => {
+                      setEmailInvite(event.target.value);
+                    }}
+                    onKeyDown={async (event) => {
+                      await inviteMember(event);
+                    }}
+                  ></input>
+                  {/* <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
                     height="16"
@@ -118,18 +178,20 @@ function Manager(props) {
                       fill="#1C1C1C"
                       fill-opacity="0.4"
                     />
-                  </svg>
+                  </svg> */}
                 </div>
               </div>
 
               <div className="team-members-count-text-container">
-                <span className="team-members-count-text">
-                  Send this invite link to your team for their Boondoggle access
-                  to be included in your current plan.
+                <span
+                  className="team-members-count-text"
+                  style={!isValidEmail ? { color: "red" } : {}}
+                >
+                  {errorMessage}
                 </span>
               </div>
 
-              <div className="manager-info-members-header-container">
+              {/* <div className="manager-info-members-header-container">
                 <span className="manager-info-members-header-text">
                   Active until Dec 9, 2022
                 </span>
@@ -140,9 +202,9 @@ function Manager(props) {
                   We will send you a notification upon monthly subscription
                   renewal.
                 </span>
-              </div>
+              </div> */}
 
-              <div className="manager-info-members-header-container">
+              {/* <div className="manager-info-members-header-container">
                 <span className="manager-info-members-header-text">
                   $30.00 Per User{" "}
                   <span style={{ fontWeight: 400 }}>(billing $60/mo)</span>
@@ -154,7 +216,7 @@ function Manager(props) {
                   Growth Subscription, billable up to 10 users. Upgrade for 10+
                   users to Enterprise.
                 </span>
-              </div>
+              </div> */}
 
               <div className="manager-info-members-header-container">
                 <span className="manager-info-members-header-text">
@@ -163,98 +225,37 @@ function Manager(props) {
               </div>
 
               <div className="manager-connected-users-container">
-                <div className="connected-user-card">
-                  <div className="connected-user-card-content">
-                    <div className="connected-user-card-text-container">
-                      <span className="connected-user-card-text-header">
-                        Raj Thaker
-                      </span>
-                      <span className="connected-user-card-text-subheader">
-                        raj@boondoggle.ai
-                      </span>
-                    </div>
-                  </div>
+                {teamMembers.map((member) => {
+                  return (
+                    <div className="connected-user-card">
+                      <div className="connected-user-card-content">
+                        <div className="connected-user-card-text-container">
+                          <span className="connected-user-card-text-header">
+                            {member.email}
+                          </span>
+                          {/* <span className="connected-user-card-text-subheader">
+                            raj@boondoggle.ai
+                          </span> */}
+                        </div>
+                      </div>
 
-                  <div className="connected-users-card-button-container">
-                    <button className="connected-users-card-pause-button">
-                      <span className="connected-users-card-button-text">
-                        Pause
-                      </span>
-                    </button>
-                    <button className="connected-users-card-deactivate-button">
-                      <span className="connected-users-card-button-text">
-                        Deactivate
-                      </span>
-                    </button>
-                  </div>
-                </div>
-                <div className="connected-user-card">
-                  <div className="connected-user-card-content">
-                    <div className="connected-user-card-text-container">
-                      <span className="connected-user-card-text-header">
-                        Blake Faulkner
-                      </span>
-                      <span className="connected-user-card-text-subheader">
-                        blake@boondoggle.ai
-                      </span>
+                      {/* <div className="connected-users-card-button-container">
+                        <button className="connected-users-card-pause-button">
+                          <span className="connected-users-card-button-text">
+                            Pause
+                          </span>
+                        </button>
+                        <button className="connected-users-card-deactivate-button">
+                          <span className="connected-users-card-button-text">
+                            Deactivate
+                          </span>
+                        </button>
+                      </div> */}
                     </div>
-                  </div>
-
-                  <div className="connected-users-card-button-container">
-                    <button className="connected-users-card-pause-button">
-                      <span className="connected-users-card-button-text">
-                        Pause
-                      </span>
-                    </button>
-                    <button className="connected-users-card-deactivate-button">
-                      <span className="connected-users-card-button-text">
-                        Deactivate
-                      </span>
-                    </button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
-            {/* 
-            <div className="manager-info-container">
-              <div className="manager-info-members-header-container">
-                <span className="manager-info-members-header-text">
-                  Subscription
-                </span>
-              </div>
-
-              <div
-                className="manager-info-members-header-container"
-                style={{ gap: "10px" }}
-              >
-                <div className="manager-card-plan">
-                  <div className="manager-card-plan-header-container">
-                    <span className="manager-card-plan-header">
-                      Growth Plan
-                    </span>
-                  </div>
-                  <div className="manager-card-plan-subheader-container">
-                    <span className="manager-card-plan-subheader">
-                      Renews 01/1/24
-                    </span>
-                    <img src={stripe} />
-                  </div>
-                </div>
-
-                <div className="manager-auto-renew-container">
-                  <div className="auto-renew-header-container">
-                    <span className="auto-renew-header">
-                      Monthly Auto Renewal
-                    </span>
-                  </div>
-
-                  <div className="auto-renew-toggile-container">
-                    <img src={toggle} />
-                    <span className="toggle-text">Active</span>
-                  </div>
-                </div>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>

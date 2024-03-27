@@ -244,15 +244,25 @@ function Entries(props) {
 
   useEffect(() => {
     async function getData() {
+      const uid = localStorage.getItem("uid");
       const connection_id = localStorage.getItem("connection_id");
-      console.log(connection_id);
+      const isAdmin = localStorage.getItem("isAdmin");
 
-      const { data, error } = await props.db
-        .from("data")
-        .select()
-        .eq("connection_id", connection_id);
-      setTableData(data[0].crm_data);
-      setTasks(data[0].tasks);
+      if (isAdmin == "true") {
+        const { data, error } = await props.db
+          .from("data")
+          .select()
+          .eq("connection_id", connection_id);
+        setTableData(data[0].crm_data);
+        setTasks(data[0].tasks);
+      } else {
+        const { data, error } = await props.db
+          .from("users")
+          .select()
+          .eq("id", uid);
+        setTableData(data[0].crm_data);
+        setTasks(data[0].tasks);
+      }
     }
 
     async function checkOnBoarding() {

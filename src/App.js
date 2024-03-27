@@ -19,10 +19,16 @@ import Payment from "./screens/Payment/Payment";
 import Settings from "./screens/Settings/Settings";
 import BoondogggleAI from "./screens/BoondoggleAI/BoondoggleAI";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import Invite from "./screens/Invite/Invite";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3anRieHhoZHNxcmVsc3dwZ2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDY3Njc5ODMsImV4cCI6MjAyMjM0Mzk4M30.bjgoombrUXrnMn92P7uNGLK0_2ONNECFrE74_Ql4HEg"
+);
+
+const supabaseAdmin = createClient(
+  "https://gwjtbxxhdsqrelswpgdi.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3anRieHhoZHNxcmVsc3dwZ2RpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwNjc2Nzk4MywiZXhwIjoyMDIyMzQzOTgzfQ.-KRrMzS7RXyjZpqhf_84CkmDMkp0g0Himi0btAMP96g"
 );
 
 export default function App() {
@@ -41,9 +47,10 @@ export default function App() {
         <Route path="/entries" element={<Entries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />
         <Route path="/boondoggleai" element={<BoondogggleAI db={supabase} />} />
-        <Route path="/manager" element={<Manager db={supabase} />} />
+        <Route path="/manager" element={<Manager db={supabaseAdmin} />} />
         <Route path="/settings" element={<Settings db={supabase} />} />
         <Route path="/airtable" element={<Airtable db={supabase} />} />
+        <Route path="/invite" element={<Invite db={supabase} />} />
         <Route
           path="/connectAirtable"
           element={<ConnectAirtable db={supabase} />}

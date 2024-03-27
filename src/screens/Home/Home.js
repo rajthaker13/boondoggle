@@ -40,6 +40,8 @@ function Home(props) {
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [cookieError, setCookieError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(true);
+  const [memberWelcome, setMemberWelcome] = useState(false);
 
   const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const openai = new OpenAI({
@@ -329,15 +331,23 @@ function Home(props) {
     );
   }
 
+  async function getUserCRMData() {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    return {
+      crm_data: data[0].crm_data,
+      tasks: data[0].tasks,
+    };
+  }
+
   async function getCRMData() {
     const connection_id = localStorage.getItem("connection_id");
-    console.log("CONNECTIONID", connection_id);
     const { data, error } = await props.db
       .from("data")
       .select()
       .eq("connection_id", connection_id);
-    const crm_data = data[0].crm_data;
-    const to_dos = data[0].tasks;
+    const admin_crm_data = data[0].crm_data;
+    const admin_to_dos = data[0].tasks;
     const type = data[0].type;
     let baseID;
     let tableID;
@@ -347,9 +357,23 @@ function Home(props) {
       tableID = data[0].tableID;
       fieldOptions = data[0].fieldOptions;
     }
+
+    let user_crm_data;
+    let user_to_dos;
+
+    if (localStorage.getItem("isAdmin") == "true") {
+      user_crm_data = admin_crm_data;
+      user_to_dos = admin_to_dos;
+    } else {
+      const fetch_user_crm = await getUserCRMData();
+      user_crm_data = fetch_user_crm.crm_data;
+      user_to_dos = fetch_user_crm.tasks;
+    }
     return {
-      crm_data: crm_data,
-      to_dos: to_dos,
+      admin_crm_data: admin_crm_data,
+      admin_to_dos: admin_to_dos,
+      user_crm_data: user_crm_data,
+      user_to_dos: user_to_dos,
       type: type,
       baseID: baseID,
       tableID: tableID,
@@ -364,18 +388,19 @@ function Home(props) {
       .select()
       .eq("connection_id", connection_id);
 
-    let crm_update = data[0].crm_data;
+    const fetch_crm = await getCRMData();
+
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let admin_to_dos = fetch_crm.admin_to_dos;
+    let user_crm_update = fetch_crm.user_crm_data;
+    let user_to_dos = fetch_crm.user_to_dos;
     let new_crm_data = [];
-    let to_dos = data[0].tasks;
-    let type = data[0].type;
-    let baseID;
-    let tableID;
-    let fieldOptions;
-    if (type == "airtable") {
-      baseID = data[0].baseID;
-      tableID = data[0].tableID;
-      fieldOptions = data[0].fieldOptions;
-    }
+
+    let type = fetch_crm.type;
+    let baseID = fetch_crm.baseID;
+    let tableID = fetch_crm.tableID;
+    let fieldOptions = fetch_crm.fieldOptions;
+
     let twitter_messages = [];
 
     const meUser = userData.meUser.data.username;
@@ -496,9 +521,11 @@ function Home(props) {
           source: "Twitter",
           status: "Incomplete",
         };
-        crm_update.push(obj);
+        admin_crm_update.push(obj);
+        user_crm_update.push(obj);
         new_crm_data.push(obj);
-        to_dos.push(toDoObject);
+        admin_to_dos.push(toDoObject);
+        user_to_dos.push(toDoObject);
         // }
       })
     );
@@ -511,22 +538,31 @@ function Home(props) {
       await sendToCRM(new_crm_data, "Twitter");
     }
     const new_connection_id = localStorage.getItem("connection_id");
+    const uid = localStorage.getItem("uid");
 
     await props.db
       .from("data")
       .update({
-        crm_data: crm_update,
+        crm_data: admin_crm_update,
         twitter_messages: userData.messages,
         twitterLinked: true,
-        tasks: to_dos,
+        tasks: admin_to_dos,
       })
       .eq("connection_id", new_connection_id);
+    await props.db
+      .from("users")
+      .update({
+        crm_data: user_crm_update,
+        twitterLinked: true,
+        tasks: user_to_dos,
+      })
+      .eq("id", uid);
     setTwitterLinked(true);
     setIsLoading(false);
     localStorage.setItem("twitterLinked", true);
-    setCRM(crm_update);
-    setToDos(to_dos);
-    localStorage.setItem("to_dos", to_dos);
+    setCRM(user_crm_update);
+    setToDos(user_to_dos);
+    localStorage.setItem("to_dos", user_to_dos);
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
   }
@@ -581,11 +617,22 @@ function Home(props) {
       .select("")
       .eq("id", uid);
 
+    setTwitterLinked(data[0].twitterLinked);
+    setEmailLinked(data[0].emailLinked);
+    setLinkedInLinked(data[0].linkedinLinked);
+    const isAdmin = data[0].isAdmin;
+    setIsAdmin(isAdmin);
+    localStorage.setItem("isAdmin", isAdmin);
+    localStorage.setItem("twitterLinked", data[0].twitterLinked);
+    localStorage.setItem("linkedInLinked", data[0].linkedinLinked);
+
     localStorage.setItem("connection_id", data[0].crm_id);
   }
 
   async function checkLinks() {
     const onboardingValues = await checkOnBoarding();
+    setIsAdmin(localStorage.getItem("isAdmin"));
+    console.log(isAdmin);
 
     if (onboardingValues.onboardingStep > 1) {
       await getConnections();
@@ -596,16 +643,11 @@ function Home(props) {
         .select("")
         .eq("connection_id", id);
 
-      setTwitterLinked(data[0].twitterLinked);
-      setEmailLinked(data[0].emailLinked);
-      setLinkedInLinked(data[0].linkedinLinked);
       setCRM(data[0].crm_data);
       setToDos(data[0].tasks);
       setIsOnboarding(!onboardingValues.hasOnboarded);
       setOnboardingStep(onboardingValues.onboardingStep);
 
-      localStorage.setItem("twitterLinked", data[0].twitterLinked);
-      localStorage.setItem("linkedInLinked", data[0].linkedinLinked);
       localStorage.setItem("crmType", data[0].type);
 
       const type = data[0].type;
@@ -749,14 +791,14 @@ function Home(props) {
     if (error == null) {
       localStorage.setItem("email_grant_id", data.id);
 
-      const connection_id = localStorage.getItem("connection_id");
+      const uid = localStorage.getItem("uid");
 
       await props.db
-        .from("data")
+        .from("users")
         .update({
           email_grant_id: data.id,
         })
-        .eq("connection_id", connection_id);
+        .eq("id", uid);
 
       await uploadEmails(data.id, data.email);
     }
@@ -775,10 +817,18 @@ function Home(props) {
     const emails = data.data.data;
 
     const curData = await getCurrentData();
+    const fetch_crm = await getCRMData();
 
-    let updated_CRM = curData.data;
-    let new_updates = [];
-    let to_dos = curData.tasks;
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let admin_to_dos = fetch_crm.admin_to_dos;
+    let user_crm_update = fetch_crm.user_crm_data;
+    let user_to_dos = fetch_crm.user_to_dos;
+    let new_crm_data = [];
+
+    let type = fetch_crm.type;
+    let baseID = fetch_crm.baseID;
+    let tableID = fetch_crm.tableID;
+    let fieldOptions = fetch_crm.fieldOptions;
 
     let new_emails = [];
 
@@ -1016,8 +1066,9 @@ function Home(props) {
             status: email.status,
           };
 
-          updated_CRM.push(obj);
-          new_updates.push(obj);
+          admin_crm_update.push(obj);
+          user_crm_update.push(obj);
+          new_crm_data.push(obj);
 
           const toDoTitleCompletion = await openai.chat.completions.create({
             messages: [
@@ -1061,7 +1112,8 @@ function Home(props) {
             status: "Incomplete",
             emailStatus: email.status,
           };
-          to_dos.push(toDoObject);
+          admin_to_dos.push(toDoObject);
+          user_to_dos.push(toDoObject);
         }
       })
     );
@@ -1069,19 +1121,25 @@ function Home(props) {
     await props.db
       .from("data")
       .update({
-        crm_data: updated_CRM,
-        tasks: to_dos,
-        emailLinked: true,
+        crm_data: admin_crm_update,
+        tasks: admin_to_dos,
       })
       .eq("connection_id", connection_id);
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("users")
+      .update({
+        crm_data: user_crm_update,
+        tasks: user_to_dos,
+        emailLinked: true,
+      })
+      .eq("id", uid);
     setEmailLinked(true);
 
-    const type = localStorage.getItem("crmType");
-
     if (type == "airtable") {
-      await pushToAirtable(new_updates, "Email");
+      await pushToAirtable(new_crm_data, "Email");
     } else {
-      await sendToCRM(new_updates, "Email");
+      await sendToCRM(new_crm_data, "Email");
     }
 
     setIsLoading(false);
@@ -1143,6 +1201,7 @@ function Home(props) {
   async function getSessionCookie() {
     // Extension ID
     setIsLoading(true);
+
     const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
 
     // Message you want to send to the extension
@@ -1158,9 +1217,17 @@ function Home(props) {
         message,
         async function (response) {
           if (response && response.cookie != null) {
+            if (isOnboarding) {
+              const uid = localStorage.getItem("uid");
+              await props.db
+                .from("user_data")
+                .update({
+                  onboardingStep: 4,
+                })
+                .eq("id", uid);
+            }
             const fetch_crm = await getCRMData();
             const cookie = response.cookie;
-            console.log("COOKIE", cookie);
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
               {
@@ -1168,9 +1235,12 @@ function Home(props) {
               }
             );
             const messageArray = data.text;
-            let crm_update = fetch_crm.crm_data;
+            let admin_crm_update = fetch_crm.admin_crm_data;
+            let admin_to_dos = fetch_crm.admin_to_dos;
+            let user_crm_update = fetch_crm.user_crm_data;
+            let user_to_dos = fetch_crm.user_to_dos;
             let new_crm_data = [];
-            let to_dos = fetch_crm.to_dos;
+
             let type = fetch_crm.type;
             let baseID = fetch_crm.baseID;
             let tableID = fetch_crm.tableID;
@@ -1273,9 +1343,11 @@ function Home(props) {
                   source: "LinkedIn",
                   status: "Incomplete",
                 };
-                crm_update.push(obj);
+                admin_crm_update.push(obj);
+                user_crm_update.push(obj);
                 new_crm_data.push(obj);
-                to_dos.push(toDoObject);
+                admin_to_dos.push(toDoObject);
+                user_to_dos.push(toDoObject);
               })
             );
             const type_crm = localStorage.getItem("crmType");
@@ -1286,21 +1358,30 @@ function Home(props) {
               await sendToCRM(new_crm_data, "LinkedIn");
             }
             const new_connection_id = localStorage.getItem("connection_id");
+            const uid = localStorage.getItem("uid");
             await props.db
               .from("data")
               .update({
-                crm_data: crm_update,
-                linkedinLinked: true,
-                tasks: to_dos,
+                crm_data: admin_crm_update,
+                tasks: admin_to_dos,
               })
               .eq("connection_id", new_connection_id);
+            await props.db
+              .from("users")
+              .update({
+                crm_data: user_crm_update,
+                tasks: user_to_dos,
+                linkedinLinked: true,
+              })
+              .eq("id", uid);
             setLinkedInLinked(true);
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
-            setCRM(crm_update);
-            setToDos(to_dos);
-            localStorage.setItem("to_dos", to_dos);
+            setCRM(user_crm_update);
+            setToDos(user_to_dos);
+            localStorage.setItem("to_dos", user_to_dos);
             setOpenCookieModal(false);
+            window.location.reload();
           } else {
             console.log(cookieError);
             setCookieError("LoggedIn");
@@ -1494,69 +1575,76 @@ function Home(props) {
             </div>
           )}
 
-          {isOnboarding && onboardingStep == 0 && (
-            <div className="modal-overlay">
-              <div className="modal-content">
-                <p
-                  style={{
-                    textAlign: "center",
-                    fontSize: "20px",
-                    fontWeight: "600",
-                  }}
-                >
-                  Welcome to Boondoggle Beta
-                </p>
-                <br />
-                <p style={{ textAlign: "left" }}>
-                  This is our first public release, & we're excited to share a
-                  glimpse into the early tech we've been working on over the
-                  past few weeks. <br /> <br /> Our goal for this beta is to get
-                  feedback on your user experience, the integrations/features
-                  most important to your workday, and any other improvements
-                  you'd love to see.
-                </p>
-                <p style={{ textAlign: "left" }}>Beta features include:</p>
-                <ul style={{ textAlign: "left" }}>
-                  <li>
-                    <p>Summarize your emails and twitter direct messages.</p>
-                  </li>
-                  <li>
-                    <p>Push those summaries/contacts to a CRM of choice.</p>
-                  </li>
-                  <li>
-                    <p>
-                      Automatically create completable to-do tasks with
-                      AI-generated responses.
-                    </p>
-                  </li>
-                </ul>
-                <p style={{ textAlign: "left" }}>
-                  We're excited to continue building new integrations and
-                  features. Stay tuned for updates! For any feedback, bugs, or
-                  feature requests, please email{" "}
-                  <span style={{ color: "blue" }}>support@boondoggle.ai</span>,
-                  and thanks again for supporting Boondoggle!
-                </p>
-                <br />
-                <div
-                  style={{
-                    justifyContent: "center",
-                    display: "flex",
-                    marginTop: "2vh",
-                  }}
-                >
-                  <button
-                    className="linked-button"
-                    onClick={async () => {
-                      await nextOnboardingStep();
+          {isOnboarding &&
+            (isAdmin
+              ? onboardingStep == 0
+              : onboardingStep == 2 && !memberWelcome) && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <p
+                    style={{
+                      textAlign: "center",
+                      fontSize: "20px",
+                      fontWeight: "600",
                     }}
                   >
-                    <p className="link-button-text">Get Started</p>
-                  </button>
+                    Welcome to Boondoggle Beta
+                  </p>
+                  <br />
+                  <p style={{ textAlign: "left" }}>
+                    This is our first public release, & we're excited to share a
+                    glimpse into the early tech we've been working on over the
+                    past few weeks. <br /> <br /> Our goal for this beta is to
+                    get feedback on your user experience, the
+                    integrations/features most important to your workday, and
+                    any other improvements you'd love to see.
+                  </p>
+                  <p style={{ textAlign: "left" }}>Beta features include:</p>
+                  <ul style={{ textAlign: "left" }}>
+                    <li>
+                      <p>Summarize your emails and twitter direct messages.</p>
+                    </li>
+                    <li>
+                      <p>Push those summaries/contacts to a CRM of choice.</p>
+                    </li>
+                    <li>
+                      <p>
+                        Automatically create completable to-do tasks with
+                        AI-generated responses.
+                      </p>
+                    </li>
+                  </ul>
+                  <p style={{ textAlign: "left" }}>
+                    We're excited to continue building new integrations and
+                    features. Stay tuned for updates! For any feedback, bugs, or
+                    feature requests, please email{" "}
+                    <span style={{ color: "blue" }}>support@boondoggle.ai</span>
+                    , and thanks again for supporting Boondoggle!
+                  </p>
+                  <br />
+                  <div
+                    style={{
+                      justifyContent: "center",
+                      display: "flex",
+                      marginTop: "2vh",
+                    }}
+                  >
+                    <button
+                      className="linked-button"
+                      onClick={async () => {
+                        if (isAdmin) {
+                          await nextOnboardingStep();
+                        } else {
+                          setMemberWelcome(true);
+                        }
+                      }}
+                    >
+                      <p className="link-button-text">Get Started</p>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {isOnboarding && onboardingStep == 14 && (
             <div className="modal-overlay">
@@ -1811,11 +1899,17 @@ function Home(props) {
                       className={
                         linkedInLinked ? "linked-button" : "link-button"
                       }
-                      onClick={() => {
+                      disabled={linkedInLinked}
+                      onClick={async () => {
                         if (!linkedInLinked) {
                           setOpenCookieModal(true);
                         }
                       }}
+                      style={
+                        isOnboarding && onboardingStep == 3
+                          ? { border: "5px solid red" }
+                          : {}
+                      }
                     >
                       <p
                         className="link-button-text"
@@ -1837,7 +1931,7 @@ function Home(props) {
                         className="link-button-text"
                         style={{ color: "black" }}
                       >
-                        Connect
+                        Coming Soon
                       </p>
                     </button>
                   </div>
@@ -1866,7 +1960,11 @@ function Home(props) {
                   <div className="connected-apps-cell">
                     <div
                       style={
-                        isOnboarding && onboardingStep == 2
+                        (
+                          isOnboarding && isAdmin
+                            ? onboardingStep == 2
+                            : memberWelcome && onboardingStep == 2
+                        )
                           ? {
                               display: "flex",
                               flex: "1 0 0",
@@ -1887,7 +1985,9 @@ function Home(props) {
                         <p className="connected-app-info-1">{crmType}</p>
                       </div>
                     </div>
-                    {isOnboarding && onboardingStep == 2 && (
+                    {(isOnboarding && isAdmin
+                      ? onboardingStep == 2
+                      : memberWelcome && onboardingStep == 2) && (
                       <div
                         className="onboarding-tooltip"
                         style={{ width: "15vw" }}
@@ -1896,8 +1996,9 @@ function Home(props) {
                           className="link-button-text"
                           style={{ lineHeight: "100%" }}
                         >
-                          Congratulations! You just connected your CRM to
-                          Boondoggle.
+                          {isAdmin
+                            ? "Congratulations! You just connected your CRM to Boondoggle."
+                            : "Your admin has successfully connected your CRM to Boondoggle"}
                         </p>
                         <button
                           className="onboarding-tooltip-button"

@@ -232,6 +232,25 @@
   align-items: flex-start;
   flex: 1 0 0;
   border-radius: var(--8, 8px);
+  height: 100%;
+  border: 0;
+}
+
+.manager-invite-link-text-container:focus {
+  outline: none;
+}
+
+.manager-invite-link-text-container::placeholder {
+  color: var(--black-100, #1c1c1c);
+  font-feature-settings: "cv11" on, "cv01" on, "ss01" on;
+
+  /* 14 Regular */
+  font-family: Inter;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px; /* 142.857% */
+  align-self: stretch;
 }
 
 .manager-invite-link-text {
