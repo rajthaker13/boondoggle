@@ -135,7 +135,7 @@ function BoondogggleAI(props) {
       }
       setIsLoading(true);
       const searchQuery = isOnboarding
-        ? "What people in my CRM have I contacted recently?"
+        ? "What Contacts in my CRM have I created notes for recently?"
         : query;
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
