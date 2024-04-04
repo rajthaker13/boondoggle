@@ -43,7 +43,8 @@ function Home(props) {
   const [isAdmin, setIsAdmin] = useState(true);
   const [memberWelcome, setMemberWelcome] = useState(false);
 
-  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  // const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  const client_id = process.env.REACT_APP_AIRTABLE_KEY;
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
@@ -72,6 +73,7 @@ function Home(props) {
       }
     }
   }
+
   async function pushToAirtable(new_entries, source) {
     const connection_id = await getAirtableRefreshToken();
     const { data, error } = await props.db
@@ -180,6 +182,160 @@ function Home(props) {
       );
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
+  }
+
+  async function pushToAirtableUpdate(new_entries, source) {
+    const connection_id = await getAirtableRefreshToken();
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+
+    const baseID = data[0].baseID;
+    const differentTables = data[0].fieldOptions.differentTables;
+    const nameFieldObject = data[0].fieldOptions.entryID;
+    const notesFieldObject = data[0].fieldOptions.summary;
+    const linkFieldObject = data[0].fieldOptions.link;
+    const emailFieldObject = data[0].fieldOptions.email;
+    const twitterFieldObject = data[0].fieldOptions.twitter;
+    const linkedInFieldObject = data[0].fieldOptions.linkedIn;
+
+    const entryTypeObject = data[0].fieldOptions.entryType;
+    const entryDateObject = data[0].fieldOptions.entryDate;
+
+    const nameField = nameFieldObject.data.id;
+    const notesField = notesFieldObject.data.id;
+    const entryTypeField =
+      entryTypeObject == false ? false : entryTypeObject.data.id;
+    const entryDateField =
+      entryDateObject == false ? false : entryDateObject.data.id;
+    const emailField =
+      emailFieldObject == false ? false : emailFieldObject.data.id;
+    const linkedInField =
+      linkFieldObject == false ? false : linkedInFieldObject.data.id;
+    const twitterField =
+      twitterFieldObject == false ? false : twitterFieldObject.data.id;
+
+    const tableID = nameFieldObject.tableID;
+
+    let new_contacts = [];
+    let new_entries_data = [];
+
+    if (differentTables) {
+      const linkField = linkFieldObject.data.id;
+      console.log("LINKFIELD", linkFieldObject);
+      for (let i = 0; i < new_entries.length; i++) {
+        const formula = `({${nameField}} = "${new_entries[i].customer}")`;
+        const encodedFormula = encodeURIComponent(formula);
+        const existingContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}?filterByFormula=${encodedFormula}`;
+        let recordResponse;
+        try {
+          recordResponse = await axios.get(existingContactURL, {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+            },
+          });
+        } catch (error) {
+          if (error) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            recordResponse = await axios.get(existingContactURL, {
+              headers: {
+                Authorization: `Bearer ${connection_id}`,
+              },
+            });
+          }
+        }
+        if (recordResponse.data.records.length > 0) {
+          const recordID = recordResponse.data.records[0].id;
+          new_entries_data.push({
+            id: recordID,
+            data: new_entries[i],
+          });
+        } else {
+          new_contacts.push(new_entries[i]);
+        }
+      }
+      for (let i = 0; i < new_contacts.length; i += 10) {
+        const batch = new_contacts.slice(
+          i,
+          i + 10 > new_contacts.length ? new_contacts.length : i + 10
+        );
+        const newContactURL = `https://api.airtable.com/v0/${baseID}/${tableID}`;
+        const records = batch.map((contact) => ({
+          fields: {
+            ...(nameField !== false ? { [nameField]: contact.customer } : {}),
+            ...(linkedInField !== false
+              ? { [linkedInField]: contact.url }
+              : {}),
+            ...(twitterField !== false ? { [twitterField]: contact.url } : {}),
+          },
+        }));
+        const newContactResponse = await axios.post(
+          newContactURL,
+          {
+            records,
+          },
+
+          {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("Respomse", newContactResponse);
+        newContactResponse.data.records.map((record, index) => {
+          new_entries_data.push({
+            id: record.id,
+            data: new_contacts[index],
+          });
+        });
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      console.log("NEW CONTACTS RECORDS", new_entries_data);
+      const reverseLinkedTableID = linkFieldObject.data.options.linkedTableId;
+      const reverseLinkFieldID =
+        linkFieldObject.data.options.inverseLinkFieldId;
+      for (let i = 0; i < new_entries_data.length; i += 10) {
+        const batch = new_entries_data.slice(
+          i,
+          i + 10 > new_entries_data.length ? new_entries_data.length : i + 10
+        );
+        console.log("Btach", batch);
+        const newEntryURL = `https://api.airtable.com/v0/${baseID}/${reverseLinkedTableID}`;
+        const records = batch.map((contact) => ({
+          fields: {
+            ...(entryTypeField !== false ? { [entryTypeField]: "Email" } : {}),
+            ...(reverseLinkFieldID !== false
+              ? { [reverseLinkFieldID]: [contact.id] }
+              : {}),
+            ...(entryDateField !== false
+              ? { [entryDateField]: new Date(contact.data.date).toISOString() }
+              : {}),
+            ...(notesField !== false
+              ? { [notesField]: contact.data.summary }
+              : {}),
+          },
+        }));
+        console.log("RECORDS", records);
+        const newEntryResponse = await axios.post(
+          newEntryURL,
+          {
+            records,
+            typecast: true,
+          },
+
+          {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("NEW ENTRY", newEntryResponse);
+      }
+    }
+    setIsLoading(false);
   }
 
   async function linkWithTwitter() {
@@ -350,11 +506,9 @@ function Home(props) {
     const admin_to_dos = data[0].tasks;
     const type = data[0].type;
     let baseID;
-    let tableID;
     let fieldOptions;
     if (type == "airtable") {
       baseID = data[0].baseID;
-      tableID = data[0].tableID;
       fieldOptions = data[0].fieldOptions;
     }
 
@@ -376,7 +530,6 @@ function Home(props) {
       user_to_dos: user_to_dos,
       type: type,
       baseID: baseID,
-      tableID: tableID,
       fieldOptions: fieldOptions,
     };
   }
@@ -1170,6 +1323,8 @@ function Home(props) {
       getEmailData();
     }
     loadCheck();
+    const apiKey = process.env.REACT_APP_API_KEY;
+    console.log("APIKEY", apiKey);
   }, []);
 
   async function nextOnboardingStep() {
@@ -1219,12 +1374,12 @@ function Home(props) {
           if (response && response.cookie != null) {
             if (isOnboarding) {
               const uid = localStorage.getItem("uid");
-              await props.db
-                .from("user_data")
-                .update({
-                  onboardingStep: 4,
-                })
-                .eq("id", uid);
+              // await props.db
+              //   .from("user_data")
+              //   .update({
+              //     onboardingStep: 4,
+              //   })
+              //   .eq("id", uid);
             }
             const fetch_crm = await getCRMData();
             const cookie = response.cookie;
@@ -1243,7 +1398,6 @@ function Home(props) {
 
             let type = fetch_crm.type;
             let baseID = fetch_crm.baseID;
-            let tableID = fetch_crm.tableID;
             let fieldOptions = fetch_crm.fieldOptions;
             await Promise.all(
               messageArray.map(async (messageData) => {
@@ -1324,12 +1478,15 @@ function Home(props) {
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
 
+                console.log("MessageData", messageData);
+
                 var obj = {
                   id: uniqueId,
                   customer: customer,
                   title: title,
                   summary: summary,
                   date: date,
+                  url: messageData.url,
                   source: "LinkedIn",
                   status: "Completed",
                 };
@@ -1353,35 +1510,35 @@ function Home(props) {
             const type_crm = localStorage.getItem("crmType");
 
             if (type_crm == "airtable") {
-              await pushToAirtable(new_crm_data, "LinkedIn");
+              await pushToAirtableUpdate(new_crm_data, "LinkedIn");
             } else {
               await sendToCRM(new_crm_data, "LinkedIn");
             }
-            const new_connection_id = localStorage.getItem("connection_id");
-            const uid = localStorage.getItem("uid");
-            await props.db
-              .from("data")
-              .update({
-                crm_data: admin_crm_update,
-                tasks: admin_to_dos,
-              })
-              .eq("connection_id", new_connection_id);
-            await props.db
-              .from("users")
-              .update({
-                crm_data: user_crm_update,
-                tasks: user_to_dos,
-                linkedinLinked: true,
-              })
-              .eq("id", uid);
-            setLinkedInLinked(true);
-            setIsLoading(false);
-            localStorage.setItem("linkedInLinked", true);
-            setCRM(user_crm_update);
-            setToDos(user_to_dos);
-            localStorage.setItem("to_dos", user_to_dos);
-            setOpenCookieModal(false);
-            window.location.reload();
+            // const new_connection_id = localStorage.getItem("connection_id");
+            // const uid = localStorage.getItem("uid");
+            // await props.db
+            //   .from("data")
+            //   .update({
+            //     crm_data: admin_crm_update,
+            //     tasks: admin_to_dos,
+            //   })
+            //   .eq("connection_id", new_connection_id);
+            // await props.db
+            //   .from("users")
+            //   .update({
+            //     crm_data: user_crm_update,
+            //     tasks: user_to_dos,
+            //     linkedinLinked: true,
+            //   })
+            //   .eq("id", uid);
+            // setLinkedInLinked(true);
+            // setIsLoading(false);
+            // localStorage.setItem("linkedInLinked", true);
+            // setCRM(user_crm_update);
+            // setToDos(user_to_dos);
+            // localStorage.setItem("to_dos", user_to_dos);
+            // setOpenCookieModal(false);
+            // window.location.reload();
           } else {
             console.log(cookieError);
             setCookieError("LoggedIn");

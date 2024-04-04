@@ -10,8 +10,9 @@ import LoadingOverlay from "react-loading-overlay";
 
 function Link(props) {
   const navigation = useNavigate();
-  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
-  const redirect_uri = window.location.href;
+  // const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  const client_id = process.env.REACT_APP_AIRTABLE_KEY;
+  const redirect_uri = process.env.REACT_APP_LINK_REDIRECT;
   let airtableConnected = false;
 
   const pinecone = new Pinecone({
@@ -282,7 +283,7 @@ function Link(props) {
           {
             code: code,
             client_id: client_id,
-            redirect_uri: "https://boondoggle.ai/link",
+            redirect_uri: redirect_uri,
             grant_type: "authorization_code",
             code_verifier: verifier,
           },
@@ -324,6 +325,9 @@ function Link(props) {
       connectAirTable();
       airtableConnected = true;
     }
+
+    console.log("Airtable ID", client_id);
+    console.log("REDIRECT", redirect_uri);
   }, []);
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">

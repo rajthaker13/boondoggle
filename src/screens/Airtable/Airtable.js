@@ -7,7 +7,8 @@ import { fontWeight } from "@mui/system";
 import { Pinecone } from "@pinecone-database/pinecone";
 
 function Airtable(props) {
-  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  // const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  const client_id = process.env.REACT_APP_AIRTABLE_KEY;
   const [bases, setBases] = useState([]);
   const [tables, setTables] = useState([]);
   const [baseSet, setBaseSet] = useState(false);
@@ -15,13 +16,27 @@ function Airtable(props) {
   const [chosenBase, setChosenBase] = useState();
   const [chosenTable, setChosenTable] = useState();
 
+  const [differentTables, setDifferentTables] = useState(false);
+
+  const [idFields, setIDFieds] = useState([]);
+  const [notesFields, setNotesFields] = useState([]);
+  const [emailFields, setEmailFields] = useState([]);
+  const [urlFields, setURLFields] = useState([]);
+  const [companyFields, setCompanyFields] = useState([]);
+  const [entryTypeFields, setEntryTypeFields] = useState([]);
+  const [entryDateFields, setEntryDateFields] = useState([]);
+
   const [entryID, setEntryID] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [company, setCompany] = useState("");
   const [summary, setSummary] = useState("");
+  const [connectingField, setConnectingField] = useState("");
+
+  const [email, setEmail] = useState("");
+  const [linkedIn, setLinkedIn] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [company, setCompany] = useState("");
+
+  const [entryType, setEntryType] = useState("");
+  const [entryDate, setEntryDate] = useState("");
 
   const navigation = useNavigate();
 
@@ -52,6 +67,7 @@ function Airtable(props) {
           setBases(res.data.bases);
         });
     }
+
     getData();
   }, []);
 
@@ -141,20 +157,126 @@ function Airtable(props) {
   }
 
   async function connectExistingAirtable(base) {
-    const connection_id = localStorage.getItem("connection_id");
-    const url = `https://api.airtable.com/v0/meta/bases/${base.id}/tables`;
-    axios
-      .get(url, {
-        headers: {
-          Authorization: `Bearer ${connection_id}`,
-        },
-      })
-      .then((res) => {
-        console.log(res);
-        setTables(res.data.tables);
-        setChosenBase(base);
-        setBaseSet(true);
+    const connection_id = await getAirtableRefreshToken();
+    const recordsURL = `https://api.airtable.com/v0/meta/bases/${base.id}/tables`;
+    const recordResponse = await axios.get(recordsURL, {
+      headers: {
+        Authorization: `Bearer ${connection_id}`,
+      },
+    });
+    const tableList = recordResponse.data.tables;
+    let identifierList = [];
+    let notesList = [];
+    let emailsList = [];
+    let urlList = [];
+    let companyList = [];
+    let entryTypeList = [];
+    let entryDateList = [];
+    tableList.map((table) => {
+      console.log(table);
+      const tableName = table.name;
+      const tableID = table.id;
+      const primaryFieldId = table.primaryFieldId;
+      table.fields.map((field, index) => {
+        if (field.type == "singleLineText" || field.type == "multilineText") {
+          identifierList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+          companyList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+          entryTypeList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "formula") {
+          identifierList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "multipleRecordLinks") {
+          notesList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+          companyList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "email") {
+          emailsList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "date") {
+          entryDateList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "externalSyncSource" || field.type == "url") {
+          urlList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        } else if (field.type == "singleSelect") {
+          entryTypeList.push({
+            data: field,
+            name: `${tableName} - ${field.name}`,
+            type: field.type,
+            tableID: tableID,
+            primaryFieldId: primaryFieldId,
+            tableData: table,
+          });
+        }
       });
+      setIDFieds(identifierList);
+      setNotesFields(notesList);
+      setEmailFields(emailsList);
+      setURLFields(urlList);
+      setCompanyFields(companyList);
+      setEntryTypeFields(entryTypeList);
+      setEntryDateFields(entryDateList);
+      setChosenBase(base);
+      setBaseSet(true);
+    });
   }
 
   async function getTable(table) {
@@ -230,37 +352,158 @@ function Airtable(props) {
       });
   }
 
-  async function submitAirtable() {
-    if (fullName != "" && email != "" && company != "" && summary != "") {
-      const connection_id = localStorage.getItem("connection_id");
-      const uid = localStorage.getItem("uid");
+  async function chooseFields() {
+    const entryIDObject = idFields.find((entry) => entry.name === entryID);
+    const summaryObject = idFields.find((entry) => entry.name === summary);
+    let linkObject = {};
+    if (differentTables) {
+      linkObject = notesFields.find((entry) => entry.name === connectingField);
+    }
 
-      const chosen_fields = {
-        fullName: fullName,
-        email: email,
-        company: company,
-        summary: summary,
-      };
+    let emailObject;
+    let linkedInObject;
+    let twitterObject;
+    let companyObject;
+    let entryTypeObject;
+    let entryDateObject;
 
-      await props.db
-        .from("data")
-        .update({
-          crm_data: [],
-          baseID: chosenBase.id,
-          tableID: chosenTable.id,
-          fieldOptions: chosen_fields,
-        })
-        .eq("connection_id", connection_id);
+    if (email != "skip") {
+      emailObject = emailFields.find((entry) => entry.name === email);
+    } else {
+      emailObject = false;
+    }
+
+    if (linkedIn != "skip") {
+      linkedInObject = urlFields.find((entry) => entry.name === linkedIn);
+    } else {
+      linkedInObject = false;
+    }
+
+    if (twitter != "skip") {
+      twitterObject = urlFields.find((entry) => entry.name === twitter);
+    } else {
+      twitterObject = false;
+    }
+
+    if (company != "skip") {
+      companyObject = companyFields.find((entry) => entry.name === company);
+    } else {
+      companyObject = false;
+    }
+
+    if (entryType != "skip") {
+      entryTypeObject = entryTypeFields.find(
+        (entry) => entry.name === entryType
+      );
+    } else {
+      entryTypeObject = false;
+    }
+
+    if (entryDate != "skip") {
+      entryDateObject = entryDateFields.find(
+        (entry) => entry.name === entryDate
+      );
+    } else {
+      entryDateObject = false;
+    }
+
+    const uid = localStorage.getItem("uid");
+    const connection_id = await getAirtableRefreshToken();
+
+    const fieldOptions = {
+      entryID: entryIDObject,
+      summary: summaryObject,
+      link: linkObject,
+      email: emailObject,
+      linkedIn: linkedInObject,
+      twitter: twitterObject,
+      company: companyObject,
+      entryType: entryTypeObject,
+      entryDate: entryDateObject,
+      differentTables: differentTables,
+    };
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: [],
+        baseID: chosenBase.id,
+        fieldOptions: fieldOptions,
+      })
+      .eq("connection_id", connection_id);
+
+    const index = pinecone.index("boondoggle-data");
+    let airtableEmbeddings = [];
+    if (differentTables) {
+      const idRecordsURL = `https://api.airtable.com/v0/${chosenBase.id}/${entryIDObject.tableID}`;
+      const idRecordsResponse = await axios.get(idRecordsURL, {
+        headers: {
+          Authorization: `Bearer ${connection_id}`,
+        },
+      });
+      const idrRecordData = idRecordsResponse.data.records;
+
+      const entryRecordsURL = `https://api.airtable.com/v0/${chosenBase.id}/${summaryObject.tableID}`;
+      const entryRecordsResponse = await axios.get(entryRecordsURL, {
+        headers: {
+          Authorization: `Bearer ${connection_id}`,
+        },
+      });
+
+      const entryrRecordData = entryRecordsResponse.data.records;
+
+      if (idrRecordData.length > 0) {
+        await Promise.all(
+          idrRecordData.map(async (item) => {
+            const embedding = await openai.embeddings.create({
+              model: "text-embedding-ada-002",
+              input: `${item}`,
+            });
+            var obj = {
+              id: item.id,
+              values: embedding.data[0].embedding,
+              metadata: { type: "Contact" },
+            };
+            airtableEmbeddings.push(obj);
+          })
+        );
+      }
+
+      if (entryrRecordData.length > 0) {
+        await Promise.all(
+          entryrRecordData.map(async (item) => {
+            // console.log("ENTRY", item);
+            const embedding = await openai.embeddings.create({
+              model: "text-embedding-ada-002",
+              input: `${item}`,
+            });
+            var obj = {
+              id: item.id,
+              values: embedding.data[0].embedding,
+              metadata: { type: "Entry" },
+            };
+            airtableEmbeddings.push(obj);
+          })
+        );
+      }
+
+      const ns1 = index.namespace(uid);
+
+      if (airtableEmbeddings.length > 0) {
+        await ns1.upsert(airtableEmbeddings);
+      }
+
       await props.db
         .from("user_data")
         .update({
           onboardingStep: 2,
         })
         .eq("id", uid);
-      await createPineconeIndexesAirtable(chosenBase.id, chosenTable.id);
+
       navigation("/home");
     }
   }
+
   return (
     <div className="login-container">
       <div className="crm-container">
@@ -288,57 +531,9 @@ function Airtable(props) {
                 );
               })}
             </div>
-            {/* <button
-              className="create-base-button"
-              onClick={async () => {
-                await createAirtable();
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="21"
-                viewBox="0 0 20 21"
-                fill="none"
-              >
-                <path
-                  d="M16.875 6.125H10.2086L8.04141 4.5C7.82472 4.33832 7.56176 4.25067 7.29141 4.25H3.125C2.79348 4.25 2.47554 4.3817 2.24112 4.61612C2.0067 4.85054 1.875 5.16848 1.875 5.5V16.125C1.875 16.4565 2.0067 16.7745 2.24112 17.0089C2.47554 17.2433 2.79348 17.375 3.125 17.375H16.9445C17.2575 17.3746 17.5575 17.2501 17.7788 17.0288C18.0001 16.8075 18.1246 16.5075 18.125 16.1945V7.375C18.125 7.04348 17.9933 6.72554 17.7589 6.49112C17.5245 6.2567 17.2065 6.125 16.875 6.125ZM16.875 16.125H3.125V5.5H7.29141L9.45859 7.125C9.67528 7.28668 9.93824 7.37433 10.2086 7.375H16.875V16.125ZM12.5 11.75C12.5 11.9158 12.4342 12.0747 12.3169 12.1919C12.1997 12.3092 12.0408 12.375 11.875 12.375H10.625V13.625C10.625 13.7908 10.5592 13.9497 10.4419 14.0669C10.3247 14.1842 10.1658 14.25 10 14.25C9.83424 14.25 9.67527 14.1842 9.55806 14.0669C9.44085 13.9497 9.375 13.7908 9.375 13.625V12.375H8.125C7.95924 12.375 7.80027 12.3092 7.68306 12.1919C7.56585 12.0747 7.5 11.9158 7.5 11.75C7.5 11.5842 7.56585 11.4253 7.68306 11.3081C7.80027 11.1908 7.95924 11.125 8.125 11.125H9.375V9.875C9.375 9.70924 9.44085 9.55027 9.55806 9.43306C9.67527 9.31585 9.83424 9.25 10 9.25C10.1658 9.25 10.3247 9.31585 10.4419 9.43306C10.5592 9.55027 10.625 9.70924 10.625 9.875V11.125H11.875C12.0408 11.125 12.1997 11.1908 12.3169 11.3081C12.4342 11.4253 12.5 11.5842 12.5 11.75Z"
-                  fill="#1C1C1C"
-                  fill-opacity="0.4"
-                />
-              </svg>
-              <p className="based-button-text">Create Airtable Base</p>
-            </button> */}
           </>
         )}
         {baseSet && !tableSet && (
-          <>
-            <div className="crm-header-container">
-              <p className="airtable-header">Choose Airtable Table</p>
-              <p className="airtable-subheader">
-                Choose which of your CRMs that Boondoggle should deploy entries
-                to.
-              </p>
-            </div>
-            <div className="unified_vendors">
-              {tables.map((table) => {
-                return (
-                  <div
-                    key={table.id}
-                    className="base-choices"
-                    style={{ flexDirection: "column", display: "flex" }}
-                    onClick={async () => {
-                      await getTable(table);
-                    }}
-                  >
-                    <p className="base-name">{table.name}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-        {baseSet && tableSet && (
           <div style={{ justifyContent: "center", alignContent: "center" }}>
             <div className="crm-header-container">
               <p className="airtable-header">
@@ -347,210 +542,403 @@ function Airtable(props) {
               <p className="airtable-subheader">
                 Select which columns Boondoggle data entries should deploy to.
               </p>
-              <p
-                className="airtable-subheader"
-                style={{ fontWeight: 800, paddingInline: "5%" }}
-              >
-                Boondoggle currently only supports text & email fields. <br />
-                Please request more functionality by emailing
-                support@boondoggle.ai
-              </p>
             </div>
             <div className="column-matching-table">
               <div className="column-matching-column">
                 <div className="column-matching-row">
                   <p className="column-matching-header">Column Name</p>
                 </div>
-                {/* <div className="column-matching-row">
-                  <p className="column-matching-entry">Entry ID</p>
-                </div> */}
+
                 <div className="column-matching-row">
-                  <p className="column-matching-entry">Name</p>
+                  <p className="column-matching-entry">Contact Name</p>
                 </div>
-                {/* <div className="column-matching-row">
-                  <p className="column-matching-entry">First Name</p>
-                </div>
-                <div className="column-matching-row">
-                  <p className="column-matching-entry">Last Name</p>
-                </div> */}
-                <div className="column-matching-row">
-                  <p className="column-matching-entry">Email</p>
-                </div>
-                <div className="column-matching-row">
-                  <p className="column-matching-entry">Company</p>
-                </div>
+
                 <div className="column-matching-row">
                   <p className="column-matching-entry">Summary/Notes</p>
                 </div>
+
+                {differentTables && (
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Common Field</p>
+                  </div>
+                )}
               </div>
               <div className="column-matching-column">
                 <div className="column-matching-row">
                   <p className="column-matching-header">Column Name</p>
                 </div>
-                {/* <div className="column-matching-row">
+                <div className="column-matching-row">
                   <select
                     value={entryID}
                     onChange={(e) => {
+                      if (summary != "" && e.target.value != "") {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === e.target.value
+                        );
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+                        const summaryTable = summaryObject.tableID;
+
+                        if (entryTable != summaryTable) {
+                          setDifferentTables(true);
+                        } else {
+                          setDifferentTables(false);
+                        }
+                      } else {
+                        setDifferentTables("");
+                      }
                       setEntryID(e.target.value);
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email"
-                      ) {
-                        return <option value={field.id}>{field.name}</option>;
-                      }
-                    })}
-                  </select>
-                </div> */}
-                <div className="column-matching-row">
-                  <select
-                    value={fullName}
-                    onChange={(e) => {
-                      setFullName(e.target.value);
-                    }}
-                  >
-                    <option value="" className="column-matching-entry"></option>
-                    {/* <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option> */}
-                    {chosenTable.fields.map((field) => {
-                      console.log(field);
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email" ||
-                        field.type == "multilineText"
-                      ) {
-                        return <option value={field.name}>{field.name}</option>;
+                    {idFields.map((field, index) => {
+                      {
+                        return (
+                          <option key={index} value={field.name}>
+                            {field.name}
+                          </option>
+                        );
                       }
                     })}
                   </select>
                 </div>
-                {/* <div className="column-matching-row">
-                  <select
-                    value={firstName}
-                    onChange={(e) => {
-                      setFirstName(e.target.value);
-                    }}
-                  >
-                    <option value="" className="column-matching-entry"></option>
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email"
-                      ) {
-                        return <option value={field.id}>{field.name}</option>;
-                      }
-                    })}
-                  </select>
-                </div> */}
-                {/* <div className="column-matching-row">
-                  <select
-                    value={lastName}
-                    onChange={(e) => {
-                      setLastName(e.target.value);
-                    }}
-                  >
-                    <option value="" className="column-matching-entry"></option>
 
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email"
-                      ) {
-                        return <option value={field.id}>{field.name}</option>;
-                      }
-                    })}
-                  </select>
-                </div> */}
-                <div className="column-matching-row">
-                  <select
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                    }}
-                  >
-                    <option value="" className="column-matching-entry"></option>
-                    {/* <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option> */}
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email" ||
-                        field.type == "multilineText"
-                      ) {
-                        return <option value={field.name}>{field.name}</option>;
-                      }
-                    })}
-                  </select>
-                </div>
-                <div className="column-matching-row">
-                  <select
-                    value={company}
-                    onChange={(e) => {
-                      setCompany(e.target.value);
-                    }}
-                  >
-                    <option value="" className="column-matching-entry"></option>
-                    {/* <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option>
-                    <option value="skip" className="column-matching-entry">
-                      SKIP FIELD
-                    </option> */}
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email" ||
-                        field.type == "multilineText"
-                      ) {
-                        return <option value={field.name}>{field.name}</option>;
-                      }
-                    })}
-                  </select>
-                </div>
                 <div className="column-matching-row">
                   <select
                     value={summary}
                     onChange={(e) => {
+                      if (entryID != "" && e.target.value != "") {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === e.target.value
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+                        const summaryTable = summaryObject.tableID;
+
+                        if (entryTable != summaryTable) {
+                          setDifferentTables(true);
+                        } else {
+                          setDifferentTables(false);
+                        }
+                      } else {
+                        setDifferentTables(false);
+                      }
                       setSummary(e.target.value);
                     }}
                   >
                     <option value="" className="column-matching-entry"></option>
-                    {/* <option value="create" className="column-matching-entry">
-                      CREATE FIELD
-                    </option> */}
-                    {chosenTable.fields.map((field) => {
-                      if (
-                        field.type == "singleLineText" ||
-                        field.type == "email" ||
-                        field.type == "multilineText"
-                      ) {
-                        return <option value={field.name}>{field.name}</option>;
+
+                    {idFields.map((field, index) => {
+                      {
+                        return (
+                          <option key={index} value={field.name}>
+                            {field.name}
+                          </option>
+                        );
                       }
                     })}
                   </select>
                 </div>
+
+                {differentTables && (
+                  <div className="column-matching-row">
+                    <select
+                      value={connectingField}
+                      onChange={(e) => {
+                        setConnectingField(e.target.value);
+                      }}
+                    >
+                      <option
+                        value=""
+                        className="column-matching-entry"
+                      ></option>
+
+                      {notesFields.map((field, index) => {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+                        const summaryTable = summaryObject.tableID;
+                        if (
+                          entryTable == field.tableID &&
+                          summaryTable == field.data.options.linkedTableId
+                        ) {
+                          {
+                            return (
+                              <option key={index} value={field.name}>
+                                {field.name}
+                              </option>
+                            );
+                          }
+                        }
+                      })}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
             <button
               className="submit-button"
               onClick={async () => {
-                await submitAirtable();
+                setTableSet(true);
               }}
             >
-              <p className="based-button-text">Submit</p>
+              <p className="based-button-text" style={{ color: "black" }}>
+                Next
+              </p>
             </button>
           </div>
+        )}
+        {baseSet && tableSet && (
+          <>
+            <div
+              style={{
+                justifyContent: "center",
+                alignContent: "center",
+                paddingInline: "10vw",
+              }}
+            >
+              <div className="crm-header-container">
+                <p className="airtable-header">
+                  Select Extended Contact Fields
+                </p>
+                {/* <p className="airtable-subheader">
+                  Select extended contact fields
+                </p> */}
+              </div>
+              <div className="column-matching-table">
+                <div className="column-matching-column">
+                  <div className="column-matching-row">
+                    <p className="column-matching-header">Column Name</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Email</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">LinkedIn</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Twitter</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Company</p>
+                  </div>
+                </div>
+                <div className="column-matching-column">
+                  <div className="column-matching-row">
+                    <p className="column-matching-header">Column Name</p>
+                  </div>
+                  <div className="column-matching-row">
+                    <select
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+                      {emailFields.map((field) => {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+
+                        if (field.tableID == entryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                  <div className="column-matching-row">
+                    <select
+                      value={linkedIn}
+                      onChange={(e) => {
+                        setLinkedIn(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+                      {urlFields.map((field) => {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+                        const summaryTable = summaryObject.tableID;
+                        if (field.tableID == entryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                  <div className="column-matching-row">
+                    <select
+                      value={twitter}
+                      onChange={(e) => {
+                        setTwitter(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+                      {urlFields.map((field) => {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+                        const summaryTable = summaryObject.tableID;
+                        if (field.tableID == entryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                  <div className="column-matching-row">
+                    <select
+                      value={company}
+                      onChange={(e) => {
+                        setCompany(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+                      {companyFields.map((field) => {
+                        const entryIDObject = idFields.find(
+                          (entry) => entry.name === entryID
+                        );
+
+                        const entryTable = entryIDObject.tableID;
+
+                        if (field.tableID == entryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ justifyContent: "center", alignContent: "center" }}>
+              <div className="crm-header-container">
+                <p className="airtable-header">Select Extended Entry Fields</p>
+                {/* <p className="airtable-subheader">
+                  Select extended entry fields
+                </p> */}
+              </div>
+              <div className="column-matching-table">
+                <div className="column-matching-column">
+                  <div className="column-matching-row">
+                    <p className="column-matching-header">Column Name</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Entry Type</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <p className="column-matching-entry">Entry Date</p>
+                  </div>
+                </div>
+                <div className="column-matching-column">
+                  <div className="column-matching-row">
+                    <p className="column-matching-header">Column Name</p>
+                  </div>
+
+                  <div className="column-matching-row">
+                    <select
+                      value={entryType}
+                      onChange={(e) => {
+                        setEntryType(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+
+                      {entryTypeFields.map((field) => {
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const summaryTable = summaryObject.tableID;
+                        if (field.tableID == summaryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                  <div className="column-matching-row">
+                    <select
+                      value={entryDate}
+                      onChange={(e) => {
+                        setEntryDate(e.target.value);
+                      }}
+                    >
+                      <option value="skip" className="column-matching-entry">
+                        SKIP FIELD
+                      </option>
+
+                      {entryDateFields.map((field) => {
+                        const summaryObject = idFields.find(
+                          (entry) => entry.name === summary
+                        );
+
+                        const summaryTable = summaryObject.tableID;
+                        if (field.tableID == summaryTable) {
+                          return (
+                            <option value={field.name}>{field.name}</option>
+                          );
+                        }
+                      })}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <button
+                className="submit-button"
+                onClick={async () => {
+                  await chooseFields();
+                }}
+              >
+                <p className="based-button-text">Submit</p>
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
