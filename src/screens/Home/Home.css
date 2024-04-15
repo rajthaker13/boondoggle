@@ -14,7 +14,7 @@
   background: var(--white-100, #fff);
   width: 100vw;
   height: 100vh;
-  flex-direction: row;
+  flex-direction: column;
   display: inline-flex;
 }
 
@@ -29,6 +29,112 @@
   flex-shrink: 0;
   border-radius: var(--0, 0px);
   border-right: 1px solid var(--black-10, rgba(28, 28, 28, 0.1));
+}
+
+.header-2 {
+  display: flex;
+  width: 1603px;
+  height: 81px;
+  padding: 10px 38px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-2-picker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  align-self: stretch;
+}
+
+.header-2-picker-text-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-2-picker-text {
+  color: var(--Content-DEFAULT, #6b7280);
+  text-align: center;
+  font-family: Inter;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px; /* 133.333% */
+}
+
+.header-2-picker-text:hover {
+  font-weight: 700;
+}
+
+.header-2-info-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-2-action-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-2-badge-container {
+  display: flex;
+  padding: var(--borderRadius-tremor-small, 6px) 10px;
+  align-items: center;
+  gap: var(--borderRadius-tremor-small, 6px);
+  align-self: stretch;
+  border-radius: var(--borderRadius-tremor-small, 6px);
+  border: 1px solid var(--rose-700, #be123c);
+  background: var(--rose-100, #ffe4e6);
+}
+
+.header-2-badge-text {
+  color: var(--rose-700, #be123c);
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.header-2-upgrade-button {
+  display: flex;
+  padding: 6px 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--borderRadius-tremor-default, 8px);
+  border: 1px solid var(--Brand-DEFAULT, #3b82f6);
+
+  /* Tailwind dropshadow/shadow-sm */
+  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+}
+
+.header-2-upgrade-text {
+  color: var(--blue-500, #3b82f6);
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px; /* 166.667% */
+}
+
+.dashboard-2 {
+  display: flex;
+  width: 1603px;
+  padding: 38px;
+  justify-content: center;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 35px 18px;
+  flex-wrap: wrap;
+  background: var(--Background-muted, #f9fafb);
 }
 
 @font-face {

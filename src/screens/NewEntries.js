@@ -1,0 +1,421 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Unified from "unified-ts-client";
+import axios from "axios";
+import ClickAwayListener from "react-click-away-listener";
+import Sidebar from "../components/Sidebar/Sidebar";
+import LoadingOverlay from "react-loading-overlay";
+import {
+  Badge,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from "@tremor/react";
+import {
+  RiFlag2Line,
+  RiLinkedinFill,
+  RiMailLine,
+  RiTwitterLine,
+} from "@remixicon/react";
+
+function NewEntries(props) {
+  const data = [
+    {
+      name: "Viola Amherd",
+      Role: "Federal Councillor",
+      departement:
+        "The Federal Department of Defence, Civil Protection and Sport (DDPS)",
+      status: "active",
+    },
+    {
+      name: "Albert Rösti",
+      Role: "Federal Councillor",
+      departement:
+        "The Federal Department of the Environment, Transport, Energy and Communications (DETEC)",
+      status: "active",
+    },
+    {
+      name: "Beat Jans",
+      Role: "Federal Councillor",
+      departement: "The Federal Department of Justice and Police (FDJP)",
+      status: "active",
+    },
+    {
+      name: "Ignazio Cassis",
+      Role: "Federal Councillor",
+      departement: "The Federal Department of Foreign Affairs (FDFA)",
+      status: "active",
+    },
+    {
+      name: "Karin Keller-Sutter",
+      Role: "Federal Councillor",
+      departement: "The Federal Department of Finance (FDF)",
+      status: "active",
+    },
+    {
+      name: "Guy Parmelin",
+      Role: "Federal Councillor",
+      departement:
+        "The Federal Department of Economic Affairs, Education and Research (EAER)",
+      status: "active",
+    },
+    {
+      name: "Elisabeth Baume-Schneider",
+      Role: "Federal Councillor",
+      departement: "The Federal Department of Home Affairs (FDHA)",
+      status: "active",
+    },
+  ];
+  const [tableData, setTableData] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [expandedRow, setExpandedRow] = useState(null);
+  const [viewTasks, setViewTasks] = useState(false);
+  const [viewCompleted, setViewCompleted] = useState(false);
+
+  const [seeCompletedEntries, setSeeCompletedEntries] = useState(true);
+  const [seePendingEntries, setSeePendingEntries] = useState(false);
+  const [seeRejectedEntries, setSeeRejectedEntries] = useState(false);
+
+  const [selectedEntries, setSelectedEntries] = useState([]);
+  const [allSelected, setAllSelected] = useState(false);
+
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
+  const [isLoading, setIsLoading] = useState(false);
+  let renderedData = [];
+
+  let renderedTasks = [];
+  async function sendToCRM() {
+    const connection_id = localStorage.getItem("connection_id");
+
+    Promise.all(
+      selectedEntries.map(async (id) => {
+        const matchedEntryIndex = tableData.findIndex(
+          (entry) => entry.id == id
+        );
+        const update = tableData[matchedEntryIndex];
+        console.log("UPDATE", update);
+        const source = update.source;
+        console.log("SOURCE", source);
+        if (update.customer != "") {
+          let regexCustomer;
+          if (source == "Twitter") {
+            regexCustomer = update.customer.replace(
+              /\s(?=[\uD800-\uDFFF])/g,
+              ""
+            );
+          } else if (source == "Email") {
+            regexCustomer = update.email;
+          }
+
+          if (update.customer == "Blake Faulkner 🌉") {
+            regexCustomer = "Blake Faulkner";
+          }
+          const options = {
+            method: "GET",
+            url: `https://api.unified.to/crm/${connection_id}/contact`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+            params: {
+              limit: 1000,
+              query: regexCustomer,
+            },
+          };
+          let results;
+          try {
+            results = await axios.request(options);
+          } catch (error) {
+            if (error) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              results = await axios.request(options);
+            }
+          }
+          const current_crm = results.data[0];
+
+          const idOptions = {
+            method: "GET",
+            url: `https://api.unified.to/hris/${connection_id}/employee`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+          };
+
+          let idResults;
+
+          try {
+            idResults = await axios.request(idOptions);
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            idResults = await axios.request(idOptions);
+          }
+          const user_crm_id = idResults.data[0].id;
+
+          if (current_crm != undefined) {
+            const event = {
+              id: current_crm.id,
+              type: "NOTE",
+              note: {
+                description: update.title + "\n" + update.summary,
+              },
+              company_ids: current_crm.company_ids,
+              contact_ids: [current_crm.id],
+              user_id: user_crm_id,
+            };
+            const { data, error } = await props.db.functions.invoke(
+              "update-crm-unified",
+              {
+                body: { connection_id: connection_id, event: event },
+              }
+            );
+          } else {
+            let contact;
+            if (source == "Twitter") {
+              contact = {
+                name: regexCustomer,
+              };
+            } else if (source == "Email") {
+              contact = {
+                name: update.customer,
+                emails: [
+                  {
+                    email: regexCustomer,
+                    type: "WORK",
+                  },
+                ],
+              };
+            }
+            const { data, error } = await props.db.functions.invoke(
+              "new-contact-unified",
+              {
+                body: {
+                  connection_id: connection_id,
+                  contact: contact,
+                  title: update.title,
+                  description:
+                    update.summary + "\n + Summarized by Boondoggle AI",
+                  user_id: user_crm_id,
+                },
+              }
+            );
+          }
+        }
+      })
+    );
+    setTableData(tableData);
+    setTasks(tasks);
+    setSelectedEntries([]);
+    setAllSelected(false);
+    setIsLoading(false);
+  }
+  async function deployEntries() {
+    selectedEntries.map((id) => {
+      const matchedEntryIndex = tableData.findIndex((entry) => entry.id == id);
+      const toDoEntryIndex = tasks.findIndex((entry) => entry.id == id);
+      tableData[matchedEntryIndex].status = "Completed";
+      tasks[toDoEntryIndex].emailStatus = "Completed";
+    });
+
+    const connection_id = localStorage.getItem("connection_id");
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: tableData,
+        tasks: tasks,
+      })
+      .eq("connection_id", connection_id);
+
+    const crmType = localStorage.getItem("crmType");
+
+    if (crmType == "crm") {
+      await sendToCRM();
+    }
+  }
+
+  async function rejectEntries() {
+    selectedEntries.map((id) => {
+      const matchedEntryIndex = tableData.findIndex((entry) => entry.id == id);
+      const toDoEntryIndex = tasks.findIndex((entry) => entry.id == id);
+      tableData[matchedEntryIndex].status = "Rejected";
+      tasks[toDoEntryIndex].emailStatus = "Rejected";
+    });
+
+    const connection_id = localStorage.getItem("connection_id");
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: tableData,
+        tasks: tasks,
+      })
+      .eq("connection_id", connection_id);
+
+    setTableData(tableData);
+    setTasks(tasks);
+    setSelectedEntries([]);
+    setAllSelected(false);
+    setIsLoading(false);
+  }
+
+  useEffect(() => {
+    async function getData() {
+      const uid = localStorage.getItem("uid");
+      const connection_id = localStorage.getItem("connection_id");
+      const isAdmin = localStorage.getItem("isAdmin");
+
+      if (isAdmin == "true") {
+        const { data, error } = await props.db
+          .from("data")
+          .select()
+          .eq("connection_id", connection_id);
+        setTableData(data[0].crm_data);
+        setTasks(data[0].tasks);
+      } else {
+        const { data, error } = await props.db
+          .from("users")
+          .select()
+          .eq("id", uid);
+        setTableData(data[0].crm_data);
+        setTasks(data[0].tasks);
+      }
+    }
+
+    async function checkOnBoarding() {
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("user_data")
+        .select("")
+        .eq("id", uid);
+      setIsOnboarding(!data[0].hasOnboarded);
+      setOnboardingStep(data[0].onboardingStep);
+    }
+
+    checkOnBoarding();
+
+    getData();
+  }, []);
+
+  function timeAgo(timestamp) {
+    const currentTime = new Date();
+    const targetTime = new Date(timestamp);
+
+    const timeDifference = currentTime - targetTime;
+    const seconds = Math.floor(timeDifference / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+
+    if (months > 0) {
+      return `${months} month${months !== 1 ? "s" : ""} ago`;
+    } else if (days > 0) {
+      return `${days} day${days !== 1 ? "s" : ""} ago`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    } else {
+      return `${seconds} second${seconds !== 1 ? "s" : ""} ago`;
+    }
+  }
+
+  return (
+    <div>
+      <Sidebar selectedTab={2} db={props.db} />
+      <div class="w-[100vw] h-[90vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] flex-col">
+        <div class="w-[95vw] h-[85vh] p-6 bg-white rounded-[5.13px] shadow border border-gray-200 flex-col justify-start items-center gap-6 inline-flex">
+          <div class="w-[90vw] h-6 justify-start items-center gap-2.5 inline-flex">
+            <div class="grow shrink basis-0 text-gray-700 text-base font-medium font-['Inter'] leading-normal">
+              Activity Log
+            </div>
+            <div class="h-[21px] justify-end items-center gap-2.5 flex">
+              <div class="w-[77.50px] px-2.5 py-0.5 bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 flex">
+                <div class="text-blue-700 text-xs font-normal font-['Inter']">
+                  Review
+                </div>
+                <div class="p-[0.75px] bg-blue-500 rounded-sm justify-start items-start gap-[3px] flex">
+                  <div class="w-[9px] h-[9px] relative"></div>
+                </div>
+              </div>
+              <div class="w-[91.50px] px-2.5 py-0.5 bg-white bg-opacity-90 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
+                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
+                  <div class="text-emerald-600 text-xs font-normal font-['Inter']">
+                    Approved
+                  </div>
+                </div>
+                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
+                  <div></div>
+                </div>
+              </div>
+              <div class="w-[86.50px] px-2.5 py-0.5 bg-rose-100 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
+                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
+                  <div class="text-rose-700 text-xs font-normal font-['Inter']">
+                    Rejected
+                  </div>
+                </div>
+                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
+                  <div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <Table className="w-[100%]">
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Date</TableHeaderCell>
+                <TableHeaderCell>Workflow</TableHeaderCell>
+                <TableHeaderCell>Entry Title</TableHeaderCell>
+                <TableHeaderCell>Summary</TableHeaderCell>
+                <TableHeaderCell>Customer</TableHeaderCell>
+                <TableHeaderCell>Email</TableHeaderCell>
+                <TableHeaderCell>LinkedIn</TableHeaderCell>
+                <TableHeaderCell>Twitter</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <>
+                {tableData.map((lead, index) => {
+                  console.log(tableData);
+                  const timestamp = lead.date;
+                  const timeAgoString = timeAgo(timestamp);
+                  return (
+                    <TableRow key={lead.id}>
+                      <TableCell>{timeAgoString}</TableCell>
+                      <TableCell>LinkedIn {`->`} Hubspot</TableCell>
+                      <TableCell>{lead.title}</TableCell>
+                      <TableCell>{lead.summary}</TableCell>
+                      <TableCell>{lead.customer}</TableCell>
+                      <TableCell>
+                        <RiMailLine />
+                      </TableCell>
+                      <TableCell
+                        onClick={() => {
+                          window.open(lead.url, "_blank");
+                        }}
+                      >
+                        <RiLinkedinFill />
+                      </TableCell>
+                      <TableCell>
+                        <RiTwitterLine />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default NewEntries;

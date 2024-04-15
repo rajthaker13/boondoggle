@@ -28,7 +28,8 @@
 
 .boondoggleai-query-input {
   display: flex;
-  width: 80vw;
+  width: 95vw;
+  margin-bottom: 1vh;
   padding: var(--16, 16px) var(--12, 12px);
   flex-direction: column;
   justify-content: center;

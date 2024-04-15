@@ -24,6 +24,7 @@ import salesforce from "../../assets/landing/integrations/crm_svg/salesforce.svg
 import salesloft from "../../assets/landing/integrations/crm_svg/salesloft.svg";
 import zendesksell from "../../assets/landing/integrations/crm_svg/zendesksell.svg";
 import zohocrm from "../../assets/landing/integrations/crm_svg/zohocrm.svg";
+import { Callout } from "@tremor/react";
 
 function Home(props) {
   const navigation = useNavigate();
@@ -213,8 +214,8 @@ function Home(props) {
       emailFieldObject == false ? false : emailFieldObject.data.id;
     const linkedInField =
       linkFieldObject == false ? false : linkedInFieldObject.data.id;
-    const twitterField =
-      twitterFieldObject == false ? false : twitterFieldObject.data.id;
+    // const twitterField =
+    //   twitterFieldObject == false ? false : twitterFieldObject.data.id;
 
     const tableID = nameFieldObject.tableID;
 
@@ -267,7 +268,6 @@ function Home(props) {
             ...(linkedInField !== false
               ? { [linkedInField]: contact.url }
               : {}),
-            ...(twitterField !== false ? { [twitterField]: contact.url } : {}),
           },
         }));
         const newContactResponse = await axios.post(
@@ -1374,12 +1374,12 @@ function Home(props) {
           if (response && response.cookie != null) {
             if (isOnboarding) {
               const uid = localStorage.getItem("uid");
-              // await props.db
-              //   .from("user_data")
-              //   .update({
-              //     onboardingStep: 4,
-              //   })
-              //   .eq("id", uid);
+              await props.db
+                .from("user_data")
+                .update({
+                  onboardingStep: 4,
+                })
+                .eq("id", uid);
             }
             const fetch_crm = await getCRMData();
             const cookie = response.cookie;
@@ -1514,31 +1514,31 @@ function Home(props) {
             } else {
               await sendToCRM(new_crm_data, "LinkedIn");
             }
-            // const new_connection_id = localStorage.getItem("connection_id");
-            // const uid = localStorage.getItem("uid");
-            // await props.db
-            //   .from("data")
-            //   .update({
-            //     crm_data: admin_crm_update,
-            //     tasks: admin_to_dos,
-            //   })
-            //   .eq("connection_id", new_connection_id);
-            // await props.db
-            //   .from("users")
-            //   .update({
-            //     crm_data: user_crm_update,
-            //     tasks: user_to_dos,
-            //     linkedinLinked: true,
-            //   })
-            //   .eq("id", uid);
-            // setLinkedInLinked(true);
-            // setIsLoading(false);
-            // localStorage.setItem("linkedInLinked", true);
-            // setCRM(user_crm_update);
-            // setToDos(user_to_dos);
-            // localStorage.setItem("to_dos", user_to_dos);
-            // setOpenCookieModal(false);
-            // window.location.reload();
+            const new_connection_id = localStorage.getItem("connection_id");
+            const uid = localStorage.getItem("uid");
+            await props.db
+              .from("data")
+              .update({
+                crm_data: admin_crm_update,
+                tasks: admin_to_dos,
+              })
+              .eq("connection_id", new_connection_id);
+            await props.db
+              .from("users")
+              .update({
+                crm_data: user_crm_update,
+                tasks: user_to_dos,
+                linkedinLinked: true,
+              })
+              .eq("id", uid);
+            setLinkedInLinked(true);
+            setIsLoading(false);
+            localStorage.setItem("linkedInLinked", true);
+            setCRM(user_crm_update);
+            setToDos(user_to_dos);
+            localStorage.setItem("to_dos", user_to_dos);
+            setOpenCookieModal(false);
+            window.location.reload();
           } else {
             console.log(cookieError);
             setCookieError("LoggedIn");
@@ -1871,6 +1871,13 @@ function Home(props) {
             onboardingStep={onboardingStep}
             db={props.db}
           />
+          <div className="dashboard-2">
+            <div className="mx-auto max-w-lg space-y-6">
+              <Callout title="Sales Performance" color="red">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              </Callout>
+            </div>
+          </div>
           <div
             style={
               isOnboarding && onboardingStep == 5

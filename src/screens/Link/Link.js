@@ -335,13 +335,13 @@ function Link(props) {
         <div className="crm-container">
           <div className="crm-header-container">
             <p className="crm-header-text">Choose your CRM</p>
-            <p className="crm-subheader-text">
+            {/* <p className="crm-subheader-text">
               Boondoggle will read your CRM structure to match <br /> your
               entries to your team’s existing structure.
             </p>
             <p className="crm-subheader-text">
               Learn more about our data access at Privacy Policy
-            </p>
+            </p> */}
           </div>
           <div className="crm-link">
             <UnifiedDirectory
