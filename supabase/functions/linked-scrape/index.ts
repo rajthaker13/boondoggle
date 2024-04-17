@@ -24,9 +24,11 @@ Deno.serve(async (req) => {
   await page.setCookie({ name: "li_at", value: session_cookie, domain: "www.linkedin.com" })
   await page.goto(url);
   await page.click('a[href="https://www.linkedin.com/messaging/?"]');
-  await page.waitForNavigation();
+  // await page.waitForNavigation();
 
   const test = await page.content()
+
+  console.log("test", test)
 
   const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link', links => links.map(link => link.href));
 

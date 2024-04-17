@@ -129,14 +129,9 @@ function BoondogggleAI(props) {
   }
 
   async function onBoondoggleQuery(event) {
-    if (event.key == "Enter" || isOnboarding) {
-      if (isOnboarding) {
-        await nextOnboardingStep();
-      }
+    if (event.key == "Enter") {
       setIsLoading(true);
-      const searchQuery = isOnboarding
-        ? "What conversations have I had recently related to Boondoggle AI?"
-        : query;
+      const searchQuery = query;
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
       );
@@ -159,7 +154,8 @@ function BoondogggleAI(props) {
       const id = localStorage.getItem("connection_id");
       const uid = localStorage.getItem("uid");
       const type = localStorage.getItem("crmType");
-      const ns1 = index.namespace(type == "crm" ? id : uid);
+      // const ns1 = index.namespace(type == "crm" ? id : uid);
+      const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
 
       const queryResponse = await ns1.query({
         topK: 20,
@@ -168,6 +164,8 @@ function BoondogggleAI(props) {
       });
 
       const matches = queryResponse.matches;
+
+      console.log("Matches", matches);
 
       let queryArray = [];
 
@@ -360,41 +358,6 @@ function BoondogggleAI(props) {
                 : { flexDirection: "column", marginLeft: "2vw" }
             }
           >
-            <div className="boondoggleai-header-container">
-              <p className="boondoggleai-header">Boondoggle AI</p>
-            </div>
-            {isOnboarding && onboardingStep == 11 && (
-              <div
-                className="onboarding-tooltip"
-                style={{ width: "80vw", marginTop: "5vh" }}
-              >
-                <p
-                  className="link-button-text"
-                  style={{ lineHeight: "100%", paddingInline: "1vw" }}
-                >
-                  Now that you have connected your CRM to Boondoggle, our AI can
-                  help you answer questions and analyze data within your CRM.
-                </p>
-                <button
-                  className="onboarding-tooltip-button"
-                  style={{ marginBottom: "1vh" }}
-                  onClick={async () => {
-                    await onBoondoggleQuery("Onboarding");
-                  }}
-                >
-                  {" "}
-                  <p
-                    className="link-button-text"
-                    style={{
-                      color: "black",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Run a Test Query
-                  </p>
-                </button>
-              </div>
-            )}
             <div
               className="boondoggle-ai-chat-content"
               id="boondoggle-ai-chat-content"
@@ -403,46 +366,15 @@ function BoondogggleAI(props) {
                 (onboardingStep == 11 || onboardingStep == 12) &&
                 !isLoading
                   ? { height: "69vh" }
-                  : {}
+                  : { marginTop: "2vh" }
               }
             />
-            {isOnboarding && onboardingStep == 12 && !isLoading && (
-              <div
-                className="onboarding-tooltip"
-                style={{ width: "80vw", marginBottom: "5vh" }}
-              >
-                <p
-                  className="link-button-text"
-                  style={{ lineHeight: "100%", paddingInline: "1vw" }}
-                >
-                  Congratulations! You just made your first Boondoggle
-                  Query...it's that easy.
-                </p>
-                <button
-                  className="onboarding-tooltip-button"
-                  style={{ marginBottom: "1vh" }}
-                  onClick={async () => {
-                    await nextOnboardingStep();
-                  }}
-                >
-                  <p
-                    className="link-button-text"
-                    style={{
-                      color: "black",
-                      fontSize: "12px",
-                    }}
-                  >
-                    Continue
-                  </p>
-                </button>
-              </div>
-            )}
+
             <input
               onKeyDown={async (event) => await onBoondoggleQuery(event)}
               className="boondoggleai-query-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              disabled={isOnboarding ? true : false}
             ></input>
             <p>Press Enter to Query</p>
           </div>
