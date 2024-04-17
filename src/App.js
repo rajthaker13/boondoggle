@@ -23,6 +23,7 @@ import Invite from "./screens/Invite/Invite";
 import NewHome from "./screens/NewHome/NewHome";
 import Workflows from "./screens/Workflows";
 import NewEntries from "./screens/NewEntries";
+import Demo from "./screens/Demo";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",

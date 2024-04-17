@@ -103,8 +103,15 @@ function NewHome(props) {
               emails, inbox, and more.
             </p>
 
-            <Button variant="secondary" className="w-[100%]" icon={RiAddLine}>
-              Add Twitter account
+            <Button
+              variant={linkedInLinked ? "primary" : "secondary"}
+              className="w-[100%]"
+              icon={RiAddLine}
+              onClick={() => {
+                setLinkedInLinked(true);
+              }}
+            >
+              {linkedInLinked ? "Linked" : "Add Twitter account"}
             </Button>
           </Card>
 
@@ -125,15 +132,8 @@ function NewHome(props) {
               your emails, inbox, and more.
             </p>
 
-            <Button
-              variant={linkedInLinked ? "primary" : "secondary"}
-              className="w-[100%]"
-              icon={RiAddLine}
-              onClick={() => {
-                setLinkedInLinked(true);
-              }}
-            >
-              {linkedInLinked ? "Linked" : "Add LinkedIn account"}
+            <Button variant="primary" className="w-[100%]" disabled={true}>
+              Extension Installed
             </Button>
           </Card>
 
@@ -161,10 +161,10 @@ function NewHome(props) {
                   : "primary"
               }
               className="w-[100%]"
-              icon={RiAddLine}
               onClick={() => {
                 navigation("/link");
               }}
+              disabled={true}
             >
               {localStorage.getItem("connection_id") == null
                 ? "Add CRM Account"
@@ -191,15 +191,15 @@ function NewHome(props) {
               Explore Workflows
             </Button>
           </Card>
-          <Card className="mx-auto w-[23vw]">
-            <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
+          <Card className="mx-auto w-[25vw] flex-column">
+            <div className="flex flex-row justify-between rounded-lg items-center mb-5">
               <div className="flex gap-1.5 mr-20 items-center">
-                <div className="w-[50px] h-7 px-2 py-[2.50px] bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 inline-flex">
-                  <HiOutlineMail width={15} height={15} />
+                <div className="px-2 py-[2.50px] bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 inline-flex">
+                  <RiLinkedinBoxFill color="#0077B5" className="w-[35px]" />
                   <img src={hubspot} className="w-[15px] h-[15px]" />
                 </div>
                 <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7n whitespace-nowrap">
-                  Gmail {`->`} HubSpot
+                  LinkedIn {`->`} HubSpot
                 </p>
               </div>
               <Badge color="emerald-500">
@@ -212,10 +212,10 @@ function NewHome(props) {
             </p>
 
             <Button variant="secondary" className="w-[100%]" icon={RiAddLine}>
-              Add CRM account
+              Use Template
             </Button>
           </Card>
-          <Card className="mx-auto w-[23vw]">
+          {/* <Card className="mx-auto w-[23vw]">
             <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
               <div className="flex gap-1.5 mr-20 items-center">
                 <RiAlignJustify />
@@ -235,8 +235,8 @@ function NewHome(props) {
             <Button variant="secondary" className="w-[100%]" icon={RiAddLine}>
               Add CRM account
             </Button>
-          </Card>
-          <Card className="mx-auto w-[23vw]">
+          </Card> */}
+          {/* <Card className="mx-auto w-[23vw]">
             <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
               <div className="flex gap-1.5 mr-20 items-center">
                 <RiAlignJustify />
@@ -263,7 +263,7 @@ function NewHome(props) {
             >
               Add CRM account
             </Button>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>

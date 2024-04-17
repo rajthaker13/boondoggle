@@ -129,14 +129,9 @@ function BoondogggleAI(props) {
   }
 
   async function onBoondoggleQuery(event) {
-    if (event.key == "Enter" || isOnboarding) {
-      if (isOnboarding) {
-        await nextOnboardingStep();
-      }
+    if (event.key == "Enter") {
       setIsLoading(true);
-      const searchQuery = isOnboarding
-        ? "What conversations have I had recently related to Boondoggle AI?"
-        : query;
+      const searchQuery = query;
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
       );
@@ -159,7 +154,8 @@ function BoondogggleAI(props) {
       const id = localStorage.getItem("connection_id");
       const uid = localStorage.getItem("uid");
       const type = localStorage.getItem("crmType");
-      const ns1 = index.namespace(type == "crm" ? id : uid);
+      // const ns1 = index.namespace(type == "crm" ? id : uid);
+      const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
 
       const queryResponse = await ns1.query({
         topK: 20,
@@ -168,6 +164,8 @@ function BoondogggleAI(props) {
       });
 
       const matches = queryResponse.matches;
+
+      console.log("Matches", matches);
 
       let queryArray = [];
 
@@ -368,7 +366,7 @@ function BoondogggleAI(props) {
                 (onboardingStep == 11 || onboardingStep == 12) &&
                 !isLoading
                   ? { height: "69vh" }
-                  : {}
+                  : { marginTop: "2vh" }
               }
             />
 
@@ -377,7 +375,6 @@ function BoondogggleAI(props) {
               className="boondoggleai-query-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              disabled={isOnboarding ? true : false}
             ></input>
             <p>Press Enter to Query</p>
           </div>

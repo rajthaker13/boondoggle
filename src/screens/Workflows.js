@@ -38,6 +38,217 @@ function Workflows(props) {
     dangerouslyAllowBrowser: true,
   });
 
+  async function updateCRM(userData) {
+    const connection_id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+
+    const fetch_crm = await getCRMData();
+
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let admin_to_dos = fetch_crm.admin_to_dos;
+    let user_crm_update = fetch_crm.user_crm_data;
+    let user_to_dos = fetch_crm.user_to_dos;
+    let new_crm_data = [];
+
+    let type = fetch_crm.type;
+    let baseID = fetch_crm.baseID;
+    let tableID = fetch_crm.tableID;
+    let fieldOptions = fetch_crm.fieldOptions;
+
+    let twitter_messages = [];
+
+    const meUser = userData.meUser.data.username;
+    const meName = userData.meUser.data.name;
+
+    await Promise.all(
+      userData.messages.map(async (lead) => {
+        const itemIndex = twitter_messages.findIndex(
+          (item) => item.id === lead.messageData.dm_conversation_id
+        );
+        if (itemIndex !== -1) {
+          if (lead.userData[0].username != meUser) {
+            twitter_messages[itemIndex].customer = lead.userData[0].name;
+            twitter_messages[itemIndex].messages = [
+              ...twitter_messages[itemIndex].messages,
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ];
+          } else {
+            twitter_messages[itemIndex].messages = [
+              ...twitter_messages[itemIndex].messages,
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ];
+          }
+        } else {
+          twitter_messages.push({
+            id: lead.messageData.dm_conversation_id,
+            customer: lead.userData[0].name,
+            messages: [
+              {
+                name: lead.userData[0].name,
+                username: lead.userData[0].username,
+                text: lead.messageData.text,
+              },
+            ],
+          });
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      })
+    );
+
+    await Promise.all(
+      twitter_messages.map(async (dm) => {
+        // if (dm.customer != meName) {
+        const messagesString = dm.messages
+          .map(
+            (message) =>
+              `${message.name} (${message.username}): ${message.text}`
+          )
+          .join("\n");
+        const titleCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a short title that captures what this conversation was about.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+        const title = titleCompletion.choices[0].message.content;
+        const summaryCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a brief summary of this conversation that captures what it was about.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+        const summary = summaryCompletion.choices[0].message.content;
+
+        const toDoTitleCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a title for a to-do action item based on the context of this conversation.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+
+        const toDoTitle = toDoTitleCompletion.choices[0].message.content;
+
+        const responseCompletion = await openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a response to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
+            },
+          ],
+          model: "gpt-4",
+        });
+
+        const toDoResponse = responseCompletion.choices[0].message.content;
+        const date = Date.now();
+        var obj = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: title,
+          summary: summary,
+          date: date,
+          source: "Twitter",
+          status: "Completed",
+        };
+        var toDoObject = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: toDoTitle,
+          response: toDoResponse,
+          date: date,
+          source: "Twitter",
+          status: "Incomplete",
+        };
+        admin_crm_update.push(obj);
+        user_crm_update.push(obj);
+        new_crm_data.push(obj);
+        admin_to_dos.push(toDoObject);
+        user_to_dos.push(toDoObject);
+        // }
+      })
+    );
+
+    const type_crm = localStorage.getItem("crmType");
+    await sendToCRM(new_crm_data, "Twitter");
+
+    const new_connection_id = localStorage.getItem("connection_id");
+    const uid = localStorage.getItem("uid");
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: admin_crm_update,
+        twitter_messages: userData.messages,
+        twitterLinked: true,
+        tasks: admin_to_dos,
+      })
+      .eq("connection_id", new_connection_id);
+    await props.db
+      .from("users")
+      .update({
+        crm_data: user_crm_update,
+        twitterLinked: true,
+        tasks: user_to_dos,
+      })
+      .eq("id", uid);
+    setTwitterLinked(true);
+    setIsLoading(false);
+    localStorage.setItem("twitterLinked", true);
+    setCRM(user_crm_update);
+    setToDos(user_to_dos);
+    localStorage.setItem("to_dos", user_to_dos);
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
+  async function captureOauthVerifier() {
+    setIsLoading(true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthVerifier = urlParams.get("oauth_verifier");
+
+    // Now oauthVerifier contains the value of oauth_verifier parameter
+    const token = localStorage.getItem("oauth_token");
+    const secret = localStorage.getItem("oauth_secret");
+    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
+      body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
+    });
+    if (data) {
+      await updateCRM(data);
+    }
+  }
+
+  useEffect(() => {
+    async function getTwitterData() {
+      if (!twitterLinked) {
+        await captureOauthVerifier();
+      }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("oauth_verifier") && !twitterLinked) {
+      getTwitterData();
+    }
+  }, []);
+
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
     const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
@@ -424,6 +635,16 @@ function Workflows(props) {
     }
   }
 
+  async function linkWithTwitter() {
+    const url = window.location.href;
+    const { data, error } = await props.db.functions.invoke("twitter-login-3", {
+      body: { url },
+    });
+    localStorage.setItem("oauth_token", data.url.oauth_token);
+    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
+    window.open(data.url.url, "_self");
+  }
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div>
@@ -543,7 +764,13 @@ function Workflows(props) {
                   HubSpot, create contacts, update contacts, and more.
                 </p>
 
-                <Button variant="primary" className="w-[100%]">
+                <Button
+                  variant="primary"
+                  className="w-[100%]"
+                  onClick={() => {
+                    setOpenCookieModal(true);
+                  }}
+                >
                   Use template
                 </Button>
               </Card>

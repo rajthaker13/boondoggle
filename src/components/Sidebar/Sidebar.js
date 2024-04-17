@@ -59,7 +59,7 @@ function Sidebar(props) {
               navigation("/workflows");
             }}
           >
-            Library
+            Workflows
           </p>
           <p
             className="header-2-picker-text"

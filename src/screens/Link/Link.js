@@ -342,11 +342,33 @@ function Link(props) {
             <p className="crm-subheader-text">
               Learn more about our data access at Privacy Policy
             </p> */}
+            {/* [
+                "crm_company_read",
+                "crm_contact_read",
+                "crm_deal_read",
+                "crm_event_read",
+                "crm_lead_read",
+                "crm_company_write",
+                "crm_contact_write",
+                "crm_event_write",
+                "crm_deal_write",
+                "hris_employee_read",
+                "crm_lead_write",
+                "hris_group_read",
+              ] */}
           </div>
           <div className="crm-link">
             <UnifiedDirectory
               workspace_id={"65c02dbec9810ed1f215c33b"}
               categories={["crm"]}
+              scopes={[
+                "crm_company_read",
+                "crm_contact_read",
+                "crm_event_read",
+                "crm_company_write",
+                "crm_contact_write",
+                "crm_event_write",
+              ]}
               success_redirect={window.location.href}
               nostyle={true}
             />
