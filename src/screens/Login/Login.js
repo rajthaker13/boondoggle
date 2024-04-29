@@ -23,11 +23,9 @@ function Login(props) {
   async function getUserData(uid) {
     const { data, error } = await props.db.from("users").select().eq("id", uid);
     if (data[0].crm_id != null) {
-      localStorage.setItem("connection_id", data[0].crm_id);
     }
-    if (data[0].email_grant_id != null) {
-      localStorage.setItem("email_grant_id", data[0].email_grant_id);
-    }
+    localStorage.setItem("connection_id", data[0].crm_id);
+    localStorage.setItem("email_grant_id", data[0].email_grant_id);
   }
 
   async function signIn() {
