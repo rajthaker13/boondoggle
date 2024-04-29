@@ -82,13 +82,64 @@ function NewHome(props) {
     }
   }
 
+  async function linkWithTwitter() {
+    const url = window.location.href;
+    const { data, error } = await props.db.functions.invoke("twitter-login-3", {
+      body: { url },
+    });
+    localStorage.setItem("oauth_token", data.url.oauth_token);
+    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
+    window.open(data.url.url, "_self");
+  }
+
+  async function captureOauthVerifier() {
+    setIsLoading(true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthVerifier = urlParams.get("oauth_verifier");
+
+    // Now oauthVerifier contains the value of oauth_verifier parameter
+    const token = localStorage.getItem("oauth_token");
+    const secret = localStorage.getItem("oauth_secret");
+    localStorage.setItem("oauth_verifier", oauthVerifier);
+    const twitterInfo = {
+      oauthVerifier: oauthVerifier,
+      token: token,
+      secret: secret,
+    };
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("users")
+      .update({
+        twitter_info: twitterInfo,
+      })
+      .eq("id", uid);
+
+    setIsLoading(false);
+    // const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
+    //   body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
+    // });
+    // if (data) {
+    //   await updateCRM(data);
+    // }
+  }
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+
     async function getEmailData() {
       await getEmails();
     }
+
+    async function getTwitterData() {
+      await captureOauthVerifier();
+    }
+
     if (urlParams.has("code")) {
       getEmailData();
+    }
+
+    if (urlParams.has("oauth_verifier")) {
+      getTwitterData();
     }
   }, []);
   return (
@@ -129,7 +180,7 @@ function NewHome(props) {
               </Badge> */}
             </div>
             <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-              Integrate with Gmail to access and analyze data <br /> from your
+              Integrate with Email to access and analyze data <br /> from your
               emails, inbox, and more.
             </p>
 
@@ -176,14 +227,23 @@ function NewHome(props) {
             </p>
 
             <Button
-              variant={linkedInLinked ? "primary" : "secondary"}
+              variant={
+                localStorage.getItem("oauth_verifier") == null
+                  ? "secondary"
+                  : "primary"
+              }
               className="w-[100%]"
               icon={RiAddLine}
-              onClick={() => {
-                setLinkedInLinked(true);
+              onClick={async () => {
+                await linkWithTwitter();
               }}
+              disabled={
+                localStorage.getItem("oauth_verifier") == null ? false : true
+              }
             >
-              {linkedInLinked ? "Linked" : "Add Twitter account"}
+              {localStorage.getItem("oauth_verifier") == null
+                ? "Add Twitter account"
+                : "Linked"}
             </Button>
           </Card>
 
@@ -250,14 +310,13 @@ function NewHome(props) {
                   ? RiAddLine
                   : RiCheckLine
               }
-              // disabled={
-              //   localStorage.getItem("connection_id") == null ? false : true
-              // }
+              disabled={
+                localStorage.getItem("connection_id") == null ? false : true
+              }
             >
-              Add CRM Account
-              {/* {localStorage.getItem("connection_id") == null
+              {localStorage.getItem("connection_id") == null
                 ? "Add CRM Account"
-                : "Linked"} */}
+                : "Linked"}
             </Button>
           </Card>
         </div>

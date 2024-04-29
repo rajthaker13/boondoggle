@@ -45,6 +45,26 @@ function Workflows(props) {
     dangerouslyAllowBrowser: true,
   });
 
+  async function twitterCredentials() {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    return data[0].twitter_info;
+  }
+
+  async function twitterContacts() {
+    const twitterInfo = await twitterCredentials();
+    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
+      body: {
+        token: twitterInfo.token,
+        secret: twitterInfo.secret,
+        oauthVerifier: twitterInfo.oauthVerifier,
+      },
+    });
+    if (data) {
+      await updateCRM(data);
+    }
+  }
+
   async function updateCRM(userData) {
     const connection_id = localStorage.getItem("connection_id");
     const { data, error } = await props.db
@@ -648,6 +668,7 @@ function Workflows(props) {
     const urlWithoutParams = currentUrl.split("?")[0];
 
     const emailCreds = await getEmailCredentials();
+    console.log("CREDS", emailCreds);
     const id = emailCreds.id;
     const userEmail = emailCreds.userEmail;
 
@@ -1066,6 +1087,7 @@ function Workflows(props) {
                     } else if (source == "LinkedIn") {
                       await getSessionCookie();
                     } else if (source == "Twitter") {
+                      await twitterContacts();
                     }
                   }}
                 >
