@@ -153,8 +153,11 @@ function BoondogggleAI(props) {
       const index = pinecone.index("boondoggle-data-2");
       const id = localStorage.getItem("connection_id");
       const uid = localStorage.getItem("uid");
-      const type = "crm";
-      const ns1 = index.namespace(type == "crm" ? id : uid);
+      const type = localStorage.getItem("crmType");
+      if (type != "airtable") {
+        type = "crm";
+      }
+      const ns1 = index.namespace(type == "airtable" ? uid : id);
       // const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
 
       const queryResponse = await ns1.query({
@@ -232,11 +235,11 @@ function BoondogggleAI(props) {
           })
         );
       } else if (type == "airtable") {
-        const airtable_id = await getAirtableRefreshToken();
-        const { baseID, tableID } = await getAirtableData(airtable_id);
+        const airtable_id = localStorage.getItem("connection_id");
+        console.log(matches);
 
         for (const match of matches) {
-          const recordsURL = `https://api.airtable.com/v0/${baseID}/${tableID}/${match.id}`;
+          const recordsURL = `https://api.airtable.com/v0/${match.metadata.baseID}/${match.metadata.tableID}/${match.id}`;
           let recordResponse;
           try {
             recordResponse = await axios.get(recordsURL, {

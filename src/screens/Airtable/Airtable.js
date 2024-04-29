@@ -156,6 +156,79 @@ function Airtable(props) {
     }
   }
 
+  async function createAirtablePinecone(base) {
+    const connection_id = localStorage.getItem("connection_id");
+    const recordsURL = `https://api.airtable.com/v0/meta/bases/${base.id}/tables`;
+    const recordResponse = await axios.get(recordsURL, {
+      headers: {
+        Authorization: `Bearer ${connection_id}`,
+      },
+    });
+    const tableList = recordResponse.data.tables;
+    console.log(tableList);
+
+    let airtableEmbeddings = [];
+
+    await Promise.all(
+      tableList.map(async (table) => {
+        const tableUrl = `https://api.airtable.com/v0/${base.id}/${table.id}`;
+        let tableResponse;
+        try {
+          tableResponse = await axios.get(tableUrl, {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+            },
+          });
+        } catch (error) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          tableResponse = await axios.get(tableUrl, {
+            headers: {
+              Authorization: `Bearer ${connection_id}`,
+            },
+          });
+        }
+        const tableData = tableResponse.data.records;
+        if (tableData.length > 0) {
+          await Promise.all(
+            tableData.map(async (item) => {
+              const embedding = await openai.embeddings.create({
+                model: "text-embedding-3-small",
+                input: `${item}`,
+              });
+              var obj = {
+                id: item.id,
+                values: embedding.data[0].embedding,
+                metadata: {
+                  baseID: base.id,
+                  tableID: table.id,
+                },
+              };
+              airtableEmbeddings.push(obj);
+            })
+          );
+        }
+      })
+    );
+
+    const index = pinecone.index("boondoggle-data-2");
+    const uid = localStorage.getItem("uid");
+    const ns1 = index.namespace(uid);
+
+    console.log("EMBEDDINGS", airtableEmbeddings);
+
+    if (airtableEmbeddings.length > 0) {
+      await ns1.upsert(airtableEmbeddings);
+    }
+    localStorage.setItem("crmType", "airtable");
+    await props.db
+      .from("data")
+      .update({
+        baseID: base.id,
+      })
+      .eq("connection_id", connection_id);
+    navigation("/home");
+  }
+
   async function connectExistingAirtable(base) {
     const connection_id = await getAirtableRefreshToken();
     const recordsURL = `https://api.airtable.com/v0/meta/bases/${base.id}/tables`;
@@ -523,7 +596,7 @@ function Airtable(props) {
                     className="base-choices"
                     style={{ flexDirection: "column", display: "flex" }}
                     onClick={async () => {
-                      await connectExistingAirtable(base);
+                      await createAirtablePinecone(base);
                     }}
                   >
                     <p className="base-name">{base.name}</p>
