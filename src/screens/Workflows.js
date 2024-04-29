@@ -4,7 +4,15 @@ import OpenAI from "openai";
 import axios from "axios";
 import Sidebar from "../components/Sidebar/Sidebar";
 import WorkflowSidebar from "../components/WorkflowSidebar";
-import { TextInput, Card, Badge, Button } from "@tremor/react";
+import {
+  TextInput,
+  Card,
+  Badge,
+  Button,
+  SearchSelect,
+  SelectItem,
+  SearchSelectItem,
+} from "@tremor/react";
 import {
   RiSearchLine,
   RiMailLine,
@@ -22,6 +30,7 @@ import workflowData from "../data/workflows";
 import ClickAwayListener from "react-click-away-listener";
 
 function Workflows(props) {
+  const client_id = process.env.REACT_APP_AIRTABLE_KEY;
   const [openModal, setOpenModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [twitterLinked, setTwitterLinked] = useState(false);
@@ -38,12 +47,92 @@ function Workflows(props) {
   const [source, setSource] = useState("Email");
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
+
+  const [airtableTables, setAirtableTables] = useState([]);
+  const [airtableFields, setAirtableFields] = useState([]);
+  const [selectedTable, setSelectedTable] = useState("");
+
   const [isAdmin, setIsAdmin] = useState(true);
   const [memberWelcome, setMemberWelcome] = useState(false);
   const openai = new OpenAI({
     apiKey: "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",
     dangerouslyAllowBrowser: true,
   });
+
+  async function getAirtableRefreshToken() {
+    const id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("crm_id", id);
+
+    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
+    const refreshTokenResponse = await axios.post(
+      url,
+      {
+        client_id: client_id,
+        refresh_token: data[0].refresh_token,
+        grant_type: "refresh_token",
+      },
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+    const new_access_token = refreshTokenResponse.data.access_token;
+    const new_refresh_token = refreshTokenResponse.data.refresh_token;
+
+    await props.db
+      .from("users")
+      .update({
+        crm_id: new_access_token,
+        refresh_token: new_refresh_token,
+      })
+      .eq("id", localStorage.getItem("uid"));
+
+    await props.db
+      .from("data")
+      .update({
+        connection_id: new_access_token,
+      })
+      .eq("connection_id", id);
+    localStorage.setItem("connection_id", new_access_token);
+
+    return new_access_token;
+  }
+
+  useEffect(() => {
+    async function getAirtableTables() {
+      const connection_id = localStorage.getItem("connection_id");
+      const { data, error } = await props.db
+        .from("data")
+        .select()
+        .eq("connection_id", connection_id);
+      const baseID = data[0].baseID;
+      const url = `https://api.airtable.com/v0/meta/bases`;
+
+      let basedResponse;
+
+      try {
+        basedResponse = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${connection_id}`,
+          },
+        });
+      } catch {
+        const new_id = getAirtableRefreshToken();
+        basedResponse = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${new_id}`,
+          },
+        });
+      }
+      console.log("BASED", basedResponse);
+      setAirtableTables(basedResponse.data.bases);
+    }
+    getAirtableTables();
+  }, []);
 
   async function twitterCredentials() {
     const uid = localStorage.getItem("uid");
@@ -1065,12 +1154,33 @@ function Workflows(props) {
                   <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
                     <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
                       <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
-                        CRM
+                        {localStorage.getItem("crmType") == "airtable"
+                          ? "Airtable"
+                          : "CRM"}
                       </div>
                       <div class="w-5 h-5 relative"></div>
                     </div>
                   </div>
                 </div>
+                {/* <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                  Mapping Selection
+                </div>
+                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                  Choose Table
+                </div>
+                <SearchSelect
+                  value={selectedTable}
+                  onValueChange={setSelectedTable}
+                >
+                  {airtableTables.map((tableChoice) => {
+                    return (
+                      <SearchSelectItem value={tableChoice.name}>
+                        {tableChoice.name}
+                      </SearchSelectItem>
+                    );
+                  })}
+                </SearchSelect> */}
+
                 <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
                   What type of messages do you want scraped?
                 </div>
