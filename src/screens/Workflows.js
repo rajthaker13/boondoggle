@@ -15,6 +15,11 @@ import {
 import { HiOutlineMail } from "@react-icons/all-files/hi/HiOutlineMail";
 import hubspot from "../assets/landing/integrations/crm_svg/hubspot.svg";
 import LoadingOverlay from "react-loading-overlay";
+import emailContacts from "../assets/ui-update/workflows/emailContacts.svg";
+import linkedInContacts from "../assets/ui-update/workflows/linkedInContacts.svg";
+import twitterContacts from "../assets/ui-update/workflows/twitterContacts.svg";
+import workflowData from "../data/workflows";
+import ClickAwayListener from "react-click-away-listener";
 
 function Workflows(props) {
   const [openModal, setOpenModal] = useState(false);
@@ -30,6 +35,8 @@ function Workflows(props) {
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [openCookieModal, setOpenCookieModal] = useState(false);
+  const [source, setSource] = useState("Email");
+  const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
   const [isAdmin, setIsAdmin] = useState(true);
   const [memberWelcome, setMemberWelcome] = useState(false);
@@ -235,19 +242,6 @@ function Workflows(props) {
       await updateCRM(data);
     }
   }
-
-  useEffect(() => {
-    async function getTwitterData() {
-      if (!twitterLinked) {
-        await captureOauthVerifier();
-      }
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("oauth_verifier") && !twitterLinked) {
-      getTwitterData();
-    }
-  }, []);
 
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
@@ -635,6 +629,368 @@ function Workflows(props) {
     }
   }
 
+  async function getEmailCredentials() {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("id", uid);
+
+    return {
+      id: data[0].email_grant_id,
+      userEmail: data[0].connected_email,
+    };
+  }
+
+  async function uploadEmails() {
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
+
+    const emailCreds = await getEmailCredentials();
+    const id = emailCreds.id;
+    const userEmail = emailCreds.userEmail;
+
+    const { data, error } = await props.db.functions.invoke("get-emails", {
+      body: { identifier: id, source: urlWithoutParams },
+    });
+
+    const connection_id = localStorage.getItem("connection_id");
+
+    const emails = data.data.data;
+
+    const fetch_crm = await getCRMData();
+
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let admin_to_dos = fetch_crm.admin_to_dos;
+    let user_crm_update = fetch_crm.user_crm_data;
+    let user_to_dos = fetch_crm.user_to_dos;
+    let new_crm_data = [];
+
+    let type = fetch_crm.type;
+    let baseID = fetch_crm.baseID;
+    let tableID = fetch_crm.tableID;
+    let fieldOptions = fetch_crm.fieldOptions;
+
+    let new_emails = [];
+
+    await Promise.all(
+      emails.map(async (email) => {
+        // let spamRespone;
+        // try {
+        //   spamRespone = await axios.post(
+        //     "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+        //     {
+        //       email: email.latestDraftOrMessage.body,
+        //       options: "short",
+        //     },
+        //     {
+        //       headers: {
+        //         Accept: "application/json",
+        //         "Content-Type": "application/json",
+        //       },
+        //     }
+        //   );
+        // } catch (error) {
+        //   if (error) {
+        //     await new Promise((resolve) => setTimeout(resolve, 5000));
+        //     spamRespone = await axios.post(
+        //       "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
+        //       {
+        //         email: email.latestDraftOrMessage.body,
+        //         options: "short",
+        //       },
+        //       {
+        //         headers: {
+        //           Accept: "application/json",
+        //           "Content-Type": "application/json",
+        //         },
+        //       }
+        //     );
+        //   }
+        // }
+
+        if (
+          email.latestDraftOrMessage.from[0].name != "" &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("verification") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("alert") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("confirmation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("invitation") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("activation") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("unsubscribe") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("confirmation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("considering") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("tax") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("taxes") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("notification") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("demo") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("hesitate") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("invitation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("registration") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("contact us") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("luma") &&
+          !email.latestDraftOrMessage.body.toLowerCase().includes("receipt") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("automation") &&
+          !email.latestDraftOrMessage.body
+            .toLowerCase()
+            .includes("automated") &&
+          email.folders[0] != "DRAFT"
+        ) {
+          const fromIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+          );
+
+          const toIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+          );
+
+          let status = "Completed";
+          // if (spamRespone.data.score >= 7) {
+          //   status = "Completed";
+          // } else if (spamRespone.data.score >= 5) {
+          //   status = "Pending";
+          // } else {
+          //   status = "Rejected";
+          // }
+
+          if (fromIndex != -1) {
+            new_emails[fromIndex].snippet = [
+              ...new_emails[fromIndex].snippet,
+              {
+                message: email.snippet,
+                sender: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+              },
+            ];
+          } else if (toIndex != -1) {
+            new_emails[toIndex].snippet = [
+              ...new_emails[toIndex].snippet,
+              {
+                message: email.snippet,
+                sender: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+              },
+            ];
+          } else {
+            if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
+              var obj = {
+                id: email.id,
+                customer: email.latestDraftOrMessage?.to[0]?.name
+                  ? email.latestDraftOrMessage?.to[0]?.name
+                  : email.latestDraftOrMessage?.to[0]?.email,
+                email: email.latestDraftOrMessage.to[0].email,
+                data: email,
+                snippet: [
+                  {
+                    message: email.snippet,
+                    sender: email.latestDraftOrMessage?.from[0]?.name
+                      ? email.latestDraftOrMessage?.from[0]?.name
+                      : email.latestDraftOrMessage?.from[0]?.email,
+                  },
+                ],
+                participants: email.participants,
+                type: "OUTBOUND",
+                status: status,
+              };
+
+              new_emails.push(obj);
+            } else {
+              var obj = {
+                id: email.id,
+                customer: email.latestDraftOrMessage?.from[0]?.name
+                  ? email.latestDraftOrMessage?.from[0]?.name
+                  : email.latestDraftOrMessage?.from[0]?.email,
+                email: email.latestDraftOrMessage.from[0].email,
+                data: email,
+                snippet: [
+                  {
+                    message: email.snippet,
+                    sender: email.latestDraftOrMessage?.from[0]?.name
+                      ? email.latestDraftOrMessage?.from[0]?.name
+                      : email.latestDraftOrMessage?.from[0]?.email,
+                  },
+                ],
+                participants: email.participants,
+                type: "INBOUND",
+                status: status,
+              };
+
+              new_emails.push(obj);
+            }
+          }
+        }
+      })
+    );
+
+    await Promise.all(
+      new_emails.map(async (email) => {
+        if (email.customer) {
+          const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
+          const subject = email.data.subject;
+
+          const snippetString = email.snippet
+            .map((message) => `${message.sender}: ${message.message}`)
+            .join("\n");
+
+          const participantsString = email.participants
+            .map((user) => {
+              if (user.name && user.name.trim() !== "") {
+                return `${user.name}: ${user.email}`;
+              } else {
+                return user.email;
+              }
+            })
+            .join("\n");
+
+          const emailContext = `You are an automated CRM entry assistant. I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context you are the user associated with ${userEmail}.`;
+
+          const titleCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Give a short title that captures what this email thread was about.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const title = titleCompletion.choices[0].message.content;
+          const summaryCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+          const summary = summaryCompletion.choices[0].message.content;
+
+          const date = Date.now();
+
+          var obj = {
+            id: email.id,
+            customer: email.customer,
+            email: email.email,
+            title: title,
+            summary: summary,
+            date: date,
+            source: "Email",
+            status: email.status,
+          };
+
+          admin_crm_update.push(obj);
+          user_crm_update.push(obj);
+          new_crm_data.push(obj);
+
+          const toDoTitleCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+
+          const toDoTitle = toDoTitleCompletion.choices[0].message.content;
+
+          let responseType;
+          if (email.type == "OUTBOUND") {
+            responseType = "Follow-Up";
+          } else {
+            responseType = "Response";
+          }
+
+          const responseCompletion = await openai.chat.completions.create({
+            messages: [
+              {
+                role: "user",
+                content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
+              },
+            ],
+            model: "gpt-4",
+          });
+
+          const toDoResponse = responseCompletion.choices[0].message.content;
+
+          var toDoObject = {
+            id: email.id,
+            customer: email.customer,
+            title: toDoTitle,
+            response: toDoResponse,
+            date: date,
+            type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
+            source: "Email",
+            status: "Incomplete",
+            emailStatus: email.status,
+          };
+          admin_to_dos.push(toDoObject);
+          user_to_dos.push(toDoObject);
+        }
+      })
+    );
+
+    await props.db
+      .from("data")
+      .update({
+        crm_data: admin_crm_update,
+        tasks: admin_to_dos,
+      })
+      .eq("connection_id", connection_id);
+    const uid = localStorage.getItem("uid");
+    await props.db
+      .from("users")
+      .update({
+        crm_data: user_crm_update,
+        tasks: user_to_dos,
+        emailLinked: true,
+      })
+      .eq("id", uid);
+    setEmailLinked(true);
+
+    await sendToCRM(new_crm_data, "Email");
+
+    // if (type == "airtable") {
+    //   await pushToAirtable(new_crm_data, "Email");
+    // } else {
+    //   await sendToCRM(new_crm_data, "Email");
+    // }
+
+    setIsLoading(false);
+
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+
   async function linkWithTwitter() {
     const url = window.location.href;
     const { data, error } = await props.db.functions.invoke("twitter-login-3", {
@@ -650,130 +1006,127 @@ function Workflows(props) {
       <div>
         {openCookieModal && (
           <div className="modal-overlay">
-            <div
-              className="modal-content"
-              style={{
-                height: "auto",
-                width: "30vw",
-                maxWidth: "60vw",
-                display: "flex",
-                flexDirection: "column",
-                background: "#fff",
+            <ClickAwayListener
+              onClickAway={() => {
+                setOpenCookieModal(false);
               }}
             >
-              <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7 mb-[5vh]">
-                Create Workflow
-              </div>
-              <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[5vh]">
-                What type of messages do you want scraped?
-              </div>
-              <input class="w-[100%] h-[5vh] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[5vh]"></input>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  await getSessionCookie();
+              <div
+                className="modal-content"
+                style={{
+                  height: "auto",
+                  width: "30vw",
+                  maxWidth: "60vw",
+                  display: "flex",
+                  flexDirection: "column",
+                  background: "#fff",
                 }}
               >
-                Confirm
-              </Button>
-            </div>
+                <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7 mb-[5vh]">
+                  Create Workflow
+                </div>
+                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                  Select integrations
+                </div>
+                <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[5vh]">
+                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                        {source}
+                      </div>
+                      <div class="w-5 h-5 relative"></div>
+                    </div>
+                  </div>
+                  <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
+                    {`->`}
+                  </div>
+                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                        CRM
+                      </div>
+                      <div class="w-5 h-5 relative"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                  What type of messages do you want scraped?
+                </div>
+                <input
+                  class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
+                  placeholder="Feature coming soon..."
+                  disabled={true}
+                ></input>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (source == "Email") {
+                      await uploadEmails();
+                    } else if (source == "LinkedIn") {
+                      await getSessionCookie();
+                    } else if (source == "Twitter") {
+                    }
+                  }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </ClickAwayListener>
           </div>
         )}
 
         <Sidebar db={props.db} selectedTab={1} />
-        <div class="w-[100vw] h-[88vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
-          <WorkflowSidebar />
+        <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
+          <WorkflowSidebar
+            selectedWorkflow={selectedWorkflow}
+            setSelectedWorkflow={setSelectedWorkflow}
+          />
           <div class="w-[100vw] h-[auto] justify-start items-center gap-[18px] flex-column">
-            <TextInput icon={RiSearchLine} placeholder="Search..." />
-            <div class="flex flex-wrap justify-start gap-[18px] mt-[5vh]">
-              <Card className="mx-auto w-[25vw]">
-                <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
-                  <div className="flex gap-1.5 mr-20 items-center">
-                    <div className="w-[50px] h-7 px-2 py-[2.50px] bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 inline-flex">
-                      <HiOutlineMail width={15} height={15} />
-                      <img src={hubspot} className="w-[15px] h-[15px]" />
+            {/* <TextInput
+              icon={RiSearchLine}
+              placeholder="Search..."
+              disabled={true}
+            /> */}
+            <div class="flex flex-wrap justify-start gap-[18px]">
+              {workflowData.map((workflow) => {
+                if (selectedWorkflow != "") {
+                  if (workflow.source == selectedWorkflow) {
+                    return (
+                      <div
+                        class="w-[445px] h-[285px] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex hover:bg-blue-200"
+                        onClick={() => {
+                          setSource(workflow.source);
+                          setOpenCookieModal(true);
+                        }}
+                      >
+                        <img src={workflow.src}></img>
+                        <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
+                          <div class="grow shrink basis-0 text-gray-700 text-lg font-semibold font-['Inter'] leading-7">
+                            {workflow.title}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                } else {
+                  return (
+                    <div
+                      class="w-[445px] h-[285px] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex hover:bg-blue-200"
+                      onClick={() => {
+                        setSource(workflow.source);
+                        setOpenCookieModal(true);
+                      }}
+                    >
+                      <img src={workflow.src}></img>
+                      <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
+                        <div class="grow shrink basis-0 text-gray-700 text-lg font-semibold font-['Inter'] leading-7">
+                          {workflow.title}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7n whitespace-nowrap">
-                      Gmail {`->`} HubSpot
-                    </p>
-                  </div>
-                  <Badge color="emerald-500">
-                    <p>Connected</p>
-                  </Badge>
-                </div>
-                <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-                  Automate the entry of your emails daily into HubSpot, <br />
-                  create contacts, update contacts, and more.
-                </p>
-
-                <Button variant="primary" className="w-[100%]">
-                  Use template
-                </Button>
-              </Card>
-              <Card className="mx-auto w-[25vw]">
-                <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
-                  <div className="flex gap-1.5 mr-20 items-center">
-                    <div className="w-[50px] h-7 px-2 py-[2.50px] bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 inline-flex">
-                      <RiLinkedinBoxFill
-                        color="#0077B5"
-                        width={15}
-                        height={15}
-                      />
-                      <img src={hubspot} className="w-[15px] h-[15px]" />
-                    </div>
-                    <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7n whitespace-nowrap">
-                      LinkedIn {`->`} HubSpot
-                    </p>
-                  </div>
-                  <Badge color="emerald-500">
-                    <p>Connected</p>
-                  </Badge>
-                </div>
-                <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-                  Automate the entry of your LinkedIn messages daily into <br />
-                  HubSpot, create contacts, update contacts, and more.
-                </p>
-
-                <Button
-                  variant="primary"
-                  className="w-[100%]"
-                  onClick={() => {
-                    setOpenCookieModal(true);
-                  }}
-                >
-                  Use template
-                </Button>
-              </Card>
-              <Card className="mx-auto w-[25vw]">
-                <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
-                  <div className="flex gap-1.5 mr-20 items-center">
-                    <div className="w-[50px] h-7 px-2 py-[2.50px] bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 inline-flex">
-                      <RiTwitterFill color="#349DF0" />
-                      <img src={hubspot} className="w-[15px] h-[15px]" />
-                    </div>
-                    <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7n whitespace-nowrap">
-                      Twitter {`->`} HubSpot
-                    </p>
-                  </div>
-                  <Badge color="emerald-500">
-                    <p>Connected</p>
-                  </Badge>
-                </div>
-                <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-                  Automate the entry of your Twitter messages daily into <br />
-                  HubSpot, create contacts, update contacts, and more.
-                </p>
-
-                <Button
-                  variant="primary"
-                  className="w-[100%]"
-                  onClick={() => {
-                    setOpenCookieModal(true);
-                  }}
-                >
-                  Use template
-                </Button>
-              </Card>
+                  );
+                }
+              })}
             </div>
           </div>
         </div>

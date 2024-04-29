@@ -16,7 +16,7 @@ function Link(props) {
   let airtableConnected = false;
 
   const pinecone = new Pinecone({
-    apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
+    apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
 
   const openai = new OpenAI({
@@ -41,7 +41,7 @@ function Link(props) {
   }
 
   async function createPineconeIndexes(connection_id) {
-    const index = pinecone.index("boondoggle-data");
+    const index = pinecone.index("boondoggle-data-2");
 
     const id = connection_id;
 
@@ -93,21 +93,31 @@ function Link(props) {
 
     const contactData = contactResults.data;
 
+    console.log("Contact Data", contactData);
+
     const dealResults = await axios.request(dealOptions);
 
     const dealData = dealResults.data;
+
+    console.log("Deal Data", dealData);
 
     const companyResults = await axios.request(companyOptions);
 
     const companyData = companyResults.data;
 
+    console.log("Company Data", companyData);
+
     const eventResults = await axios.request(eventOptions);
 
     const eventData = eventResults.data;
 
+    console.log("Event Data", eventData);
+
     const leadResults = await axios.request(leadOptions);
 
     const leadData = leadResults.data;
+
+    console.log("Lead Data", leadData);
 
     let contacts = [];
     let deals = [];
@@ -120,15 +130,29 @@ function Link(props) {
     if (contactData.length > 0) {
       await Promise.all(
         contactData.map(async (item) => {
+          const values = Object.values(item);
+          console.log("CONTACT VALUEs", values);
           const embedding = await openai.embeddings.create({
-            model: "text-embedding-ada-002",
-            input: `${item}`,
+            model: "text-embedding-3-small",
+            input: `${values}`,
           });
 
           var obj = {
             id: item.id,
             values: embedding.data[0].embedding,
-            metadata: { type: "Contact" },
+            metadata: {
+              type: "Contact",
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              name: item.name,
+              title: item.title,
+              company: item.company,
+              emails: JSON.stringify(item.emails),
+              telephones: JSON.stringify(item.telephones),
+              deal_ids: item.deal_ids,
+              company_ids: item.company_ids,
+              address: JSON.stringify(item.address),
+            },
           };
           contacts.push(obj);
         })
@@ -138,15 +162,31 @@ function Link(props) {
     if (dealData.length > 0) {
       await Promise.all(
         dealData.map(async (item) => {
+          const values = Object.values(item);
           const embedding = await openai.embeddings.create({
-            model: "text-embedding-ada-002",
-            input: `${item}`,
+            model: "text-embedding-3-small",
+            input: `${values}`,
           });
 
           var obj = {
             id: item.id,
             values: embedding.data[0].embedding,
-            metadata: { type: "Deal" },
+            metadata: {
+              type: "Deal",
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              name: item.name,
+              amount: item.amount,
+              currency: item.currency,
+              closed_at: item.closed_at,
+              stage: item.stage,
+              pipeline: item.pipeline,
+              souce: item.source,
+              probability: item.probability,
+              tags: item.tags,
+              lost_reason: item.lost_reason,
+              won_reason: item.won_reason,
+            },
           };
           deals.push(obj);
         })
@@ -156,15 +196,33 @@ function Link(props) {
     if (companyData.length > 0) {
       await Promise.all(
         companyData.map(async (item) => {
+          const values = Object.values(item);
           const embedding = await openai.embeddings.create({
-            model: "text-embedding-ada-002",
-            input: `${item}`,
+            model: "text-embedding-3-small",
+            input: `${values}`,
           });
 
           var obj = {
             id: item.id,
             values: embedding.data[0].embedding,
-            metadata: { type: "Company" },
+            metadata: {
+              type: "Company",
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              name: item.name,
+              deal_ids: item.deal_ids,
+              emails: JSON.stringify(item.emails),
+              telephones: item.telephones,
+              websites: item.websites,
+              address: item.address,
+              is_active: item.is_active,
+              tags: item.tags,
+              description: item.description,
+              industry: item.industry,
+              link_urls: item.link_urls,
+              employees: item.employees,
+              timezone: item.timezone,
+            },
           };
           companies.push(obj);
         })
@@ -174,15 +232,29 @@ function Link(props) {
     if (eventData.length > 0) {
       await Promise.all(
         eventData.map(async (item) => {
+          const values = Object.values(item);
           const embedding = await openai.embeddings.create({
-            model: "text-embedding-ada-002",
-            input: `${item}`,
+            model: "text-embedding-3-small",
+            input: `${values}`,
           });
 
           var obj = {
             id: item.id,
             values: embedding.data[0].embedding,
-            metadata: { type: "Event" },
+            metadata: {
+              type: "Event",
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              type: item.type,
+              ...(item.note && { note: JSON.stringify(item.note) }),
+              ...(item.meeting && { meeting: JSON.stringify(item.meeting) }),
+              ...(item.call && { call: JSON.stringify(item.call) }),
+              ...(item.task && { task: JSON.stringify(item.task) }),
+              deal_ids: item.deal_ids,
+              company_ids: item.company_ids,
+              contact_ids: item.contact_ids,
+              lead_ids: item.lead_ids,
+            },
           };
           events.push(obj);
         })
@@ -192,35 +264,80 @@ function Link(props) {
     if (leadData.length > 0) {
       await Promise.all(
         leadData.map(async (item) => {
+          const values = Object.values(item);
           const embedding = await openai.embeddings.create({
-            model: "text-embedding-ada-002",
-            input: `${item}`,
+            model: "text-embedding-3-small",
+            input: `${values}`,
           });
 
           var obj = {
             id: item.id,
             values: embedding.data[0].embedding,
-            metadata: { type: "Lead" },
+            metadata: {
+              type: "Lead",
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              name: item.name,
+              user_id: item.user_id,
+              creator_user_id: item.creator_user_id,
+              contact_id: item.contact_id,
+              company_id: item.company_id,
+              company_name: item.company_name,
+              is_active: item.is_active,
+              address: JSON.stringify(item.address),
+              emails: JSON.stringify(item.emails),
+              telephones: item.telephones,
+              source: item.source,
+              status: item.status,
+            },
           };
           leads.push(obj);
         })
       );
     }
 
+    console.log("Contacts Embeddings", contacts);
+    console.log("Deals Embeddings", deals);
+    console.log("Companies Embeddings", companies);
+    console.log("Events Embeddings", events);
+    console.log("Leads Embeddings", leads);
+
     if (contacts.length > 0) {
-      await ns1.upsert(contacts);
+      try {
+        await ns1.upsert(contacts);
+      } catch (err) {
+        console.log(err);
+      }
     }
+
     if (deals.length > 0) {
-      await ns1.upsert(deals);
+      try {
+        await ns1.upsert(deals);
+      } catch (err) {
+        console.log(err);
+      }
     }
+
     if (companies.length > 0) {
-      await ns1.upsert(companies);
+      try {
+        await ns1.upsert(companies);
+      } catch (err) {
+        console.log(err);
+      }
     }
     if (events.length > 0) {
-      await ns1.upsert(events);
+      try {
+        await ns1.upsert(events);
+      } catch (err) {
+        console.log(err);
+      }
     }
     if (leads.length > 0) {
-      await ns1.upsert(leads);
+      try {
+        await ns1.upsert(leads);
+      } catch (err) {
+        console.log(err);
+      }
     }
   }
 
@@ -231,6 +348,8 @@ function Link(props) {
       const connection_id = urlParams.get("id");
 
       localStorage.setItem("connection_id", connection_id);
+
+      console.log("Connection ID", connection_id);
 
       await createPineconeIndexes(connection_id);
 
@@ -364,10 +483,16 @@ function Link(props) {
               scopes={[
                 "crm_company_read",
                 "crm_contact_read",
+                "crm_deal_read",
                 "crm_event_read",
+                "crm_lead_read",
                 "crm_company_write",
                 "crm_contact_write",
                 "crm_event_write",
+                "crm_deal_write",
+                "hris_employee_read",
+                "crm_lead_write",
+                "hris_group_read",
               ]}
               success_redirect={window.location.href}
               nostyle={true}

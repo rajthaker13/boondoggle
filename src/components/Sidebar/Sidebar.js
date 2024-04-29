@@ -79,12 +79,12 @@ function Sidebar(props) {
           >
             Summon
           </p>
-          <p className="header-2-picker-text">Billing</p>
-          <p className="header-2-picker-text">Help</p>
+          {/* <p className="header-2-picker-text">Billing</p>
+          <p className="header-2-picker-text">Help</p> */}
         </div>
       </div>
 
-      <div className="header-2-info-container">
+      {/* <div className="header-2-info-container">
         <div className="header-2-action-container">
           <div className="header-2-badge-container">
             <svg
@@ -108,7 +108,7 @@ function Sidebar(props) {
             <span className="header-2-upgrade-text">Upgrade plan</span>
           </button>
         </div>
-      </div>
+      </div> */}
       {/* <div className="tabs-container">
         <div
           className="sidebar-tabs"

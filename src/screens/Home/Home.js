@@ -950,6 +950,7 @@ function Home(props) {
         .from("users")
         .update({
           email_grant_id: data.id,
+          connected_email: data.email,
         })
         .eq("id", uid);
 
