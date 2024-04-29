@@ -268,8 +268,8 @@ function NewEntries(props) {
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
-      // const connection_id = localStorage.getItem("connection_id");
-      const connection_id = "65f85a82aad1a3b83ecf1efd";
+      const connection_id = localStorage.getItem("connection_id");
+      // const connection_id = "65f85a82aad1a3b83ecf1efd";
       const isAdmin = localStorage.getItem("isAdmin");
 
       if (isAdmin == "true") {

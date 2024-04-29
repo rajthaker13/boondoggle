@@ -146,16 +146,16 @@ function BoondogggleAI(props) {
 
       setQuery("");
       const embedding = await openai.embeddings.create({
-        model: "text-embedding-ada-002",
+        model: "text-embedding-3-small",
         input: `${searchQuery}`,
       });
 
-      const index = pinecone.index("boondoggle-data");
+      const index = pinecone.index("boondoggle-data-2");
       const id = localStorage.getItem("connection_id");
       const uid = localStorage.getItem("uid");
-      const type = localStorage.getItem("crmType");
-      // const ns1 = index.namespace(type == "crm" ? id : uid);
-      const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
+      const type = "crm";
+      const ns1 = index.namespace(type == "crm" ? id : uid);
+      // const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
 
       const queryResponse = await ns1.query({
         topK: 20,

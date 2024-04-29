@@ -34,16 +34,68 @@ import {
   RiAddLine,
   RiLinkedinBoxFill,
   RiAlignJustify,
+  RiCheckLine,
 } from "@remixicon/react";
 
 function NewHome(props) {
   const navigation = useNavigate();
   const [linkedInLinked, setLinkedInLinked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function connectEmail() {
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
+    const { data, error } = await props.db.functions.invoke("email-auth", {
+      body: { source: urlWithoutParams },
+    });
+    window.open(data.url, "_self");
+  }
+
+  async function getEmails() {
+    setIsLoading(true);
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    const currentUrl = window.location.href;
+    const urlWithoutParams = currentUrl.split("?")[0];
+
+    const { data, error } = await props.db.functions.invoke("email-callback", {
+      body: { code: code, source: urlWithoutParams },
+    });
+
+    if (error == null) {
+      localStorage.setItem("email_grant_id", data.id);
+
+      const uid = localStorage.getItem("uid");
+
+      await props.db
+        .from("users")
+        .update({
+          email_grant_id: data.id,
+          connected_email: data.email,
+        })
+        .eq("id", uid);
+
+      setIsLoading(false);
+      var cleanUrl = window.location.href.split("?")[0];
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    async function getEmailData() {
+      await getEmails();
+    }
+    if (urlParams.has("code")) {
+      getEmailData();
+    }
+  }, []);
   return (
     <div>
       <Sidebar selectedTab={0} db={props.db} />
       <div className="mx-10 my-10">
-        <Callout
+        {/* <Callout
           title="Refresh your integration connections"
           color="red"
           icon={RiErrorWarningFill}
@@ -57,7 +109,7 @@ function NewHome(props) {
               Refresh
             </Button>
           </div>
-        </Callout>
+        </Callout> */}
       </div>
       <div className="mx-10 my-10">
         <p className="text-gray-500 text-xl font-semibold font-['Inter'] leading-tight my-10">
@@ -72,17 +124,37 @@ function NewHome(props) {
                   Email
                 </p>
               </div>
-              <Badge color="emerald-500">
+              {/* <Badge color="emerald-500">
                 <p>Connected</p>
-              </Badge>
+              </Badge> */}
             </div>
             <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
               Integrate with Gmail to access and analyze data <br /> from your
               emails, inbox, and more.
             </p>
 
-            <Button variant="secondary" className="w-[100%]" icon={RiAddLine}>
-              Add Email account
+            <Button
+              variant={
+                localStorage.getItem("email_grant_id") == null
+                  ? "secondary"
+                  : "primary"
+              }
+              className="w-[100%]"
+              icon={
+                localStorage.getItem("email_grant_id") == null
+                  ? RiAddLine
+                  : RiCheckLine
+              }
+              onClick={async () => {
+                await connectEmail();
+              }}
+              disabled={
+                localStorage.getItem("email_grant_id") == null ? false : true
+              }
+            >
+              {localStorage.getItem("email_grant_id") == null
+                ? "Add Email account"
+                : "Linked"}
             </Button>
           </Card>
 
@@ -94,9 +166,9 @@ function NewHome(props) {
                   Twitter
                 </p>
               </div>
-              <Badge color="emerald-500">
+              {/* <Badge color="emerald-500">
                 <p>Connected</p>
-              </Badge>
+              </Badge> */}
             </div>
             <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
               Integrate with Twitter to access and analyze data <br /> from your
@@ -123,17 +195,26 @@ function NewHome(props) {
                   LinkedIn
                 </p>
               </div>
-              <Badge color="emerald-500">
+              {/* <Badge color="emerald-500">
                 <p>Connected</p>
-              </Badge>
+              </Badge> */}
             </div>
             <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
               Integrate with LinkedIn to access and analyze data <br /> from
               your emails, inbox, and more.
             </p>
 
-            <Button variant="primary" className="w-[100%]" disabled={true}>
-              Extension Installed
+            <Button
+              variant="primary"
+              className="w-[100%]"
+              onClick={() => {
+                window.open(
+                  "https://chromewebstore.google.com/detail/boondoggle/lgeokfaihmdoipgmajekijkfppdmcnib?pli=1",
+                  "_blank"
+                );
+              }}
+            >
+              Download Extension
             </Button>
           </Card>
 
@@ -145,9 +226,9 @@ function NewHome(props) {
                   CRM
                 </p>
               </div>
-              <Badge color="emerald-500">
+              {/* <Badge color="emerald-500">
                 <p>Connected</p>
-              </Badge>
+              </Badge> */}
             </div>
             <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
               Select your team’s CRM platform. Only one CRM <br />
@@ -164,7 +245,14 @@ function NewHome(props) {
               onClick={() => {
                 navigation("/link");
               }}
-              disabled={true}
+              icon={
+                localStorage.getItem("connection_id") == null
+                  ? RiAddLine
+                  : RiCheckLine
+              }
+              disabled={
+                localStorage.getItem("connection_id") == null ? false : true
+              }
             >
               {localStorage.getItem("connection_id") == null
                 ? "Add CRM Account"
@@ -173,7 +261,7 @@ function NewHome(props) {
           </Card>
         </div>
       </div>
-      <div className="mx-10 my-10">
+      {/* <div className="mx-10 my-10">
         <p className="text-gray-500 text-xl font-semibold font-['Inter'] leading-tight my-10">
           Connected Workflows
         </p>
@@ -215,57 +303,8 @@ function NewHome(props) {
               Use Template
             </Button>
           </Card>
-          {/* <Card className="mx-auto w-[23vw]">
-            <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
-              <div className="flex gap-1.5 mr-20 items-center">
-                <RiAlignJustify />
-                <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
-                  CRM
-                </p>
-              </div>
-              <Badge color="emerald-500">
-                <p>Connected</p>
-              </Badge>
-            </div>
-            <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-              Select your team’s CRM platform. Only one CRM <br />
-              tool can be connected per team.
-            </p>
-
-            <Button variant="secondary" className="w-[100%]" icon={RiAddLine}>
-              Add CRM account
-            </Button>
-          </Card> */}
-          {/* <Card className="mx-auto w-[23vw]">
-            <div className="flex flex-row justify-between rounded-lg items-center flex-auto mb-5">
-              <div className="flex gap-1.5 mr-20 items-center">
-                <RiAlignJustify />
-                <p className="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
-                  CRM
-                </p>
-              </div>
-              <Badge color="emerald-500">
-                <p>Connected</p>
-              </Badge>
-            </div>
-            <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
-              Select your team’s CRM platform. Only one CRM <br />
-              tool can be connected per team.
-            </p>
-
-            <Button
-              variant="secondary"
-              className="w-[100%]"
-              icon={RiAddLine}
-              onClick={() => {
-                navigation("/link");
-              }}
-            >
-              Add CRM account
-            </Button>
-          </Card> */}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
