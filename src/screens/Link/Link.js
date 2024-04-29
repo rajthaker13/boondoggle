@@ -89,21 +89,38 @@ function Link(props) {
       },
     };
 
-    const contactResults = await axios.request(contactOptions);
+    let contactData;
 
-    const contactData = contactResults.data;
+    try {
+      const contactResults = await axios.request(contactOptions);
+      contactData = contactResults.data;
+    } catch {
+      contactData = [];
+    }
 
     console.log("Contact Data", contactData);
 
-    const dealResults = await axios.request(dealOptions);
+    let dealData;
 
-    const dealData = dealResults.data;
+    try {
+      const dealResults = await axios.request(dealOptions);
+
+      dealData = dealResults.data;
+    } catch {
+      dealData = [];
+    }
 
     console.log("Deal Data", dealData);
 
-    const companyResults = await axios.request(companyOptions);
+    let companyData;
 
-    const companyData = companyResults.data;
+    try {
+      const companyResults = await axios.request(companyOptions);
+
+      companyData = companyResults.data;
+    } catch {
+      companyData = [];
+    }
 
     console.log("Company Data", companyData);
 
@@ -113,9 +130,15 @@ function Link(props) {
 
     // console.log("Event Data", eventData);
 
-    const leadResults = await axios.request(leadOptions);
+    let leadData;
 
-    const leadData = leadResults.data;
+    try {
+      const leadResults = await axios.request(leadOptions);
+
+      leadData = leadResults.data;
+    } catch {
+      leadData = [];
+    }
 
     console.log("Lead Data", leadData);
 
