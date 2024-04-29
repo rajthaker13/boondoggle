@@ -89,33 +89,56 @@ function Link(props) {
       },
     };
 
-    const contactResults = await axios.request(contactOptions);
+    let contactData;
 
-    const contactData = contactResults.data;
+    try {
+      const contactResults = await axios.request(contactOptions);
+      contactData = contactResults.data;
+    } catch {
+      contactData = [];
+    }
 
     console.log("Contact Data", contactData);
 
-    const dealResults = await axios.request(dealOptions);
+    let dealData;
 
-    const dealData = dealResults.data;
+    try {
+      const dealResults = await axios.request(dealOptions);
+
+      dealData = dealResults.data;
+    } catch {
+      dealData = [];
+    }
 
     console.log("Deal Data", dealData);
 
-    const companyResults = await axios.request(companyOptions);
+    let companyData;
 
-    const companyData = companyResults.data;
+    try {
+      const companyResults = await axios.request(companyOptions);
+
+      companyData = companyResults.data;
+    } catch {
+      companyData = [];
+    }
 
     console.log("Company Data", companyData);
 
-    const eventResults = await axios.request(eventOptions);
+    // const eventResults = await axios.request(eventOptions);
 
-    const eventData = eventResults.data;
+    // const eventData = eventResults.data;
 
-    console.log("Event Data", eventData);
+    // console.log("Event Data", eventData);
 
-    const leadResults = await axios.request(leadOptions);
+    let leadData;
 
-    const leadData = leadResults.data;
+    try {
+      const leadResults = await axios.request(leadOptions);
+
+      leadData = leadResults.data;
+    } catch {
+      leadData = [];
+    }
 
     console.log("Lead Data", leadData);
 
@@ -229,37 +252,37 @@ function Link(props) {
       );
     }
 
-    if (eventData.length > 0) {
-      await Promise.all(
-        eventData.map(async (item) => {
-          const values = Object.values(item);
-          const embedding = await openai.embeddings.create({
-            model: "text-embedding-3-small",
-            input: `${values}`,
-          });
+    // if (eventData.length > 0) {
+    //   await Promise.all(
+    //     eventData.map(async (item) => {
+    //       const values = Object.values(item);
+    //       const embedding = await openai.embeddings.create({
+    //         model: "text-embedding-3-small",
+    //         input: `${values}`,
+    //       });
 
-          var obj = {
-            id: item.id,
-            values: embedding.data[0].embedding,
-            metadata: {
-              type: "Event",
-              created_at: item.created_at,
-              updated_at: item.updated_at,
-              type: item.type,
-              ...(item.note && { note: JSON.stringify(item.note) }),
-              ...(item.meeting && { meeting: JSON.stringify(item.meeting) }),
-              ...(item.call && { call: JSON.stringify(item.call) }),
-              ...(item.task && { task: JSON.stringify(item.task) }),
-              deal_ids: item.deal_ids,
-              company_ids: item.company_ids,
-              contact_ids: item.contact_ids,
-              lead_ids: item.lead_ids,
-            },
-          };
-          events.push(obj);
-        })
-      );
-    }
+    //       var obj = {
+    //         id: item.id,
+    //         values: embedding.data[0].embedding,
+    //         metadata: {
+    //           type: "Event",
+    //           created_at: item.created_at,
+    //           updated_at: item.updated_at,
+    //           type: item.type,
+    //           ...(item.note && { note: JSON.stringify(item.note) }),
+    //           ...(item.meeting && { meeting: JSON.stringify(item.meeting) }),
+    //           ...(item.call && { call: JSON.stringify(item.call) }),
+    //           ...(item.task && { task: JSON.stringify(item.task) }),
+    //           deal_ids: item.deal_ids,
+    //           company_ids: item.company_ids,
+    //           contact_ids: item.contact_ids,
+    //           lead_ids: item.lead_ids,
+    //         },
+    //       };
+    //       events.push(obj);
+    //     })
+    //   );
+    // }
 
     if (leadData.length > 0) {
       await Promise.all(
