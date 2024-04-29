@@ -643,6 +643,7 @@ function Workflows(props) {
   }
 
   async function uploadEmails() {
+    setIsLoading(true);
     const currentUrl = window.location.href;
     const urlWithoutParams = currentUrl.split("?")[0];
 

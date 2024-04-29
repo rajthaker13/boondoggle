@@ -20,6 +20,16 @@ function Login(props) {
     }
   });
 
+  async function getUserData(uid) {
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    if (data[0].crm_id != null) {
+      localStorage.setItem("connection_id", data[0].crm_id);
+    }
+    if (data[0].email_grant_id != null) {
+      localStorage.setItem("email_grant_id", data[0].email_grant_id);
+    }
+  }
+
   async function signIn() {
     console.log(email);
     console.log(password);
@@ -27,9 +37,9 @@ function Login(props) {
       email: email,
       password: password,
     });
-    console.log(data);
     localStorage.setItem("email", data.user.email);
     localStorage.setItem("uid", data.user.id);
+    await getUserData(data.user.id);
     navigation("/home");
     // await redirect(data.user.id);
   }
@@ -38,7 +48,6 @@ function Login(props) {
     <div className="login-container">
       <div className="login-pic-container">
         <p className="sign-up-text">Sign in</p>
-        <p className="trial-text">Start your 2-week free trial today</p>
         <div className="or-with-email-text-container">
           <div className="line"></div>
           <p className="or-with-email-text">Use your work email</p>
