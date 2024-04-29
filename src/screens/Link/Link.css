@@ -87,8 +87,8 @@
 
 .unified_vendor {
   display: flex;
-  width: 5vw;
-  height: 5vw;
+  width: auto;
+  height: auto;
   padding: var(--12, 12px);
   justify-content: center;
   align-items: center;
