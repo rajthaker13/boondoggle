@@ -498,8 +498,8 @@ function Link(props) {
               nostyle={true}
             />
           </div>
-          <p className="crm-header-text">Utilize an Alternative CRM</p>
-          <div className="unified_vendors">
+          {/* <p className="crm-header-text">Utilize an Alternative CRM</p> */}
+          {/* <div className="unified_vendors">
             <div
               className="unified_vendor"
               onClick={async () => {
@@ -512,7 +512,7 @@ function Link(props) {
               ></img>
               <p className="unified_vendor_name">Airtable</p>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </LoadingOverlay>

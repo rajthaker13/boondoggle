@@ -10,6 +10,10 @@ console.log("Hello from Functions!")
 
 Deno.serve(async (req) => {
 
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   function generateState(length: number): string {
     const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_";
     const randomBytesArray = new Uint8Array(length);
