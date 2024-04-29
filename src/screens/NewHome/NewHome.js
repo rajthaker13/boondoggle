@@ -250,13 +250,14 @@ function NewHome(props) {
                   ? RiAddLine
                   : RiCheckLine
               }
-              disabled={
-                localStorage.getItem("connection_id") == null ? false : true
-              }
+              // disabled={
+              //   localStorage.getItem("connection_id") == null ? false : true
+              // }
             >
-              {localStorage.getItem("connection_id") == null
+              Add CRM Account
+              {/* {localStorage.getItem("connection_id") == null
                 ? "Add CRM Account"
-                : "Linked"}
+                : "Linked"} */}
             </Button>
           </Card>
         </div>
