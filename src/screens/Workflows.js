@@ -48,9 +48,17 @@ function Workflows(props) {
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
 
+  const [selectedBase, setSelectedBase] = useState([]);
   const [airtableTables, setAirtableTables] = useState([]);
   const [airtableFields, setAirtableFields] = useState([]);
   const [selectedTable, setSelectedTable] = useState("");
+
+  const [nameField, setNameField] = useState("");
+  const [emailField, setEmailField] = useState("");
+  const [twitterField, setTwitterField] = useState("");
+  const [linkedInField, setLinkedInField] = useState("");
+  const [socialField, setSocialField] = useState("");
+  const [notesField, setNotesField] = useState("");
 
   const [isAdmin, setIsAdmin] = useState(true);
   const [memberWelcome, setMemberWelcome] = useState(false);
@@ -102,6 +110,18 @@ function Workflows(props) {
     return new_access_token;
   }
 
+  async function selectTable(event) {
+    console.log(event);
+    setSelectedTable(event);
+    if (event != "") {
+      const tableObject = airtableTables.find((table) => table.id == event);
+      console.log(tableObject);
+      setAirtableFields(tableObject.fields);
+    } else {
+      setAirtableFields([]);
+    }
+  }
+
   useEffect(() => {
     async function getAirtableTables() {
       const connection_id = localStorage.getItem("connection_id");
@@ -110,7 +130,8 @@ function Workflows(props) {
         .select()
         .eq("connection_id", connection_id);
       const baseID = data[0].baseID;
-      const url = `https://api.airtable.com/v0/meta/bases`;
+      setSelectedBase(baseID);
+      const url = `https://api.airtable.com/v0/meta/bases/${baseID}/tables`;
 
       let basedResponse;
 
@@ -129,7 +150,7 @@ function Workflows(props) {
         });
       }
       console.log("BASED", basedResponse);
-      setAirtableTables(basedResponse.data.bases);
+      setAirtableTables(basedResponse.data.tables);
     }
     getAirtableTables();
   }, []);
@@ -1133,13 +1154,10 @@ function Workflows(props) {
                   background: "#fff",
                 }}
               >
-                <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7 mb-[5vh]">
+                <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
                   Create Workflow
                 </div>
-                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                  Select integrations
-                </div>
-                <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[5vh]">
+                <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[2vh]">
                   <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
                     <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
                       <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
@@ -1162,26 +1180,105 @@ function Workflows(props) {
                     </div>
                   </div>
                 </div>
-                {/* <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                  Mapping Selection
-                </div>
-                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                  Choose Table
-                </div>
-                <SearchSelect
-                  value={selectedTable}
-                  onValueChange={setSelectedTable}
-                >
-                  {airtableTables.map((tableChoice) => {
-                    return (
-                      <SearchSelectItem value={tableChoice.name}>
-                        {tableChoice.name}
-                      </SearchSelectItem>
-                    );
-                  })}
-                </SearchSelect> */}
+                {localStorage.getItem("crmType") == "airtable" && (
+                  <>
+                    <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                      Mapping Selection
+                    </div>
 
-                <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                      Choose Table
+                    </div>
+                    <SearchSelect
+                      value={selectedTable}
+                      onValueChange={async (event) => {
+                        await selectTable(event);
+                      }}
+                      className="mb-[2vh]"
+                    >
+                      {airtableTables.map((tableChoice) => {
+                        return (
+                          <SearchSelectItem value={tableChoice.id}>
+                            {tableChoice.name}
+                          </SearchSelectItem>
+                        );
+                      })}
+                    </SearchSelect>
+
+                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                      Name/Contact
+                    </div>
+                    <SearchSelect
+                      value={nameField}
+                      onValueChange={setNameField}
+                      className="mb-[2vh]"
+                    >
+                      {airtableFields.map((fieldChoice) => {
+                        console.log(fieldChoice);
+                        if (
+                          fieldChoice.type == "singleLineText" ||
+                          fieldChoice.type == "multilineText"
+                        ) {
+                          return (
+                            <SearchSelectItem value={fieldChoice.id}>
+                              {fieldChoice.name}
+                            </SearchSelectItem>
+                          );
+                        }
+                      })}
+                    </SearchSelect>
+
+                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                      {source == "Email" && "Email (Optional)"}
+                      {source == "LinkedIn" && "LinkedIn (Optional)"}
+                      {source == "Twitter" && "Twitter (Optional)"}
+                    </div>
+                    <SearchSelect
+                      value={socialField}
+                      onValueChange={setSocialField}
+                      className="mb-[2vh]"
+                    >
+                      {airtableFields.map((fieldChoice) => {
+                        console.log(fieldChoice);
+                        if (
+                          fieldChoice.type == "singleLineText" ||
+                          fieldChoice.type == "multilineText"
+                        ) {
+                          return (
+                            <SearchSelectItem value={fieldChoice.id}>
+                              {fieldChoice.name}
+                            </SearchSelectItem>
+                          );
+                        }
+                      })}
+                    </SearchSelect>
+
+                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
+                      Notes/Summary
+                    </div>
+                    <SearchSelect
+                      value={notesField}
+                      onValueChange={setNotesField}
+                      className="mb-[2vh]"
+                    >
+                      {airtableFields.map((fieldChoice) => {
+                        console.log(fieldChoice);
+                        if (
+                          fieldChoice.type == "singleLineText" ||
+                          fieldChoice.type == "multilineText"
+                        ) {
+                          return (
+                            <SearchSelectItem value={fieldChoice.id}>
+                              {fieldChoice.name}
+                            </SearchSelectItem>
+                          );
+                        }
+                      })}
+                    </SearchSelect>
+                  </>
+                )}
+
+                <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
                   What type of messages do you want scraped?
                 </div>
                 <input
@@ -1191,6 +1288,7 @@ function Workflows(props) {
                 ></input>
                 <Button
                   variant="primary"
+                  disabled={true}
                   onClick={async () => {
                     if (source == "Email") {
                       await uploadEmails();
