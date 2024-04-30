@@ -153,7 +153,7 @@ function BoondogggleAI(props) {
       const index = pinecone.index("boondoggle-data-2");
       const id = localStorage.getItem("connection_id");
       const uid = localStorage.getItem("uid");
-      const type = localStorage.getItem("crmType");
+      let type = localStorage.getItem("crmType");
       if (type != "airtable") {
         type = "crm";
       }
