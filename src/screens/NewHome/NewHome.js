@@ -321,7 +321,7 @@ function NewHome(props) {
           </Card>
         </div>
       </div>
-      {/* <div className="mx-10 my-10">
+      <div className="mx-10 my-10">
         <p className="text-gray-500 text-xl font-semibold font-['Inter'] leading-tight my-10">
           Connected Workflows
         </p>
@@ -364,7 +364,7 @@ function NewHome(props) {
             </Button>
           </Card>
         </div>
-      </div> */}
+      </div>
     </div>
   );
 }
