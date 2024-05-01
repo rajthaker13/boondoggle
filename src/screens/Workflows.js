@@ -152,7 +152,7 @@ function Workflows(props) {
       console.log("BASED", basedResponse);
       setAirtableTables(basedResponse.data.tables);
     }
-    getAirtableTables();
+    // getAirtableTables();
   }, []);
 
   async function twitterCredentials() {
