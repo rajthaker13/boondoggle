@@ -15,6 +15,7 @@ function SignUp(props) {
   });
 
   async function signIn() {
+    localStorage.clear();
     const { data } = await props.db.auth.signUp({
       email: email,
       password: password,

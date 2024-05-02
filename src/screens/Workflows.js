@@ -123,36 +123,23 @@ function Workflows(props) {
   }
 
   useEffect(() => {
-    async function getAirtableTables() {
-      const connection_id = localStorage.getItem("connection_id");
-      const { data, error } = await props.db
-        .from("data")
-        .select()
-        .eq("connection_id", connection_id);
-      const baseID = data[0].baseID;
-      setSelectedBase(baseID);
-      const url = `https://api.airtable.com/v0/meta/bases/${baseID}/tables`;
+    async function checkData() {
+      console.log("Hey");
+      const id = localStorage.getItem("connection_id");
+      const options = {
+        method: "GET",
+        url: `https://api.unified.to/crm/${id}/deal`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+      };
+      const results = await axios.request(options);
 
-      let basedResponse;
-
-      try {
-        basedResponse = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${connection_id}`,
-          },
-        });
-      } catch {
-        const new_id = getAirtableRefreshToken();
-        basedResponse = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${new_id}`,
-          },
-        });
-      }
-      console.log("BASED", basedResponse);
-      setAirtableTables(basedResponse.data.tables);
+      console.log("RESULTS", results);
     }
-    // getAirtableTables();
+
+    // checkData();
   }, []);
 
   async function twitterCredentials() {

@@ -124,11 +124,15 @@ function Link(props) {
 
     console.log("Company Data", companyData);
 
-    // const eventResults = await axios.request(eventOptions);
+    let eventData;
 
-    // const eventData = eventResults.data;
+    try {
+      const eventResults = await axios.request(eventOptions);
 
-    // console.log("Event Data", eventData);
+      eventData = eventResults.data;
+    } catch {
+      eventData = [];
+    }
 
     let leadData;
 
@@ -252,37 +256,36 @@ function Link(props) {
       );
     }
 
-    // if (eventData.length > 0) {
-    //   await Promise.all(
-    //     eventData.map(async (item) => {
-    //       const values = Object.values(item);
-    //       const embedding = await openai.embeddings.create({
-    //         model: "text-embedding-3-small",
-    //         input: `${values}`,
-    //       });
+    if (eventData.length > 0) {
+      await Promise.all(
+        eventData.map(async (item) => {
+          const values = Object.values(item);
+          const embedding = await openai.embeddings.create({
+            model: "text-embedding-3-small",
+            input: `${values}`,
+          });
 
-    //       var obj = {
-    //         id: item.id,
-    //         values: embedding.data[0].embedding,
-    //         metadata: {
-    //           type: "Event",
-    //           created_at: item.created_at,
-    //           updated_at: item.updated_at,
-    //           type: item.type,
-    //           ...(item.note && { note: JSON.stringify(item.note) }),
-    //           ...(item.meeting && { meeting: JSON.stringify(item.meeting) }),
-    //           ...(item.call && { call: JSON.stringify(item.call) }),
-    //           ...(item.task && { task: JSON.stringify(item.task) }),
-    //           deal_ids: item.deal_ids,
-    //           company_ids: item.company_ids,
-    //           contact_ids: item.contact_ids,
-    //           lead_ids: item.lead_ids,
-    //         },
-    //       };
-    //       events.push(obj);
-    //     })
-    //   );
-    // }
+          var obj = {
+            id: item.id,
+            values: embedding.data[0].embedding,
+            metadata: {
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              type: item.type,
+              ...(item.note && { note: JSON.stringify(item.note) }),
+              ...(item.meeting && { meeting: JSON.stringify(item.meeting) }),
+              ...(item.call && { call: JSON.stringify(item.call) }),
+              ...(item.task && { task: JSON.stringify(item.task) }),
+              deal_ids: item.deal_ids,
+              company_ids: item.company_ids,
+              contact_ids: item.contact_ids,
+              lead_ids: item.lead_ids,
+            },
+          };
+          events.push(obj);
+        })
+      );
+    }
 
     if (leadData.length > 0) {
       await Promise.all(
@@ -309,7 +312,7 @@ function Link(props) {
               is_active: item.is_active,
               address: JSON.stringify(item.address),
               emails: JSON.stringify(item.emails),
-              telephones: item.telephones,
+              telephones: JSON.stringify(item.telephones),
               source: item.source,
               status: item.status,
             },
@@ -503,25 +506,11 @@ function Link(props) {
             <UnifiedDirectory
               workspace_id={"65c02dbec9810ed1f215c33b"}
               categories={["crm"]}
-              scopes={[
-                "crm_company_read",
-                "crm_contact_read",
-                "crm_deal_read",
-                "crm_event_read",
-                "crm_lead_read",
-                "crm_company_write",
-                "crm_contact_write",
-                "crm_event_write",
-                "crm_deal_write",
-                "hris_employee_read",
-                "crm_lead_write",
-                "hris_group_read",
-              ]}
               success_redirect={window.location.href}
               nostyle={true}
             />
           </div>
-          <p className="crm-header-text">Utilize an Alternative CRM</p>
+          {/* <p className="crm-header-text">Utilize an Alternative CRM</p>
           <div className="unified_vendors">
             <div
               className="unified_vendor"
@@ -535,7 +524,7 @@ function Link(props) {
               ></img>
               <p className="unified_vendor_name">Airtable</p>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </LoadingOverlay>
