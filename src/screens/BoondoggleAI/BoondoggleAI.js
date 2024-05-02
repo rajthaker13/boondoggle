@@ -209,7 +209,7 @@ function BoondogggleAI(props) {
               };
               const results = await axios.request(options);
               queryArray.push(results.data);
-            } else if (matchType == "Event") {
+            } else if (matchType == "NOTE") {
               const options = {
                 method: "GET",
                 url: `https://api.unified.to/crm/${id}/event/${match.id}`,
