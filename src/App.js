@@ -20,10 +20,12 @@ import Settings from "./screens/Settings/Settings";
 import BoondogggleAI from "./screens/BoondoggleAI/BoondoggleAI";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import Invite from "./screens/Invite/Invite";
-import NewHome from "./screens/NewHome/NewHome";
+import NewHome from "./screens/NewHome";
 import Workflows from "./screens/Workflows";
 import NewEntries from "./screens/NewEntries";
 import Demo from "./screens/Demo";
+import NewLogin from "./screens/NewLogin";
+import Dashboard from "./screens/Dashboard";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -43,11 +45,17 @@ export default function App() {
         <Route path="/" element={<Landing db={supabase} />} />
         <Route path="/privacy" element={<Privacy db={supabase} />} />
         <Route path="/terms" element={<Terms db={supabase} />} />
-        <Route path="/signup" element={<SignUp db={supabase} />} />
-        <Route path="/login" element={<Login db={supabase} />} />
+        <Route
+          path="/signup"
+          element={<NewLogin db={supabase} isNewAccount={true} />}
+        />
+        <Route
+          path="/login"
+          element={<NewLogin db={supabase} isNewAccount={false} />}
+        />
         <Route path="/link" element={<Link db={supabase} />} />
         <Route path="/payment" element={<Payment db={supabase} />} />
-        <Route path="/home" element={<NewHome db={supabase} />} />
+        <Route path="/home" element={<Dashboard db={supabase} />} />
         <Route path="/workflows" element={<Workflows db={supabase} />} />
         <Route path="/entries" element={<NewEntries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />

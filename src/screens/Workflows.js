@@ -28,6 +28,7 @@ import linkedInContacts from "../assets/ui-update/workflows/linkedInContacts.svg
 import twitterContacts from "../assets/ui-update/workflows/twitterContacts.svg";
 import workflowData from "../data/workflows";
 import ClickAwayListener from "react-click-away-listener";
+import { loadEvaluator } from "langchain/evaluation";
 
 function Workflows(props) {
   const client_id = process.env.REACT_APP_AIRTABLE_KEY;
@@ -138,6 +139,12 @@ function Workflows(props) {
 
       console.log("RESULTS", results);
     }
+
+    async function compareStrings() {
+      console.log("Compaire");
+    }
+
+    compareStrings();
 
     // checkData();
   }, []);
@@ -1337,7 +1344,7 @@ function Workflows(props) {
                     >
                       <img src={workflow.src}></img>
                       <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
-                        <div class="grow shrink basis-0 text-gray-700 text-lg font-semibold font-['Inter'] leading-7">
+                        <div class="grow shrink basis-0 text-gray-700 text-sm font-semibold font-['Inter'] leading-7 whitespace-nowrap overflow-hidden">
                           {workflow.title}
                         </div>
                       </div>
