@@ -25,6 +25,7 @@ import Workflows from "./screens/Workflows";
 import NewEntries from "./screens/NewEntries";
 import Demo from "./screens/Demo";
 import NewLogin from "./screens/NewLogin";
+import Dashboard from "./screens/Dashboard";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
@@ -54,7 +55,7 @@ export default function App() {
         />
         <Route path="/link" element={<Link db={supabase} />} />
         <Route path="/payment" element={<Payment db={supabase} />} />
-        <Route path="/home" element={<NewHome db={supabase} />} />
+        <Route path="/home" element={<Dashboard db={supabase} />} />
         <Route path="/workflows" element={<Workflows db={supabase} />} />
         <Route path="/entries" element={<NewEntries db={supabase} />} />
         <Route path="/performance" element={<Performance db={supabase} />} />

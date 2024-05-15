@@ -47,6 +47,10 @@ import {
 } from "@remixicon/react";
 
 import { createPineconeIndexes } from "../functions/crm_entries";
+import {
+  TextAnalyticsClient,
+  AzureKeyCredential,
+} from "@azure/ai-text-analytics";
 
 function NewHome(props) {
   const navigation = useNavigate();
@@ -54,6 +58,11 @@ function NewHome(props) {
   const [isLoading, setIsLoading] = useState(false);
   const [availableIntegrations, setAvailableIntegrations] = useState([]);
   const [crmType, setCRMType] = useState("");
+
+  const client = new TextAnalyticsClient(
+    "https://boondoggle.cognitiveservices.azure.com/",
+    new AzureKeyCredential("a1c815a1e18c4373a07ef8f627438e53")
+  );
 
   async function connectEmail() {
     const currentUrl = window.location.href;
@@ -159,6 +168,24 @@ function NewHome(props) {
       await captureOauthVerifier();
     }
 
+    async function azureTest() {
+      const client = new TextAnalyticsClient(
+        "https://boondoggle.cognitiveservices.azure.com/",
+        new AzureKeyCredential("a1c815a1e18c4373a07ef8f627438e53")
+      );
+
+      const documents = [
+        "Microsoft moved its headquarters to Bellevue, Washington in January 1979.",
+        "Steve Ballmer stepped down as CEO of Microsoft and was succeeded by Satya Nadella.",
+      ];
+
+      const results = await client.analyzeSentiment(documents);
+
+      console.log("RESULTS", results);
+    }
+
+    azureTest();
+
     async function getCRMIntegrations() {
       const workspace_id = "65c02dbec9810ed1f215c33b";
       const integrations = await (
@@ -252,23 +279,7 @@ function NewHome(props) {
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div className="w-[100vw] h-[100vh]">
         <Sidebar selectedTab={0} db={props.db} />
-        <div className="mx-10 my-10">
-          {/* <Callout
-          title="Refresh your integration connections"
-          color="red"
-          icon={RiErrorWarningFill}
-        >
-          <div className="flex flex-row justify-between px-4 py-2 rounded-lg items-center flex-auto">
-            <p>
-              Refresh daily to have accurate information deployments to your
-              workflows.
-            </p>
-            <Button variant="primary" color="red">
-              Refresh
-            </Button>
-          </div>
-        </Callout> */}
-        </div>
+        <div className="mx-10 my-10"></div>
         <div className="mx-5 my-10">
           <p className="text-gray-500 text-xl font-semibold font-['Inter'] leading-tight my-10">
             Connected Integrations
@@ -282,9 +293,6 @@ function NewHome(props) {
                     CRM
                   </p>
                 </div>
-                {/* <Badge color="emerald-500">
-                <p>Connected</p>
-              </Badge> */}
               </div>
               <p class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-5">
                 Select your team’s CRM platform. Only one CRM <br />
