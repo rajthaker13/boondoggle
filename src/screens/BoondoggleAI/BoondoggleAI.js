@@ -17,11 +17,11 @@ import { Message, OpenAIStream, StreamingTextResponse } from "ai";
 function BoondogggleAI(props) {
   const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
   const pinecone = new Pinecone({
-    apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
+    apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
 
   const openai = new OpenAI({
-    apiKey: "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",
+    apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
   });
 
