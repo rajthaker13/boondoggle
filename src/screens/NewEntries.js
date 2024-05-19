@@ -23,53 +23,6 @@ import {
 } from "@remixicon/react";
 
 function NewEntries(props) {
-  const data = [
-    {
-      name: "Viola Amherd",
-      Role: "Federal Councillor",
-      departement:
-        "The Federal Department of Defence, Civil Protection and Sport (DDPS)",
-      status: "active",
-    },
-    {
-      name: "Albert Rösti",
-      Role: "Federal Councillor",
-      departement:
-        "The Federal Department of the Environment, Transport, Energy and Communications (DETEC)",
-      status: "active",
-    },
-    {
-      name: "Beat Jans",
-      Role: "Federal Councillor",
-      departement: "The Federal Department of Justice and Police (FDJP)",
-      status: "active",
-    },
-    {
-      name: "Ignazio Cassis",
-      Role: "Federal Councillor",
-      departement: "The Federal Department of Foreign Affairs (FDFA)",
-      status: "active",
-    },
-    {
-      name: "Karin Keller-Sutter",
-      Role: "Federal Councillor",
-      departement: "The Federal Department of Finance (FDF)",
-      status: "active",
-    },
-    {
-      name: "Guy Parmelin",
-      Role: "Federal Councillor",
-      departement:
-        "The Federal Department of Economic Affairs, Education and Research (EAER)",
-      status: "active",
-    },
-    {
-      name: "Elisabeth Baume-Schneider",
-      Role: "Federal Councillor",
-      departement: "The Federal Department of Home Affairs (FDHA)",
-      status: "active",
-    },
-  ];
   const [tableData, setTableData] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
@@ -268,7 +221,8 @@ function NewEntries(props) {
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
-      const connection_id = localStorage.getItem("connection_id");
+      // const connection_id = localStorage.getItem("connection_id")
+      const connection_id = "662fcf7451a04d41e55dd0c3";
       // const connection_id = "65f85a82aad1a3b83ecf1efd";
       const isAdmin = localStorage.getItem("isAdmin");
 
@@ -389,7 +343,7 @@ function NewEntries(props) {
                   const timeAgoString = timeAgo(timestamp);
                   return (
                     <TableRow key={lead.id}>
-                      <TableCell>1 day ago</TableCell>
+                      <TableCell>Today</TableCell>
                       <TableCell>LinkedIn {`->`} Hubspot</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>{lead.summary}</TableCell>

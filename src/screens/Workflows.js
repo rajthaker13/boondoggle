@@ -1,34 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import OpenAI from "openai";
 import axios from "axios";
 import Sidebar from "../components/Sidebar/Sidebar";
 import WorkflowSidebar from "../components/WorkflowSidebar";
 import {
-  TextInput,
-  Card,
-  Badge,
   Button,
   SearchSelect,
-  SelectItem,
   SearchSelectItem,
+  Dialog,
+  DialogPanel,
 } from "@tremor/react";
-import {
-  RiSearchLine,
-  RiMailLine,
-  RiAddLin,
-  RiLinkedinBoxFill,
-  RiTwitterFill,
-} from "@remixicon/react";
-import { HiOutlineMail } from "@react-icons/all-files/hi/HiOutlineMail";
-import hubspot from "../assets/landing/integrations/crm_svg/hubspot.svg";
 import LoadingOverlay from "react-loading-overlay";
-import emailContacts from "../assets/ui-update/workflows/emailContacts.svg";
-import linkedInContacts from "../assets/ui-update/workflows/linkedInContacts.svg";
-import twitterContacts from "../assets/ui-update/workflows/twitterContacts.svg";
 import workflowData from "../data/workflows";
 import ClickAwayListener from "react-click-away-listener";
-import { loadEvaluator } from "langchain/evaluation";
 
 function Workflows(props) {
   const client_id = process.env.REACT_APP_AIRTABLE_KEY;
@@ -1130,175 +1114,78 @@ function Workflows(props) {
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div>
-        {openCookieModal && (
-          <div className="modal-overlay">
-            <ClickAwayListener
-              onClickAway={() => {
-                setOpenCookieModal(false);
+        <Dialog
+          open={openCookieModal}
+          onClose={(val) => setOpenCookieModal(val)}
+          static={true}
+        >
+          <DialogPanel>
+            <div
+              className="modal-content"
+              style={{
+                height: "auto",
+                width: "100%",
+                maxWidth: "60vw",
+                display: "flex",
+                flexDirection: "column",
+                background: "#fff",
               }}
             >
-              <div
-                className="modal-content"
-                style={{
-                  height: "auto",
-                  width: "30vw",
-                  maxWidth: "60vw",
-                  display: "flex",
-                  flexDirection: "column",
-                  background: "#fff",
+              <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
+                Create Workflow
+              </div>
+              <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[2vh]">
+                <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                  <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                    <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                      {source}
+                    </div>
+                    <div class="w-5 h-5 relative"></div>
+                  </div>
+                </div>
+                <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
+                  {`->`}
+                </div>
+                <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                  <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                    <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                      {localStorage.getItem("crmType") == "airtable"
+                        ? "Airtable"
+                        : "CRM"}
+                    </div>
+                    <div class="w-5 h-5 relative"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                What type of messages do you want scraped?
+              </div>
+              <input
+                class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
+                placeholder="Type anything you want..."
+              ></input>
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  setIsLoading(true);
+                  await new Promise((resolve) => setTimeout(resolve, 5000));
+                  localStorage.setItem("linkedinLinked", true);
+                  setIsLoading(false);
+                  // if (source == "Email") {
+                  //   await uploadEmails();
+                  // } else if (source == "LinkedIn") {
+                  //   await getSessionCookie();
+                  // } else if (source == "Twitter") {
+                  //   await twitterContacts();
+                  // }
                 }}
               >
-                <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                  Create Workflow
-                </div>
-                <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[2vh]">
-                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
-                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
-                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
-                        {source}
-                      </div>
-                      <div class="w-5 h-5 relative"></div>
-                    </div>
-                  </div>
-                  <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
-                    {`->`}
-                  </div>
-                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
-                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
-                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
-                        {localStorage.getItem("crmType") == "airtable"
-                          ? "Airtable"
-                          : "CRM"}
-                      </div>
-                      <div class="w-5 h-5 relative"></div>
-                    </div>
-                  </div>
-                </div>
-                {localStorage.getItem("crmType") == "airtable" && (
-                  <>
-                    <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                      Mapping Selection
-                    </div>
-
-                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                      Choose Table
-                    </div>
-                    <SearchSelect
-                      value={selectedTable}
-                      onValueChange={async (event) => {
-                        await selectTable(event);
-                      }}
-                      className="mb-[2vh]"
-                    >
-                      {airtableTables.map((tableChoice) => {
-                        return (
-                          <SearchSelectItem value={tableChoice.id}>
-                            {tableChoice.name}
-                          </SearchSelectItem>
-                        );
-                      })}
-                    </SearchSelect>
-
-                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                      Name/Contact
-                    </div>
-                    <SearchSelect
-                      value={nameField}
-                      onValueChange={setNameField}
-                      className="mb-[2vh]"
-                    >
-                      {airtableFields.map((fieldChoice) => {
-                        console.log(fieldChoice);
-                        if (
-                          fieldChoice.type == "singleLineText" ||
-                          fieldChoice.type == "multilineText"
-                        ) {
-                          return (
-                            <SearchSelectItem value={fieldChoice.id}>
-                              {fieldChoice.name}
-                            </SearchSelectItem>
-                          );
-                        }
-                      })}
-                    </SearchSelect>
-
-                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                      {source == "Email" && "Email (Optional)"}
-                      {source == "LinkedIn" && "LinkedIn (Optional)"}
-                      {source == "Twitter" && "Twitter (Optional)"}
-                    </div>
-                    <SearchSelect
-                      value={socialField}
-                      onValueChange={setSocialField}
-                      className="mb-[2vh]"
-                    >
-                      {airtableFields.map((fieldChoice) => {
-                        console.log(fieldChoice);
-                        if (
-                          fieldChoice.type == "singleLineText" ||
-                          fieldChoice.type == "multilineText"
-                        ) {
-                          return (
-                            <SearchSelectItem value={fieldChoice.id}>
-                              {fieldChoice.name}
-                            </SearchSelectItem>
-                          );
-                        }
-                      })}
-                    </SearchSelect>
-
-                    <div class="w-[338px] text-gray-700 text-sm font-medium font-['Inter'] leading-tight mb-[2vh]">
-                      Notes/Summary
-                    </div>
-                    <SearchSelect
-                      value={notesField}
-                      onValueChange={setNotesField}
-                      className="mb-[2vh]"
-                    >
-                      {airtableFields.map((fieldChoice) => {
-                        console.log(fieldChoice);
-                        if (
-                          fieldChoice.type == "singleLineText" ||
-                          fieldChoice.type == "multilineText"
-                        ) {
-                          return (
-                            <SearchSelectItem value={fieldChoice.id}>
-                              {fieldChoice.name}
-                            </SearchSelectItem>
-                          );
-                        }
-                      })}
-                    </SearchSelect>
-                  </>
-                )}
-
-                <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                  What type of messages do you want scraped?
-                </div>
-                <input
-                  class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
-                  placeholder="Feature coming soon..."
-                  disabled={true}
-                ></input>
-                <Button
-                  variant="primary"
-                  disabled={true}
-                  onClick={async () => {
-                    if (source == "Email") {
-                      await uploadEmails();
-                    } else if (source == "LinkedIn") {
-                      await getSessionCookie();
-                    } else if (source == "Twitter") {
-                      await twitterContacts();
-                    }
-                  }}
-                >
-                  Confirm
-                </Button>
-              </div>
-            </ClickAwayListener>
-          </div>
-        )}
+                Confirm
+              </Button>
+            </div>
+          </DialogPanel>
+        </Dialog>
 
         <Sidebar db={props.db} selectedTab={1} />
         <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
@@ -1307,11 +1194,6 @@ function Workflows(props) {
             setSelectedWorkflow={setSelectedWorkflow}
           />
           <div class="w-[100vw] h-[auto] justify-start items-center gap-[18px] flex-column">
-            {/* <TextInput
-              icon={RiSearchLine}
-              placeholder="Search..."
-              disabled={true}
-            /> */}
             <div class="flex flex-wrap justify-start gap-[18px]">
               {workflowData.map((workflow) => {
                 if (selectedWorkflow != "") {

@@ -5,19 +5,12 @@ import {
   RiGridLine,
   RiUserAddLine,
 } from "@remixicon/react";
-import {
-  Card,
-  DonutChart,
-  List,
-  ListItem,
-  ProgressCircle,
-} from "@tremor/react";
 
 import React from "react";
 
 function Accounts(props) {
   return (
-    <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw] h-[76px] justify-start items-center gap-[17px] inline-flex">
+    <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
       <div class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex">
         <div class="self-stretch justify-between items-center inline-flex">
           <div class="justify-start items-center gap-2.5 flex">
@@ -30,8 +23,8 @@ function Accounts(props) {
           </div>
           <div class="justify-start items-center gap-[5px] flex">
             <div class="px-2 py-[2.50px] bg-white/opacity-90 rounded-md border border-white/opacity-80 justify-start items-center gap-1.5 flex">
-              <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                Connected
+              <div class="text-orange-600 text-xs font-normal font-['Inter']">
+                Disconnected
               </div>
             </div>
             <div class="w-5 h-5 relative"></div>
@@ -51,8 +44,8 @@ function Accounts(props) {
           </div>
           <div class="justify-start items-center gap-[5px] flex">
             <div class="px-2 py-[2.50px] bg-white/opacity-90 rounded-md border border-white/opacity-80 justify-start items-center gap-1.5 flex">
-              <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                Connected
+              <div class="text-orange-600 text-xs font-normal font-['Inter']">
+                Disconnected
               </div>
             </div>
             <div class="w-5 h-5 relative"></div>
@@ -72,8 +65,14 @@ function Accounts(props) {
           </div>
           <div class="justify-start items-center gap-[5px] flex">
             <div class="px-2 py-[2.50px] bg-white/opacity-90 rounded-md border border-white/opacity-80 justify-start items-center gap-1.5 flex">
-              <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                Connected
+              <div
+                class={
+                  props.linkedInLinked
+                    ? "text-emerald-600 text-xs font-normal font-['Inter']"
+                    : "text-orange-600 text-xs font-normal font-['Inter']"
+                }
+              >
+                {props.linkedInLinked ? "Connected" : "Disconnected"}
               </div>
             </div>
             <div class="w-5 h-5 relative"></div>
@@ -93,8 +92,14 @@ function Accounts(props) {
           </div>
           <div class="justify-start items-center gap-[5px] flex">
             <div class="px-2 py-[2.50px] bg-white/opacity-90 rounded-md border border-white/opacity-80 justify-start items-center gap-1.5 flex">
-              <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                Connected
+              <div
+                class={
+                  props.crmConnected
+                    ? "text-emerald-600 text-xs font-normal font-['Inter']"
+                    : "text-orange-600 text-xs font-normal font-['Inter']"
+                }
+              >
+                {props.crmConnected ? "Connected" : "Disconnected"}
               </div>
             </div>
             <div class="w-5 h-5 relative"></div>

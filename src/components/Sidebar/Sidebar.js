@@ -52,7 +52,7 @@ function Sidebar(props) {
           >
             Dashboard
           </p>
-          <p
+          {/* <p
             className="header-2-picker-text"
             style={props.selectedTab == 1 ? { fontWeight: "700" } : {}}
             onClick={() => {
@@ -60,7 +60,7 @@ function Sidebar(props) {
             }}
           >
             Workflows
-          </p>
+          </p> */}
           <p
             className="header-2-picker-text"
             style={props.selectedTab == 2 ? { fontWeight: "700" } : {}}
