@@ -1171,6 +1171,7 @@ function Workflows(props) {
                   setIsLoading(true);
                   await new Promise((resolve) => setTimeout(resolve, 5000));
                   localStorage.setItem("linkedinLinked", true);
+                  setOpenCookieModal(false);
                   setIsLoading(false);
                   // if (source == "Email") {
                   //   await uploadEmails();
