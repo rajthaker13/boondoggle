@@ -48,7 +48,7 @@ function Workflows(props) {
   const [isAdmin, setIsAdmin] = useState(true);
   const [memberWelcome, setMemberWelcome] = useState(false);
   const openai = new OpenAI({
-    apiKey: "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",
+    apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
   });
 

@@ -4,12 +4,12 @@ import axios from "axios";
 
 // Initialize OpenAI and Pinecone clients with API keys from environment variables
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: process.env.REACT_APP_OPENAI_KEY,
   dangerouslyAllowBrowser: true,
 });
 
 const pinecone = new Pinecone({
-  apiKey: "6d937a9a-2789-4947-aedd-f13a7eecb479",
+  apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
 });
 
 export async function createPineconeIndexes(connection_id) {
