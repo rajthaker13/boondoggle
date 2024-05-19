@@ -30,7 +30,6 @@ export async function createPineconeIndexes(connection_id) {
   const fetchData = async (type) => {
     try {
       const response = await axios.request(apiOptions(type));
-      console.log(type, response.data);
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${type} data:`, error);
@@ -40,8 +39,6 @@ export async function createPineconeIndexes(connection_id) {
 
   const [contactData, dealData, companyData, eventData, leadData] =
     await Promise.all(types.map(fetchData));
-  console.log("CONTACTATA", contactData);
-  console.log("EVENTDATA", eventData);
 
   // Function to generate embeddings
   const generateEmbeddings = async (data, type) => {

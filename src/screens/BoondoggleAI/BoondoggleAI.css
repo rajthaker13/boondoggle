@@ -57,6 +57,8 @@
   align-self: stretch;
   overflow-y: scroll;
   height: 80vh;
+  margin-bottom: 2vh;
+  margin-top: 2vh;
 }
 
 .boondoggle-ai-chat {

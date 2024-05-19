@@ -7,6 +7,7 @@ import LoadingOverlay from "react-loading-overlay";
 import { Dialog, DialogPanel, Button } from "@tremor/react";
 import ContactsDemo from "./DemoData/ContactsDemo";
 import DealsDemo from "./DemoData/DealsDemo";
+import { createPineconeIndexes } from "../../functions/crm_entries";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -50,12 +51,49 @@ function Dashboard(props) {
       localStorage.setItem("connection_id", connection_id);
       var cleanUrl = window.location.href.split("?")[0];
       window.history.replaceState({}, document.title, cleanUrl);
-      window.location.reload();
+      // window.location.reload();
+    }
+
+    async function storeData() {
+      setIsLoading(true);
+      const urlParams = new URLSearchParams(window.location.search);
+      const connection_id = urlParams.get("id");
+
+      await createPineconeIndexes(connection_id);
+
+      await props.db.from("data").insert({
+        connection_id: connection_id,
+        crm_data: [],
+        twitter_messages: [],
+        twitterLinked: false,
+        type: "crm",
+      });
+
+      const uid = localStorage.getItem("uid");
+
+      await props.db.from("users").insert({
+        id: uid,
+        crm_id: connection_id,
+        teamMembers: [
+          {
+            email: localStorage.getItem("email"),
+            uid: localStorage.getItem("uid"),
+            isAdmin: true,
+          },
+        ],
+      });
+      //Scoring here
+      setIsLoading(false);
+      localStorage.setItem("connection_id", connection_id);
+      setCRMScore(75);
+      var cleanUrl = window.location.href.split("?")[0];
+      window.history.replaceState({}, document.title, cleanUrl);
+      // window.location.reload();
     }
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("id")) {
-      storeDataDemo();
+      storeData();
     }
 
     getDashboardData();
