@@ -160,7 +160,7 @@ function BoondogggleAI(props) {
       const ns1 = index.namespace(id);
 
       const dealsResponse = await ns1.query({
-        topK: 10,
+        topK: 20,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -173,7 +173,7 @@ function BoondogggleAI(props) {
       console.log("Deals Match", dealsMatches);
 
       const contactResponse = await ns1.query({
-        topK: 10,
+        topK: 20,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -186,7 +186,7 @@ function BoondogggleAI(props) {
       console.log("Contact Match", contactMatches);
 
       const notesResponse = await ns1.query({
-        topK: 10,
+        topK: 20,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
