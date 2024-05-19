@@ -8,6 +8,9 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
+import { useChat } from "ai/react";
+import { Configuration, OpenAIApi } from "openai-edge";
+import { Message, OpenAIStream, StreamingTextResponse } from "ai";
 
 //65eb615fb3dfb5cfb7c939c5
 
@@ -27,11 +30,12 @@ function BoondogggleAI(props) {
 
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const { messages2, input, handleInputChange, handleSubmit } = useChat();
 
   const [messages, setMessages] = useState([
     {
       role: "system",
-      content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. I will provide you with a user-generated  query related to data in their CRM as well as the most relevent data from their vector database. Your job is to use the provided data to answer their question based on their query.`,
+      content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions.`,
     },
   ]);
 
@@ -151,116 +155,149 @@ function BoondogggleAI(props) {
       });
 
       const index = pinecone.index("boondoggle-data-2");
-      // const id = localStorage.getItem("connection_id");
-      const id = "662fcf7451a04d41e55dd0c3";
-      const uid = localStorage.getItem("uid");
-      let type = localStorage.getItem("crmType");
-      if (type != "airtable") {
-        type = "crm";
-      }
-      // const ns1 = index.namespace(type == "airtable" ? uid : id);
-      const ns1 = index.namespace("6632c82f832eb6fb06d6e60a");
+      const id = localStorage.getItem("connection_id");
 
-      const queryResponse = await ns1.query({
-        topK: 20,
+      const ns1 = index.namespace(id);
+
+      const dealsResponse = await ns1.query({
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
+        filter: {
+          type: { $eq: "Deal" },
+        },
       });
 
-      const matches = queryResponse.matches;
+      const dealsMatches = dealsResponse.matches;
+
+      console.log("Deals Match", dealsMatches);
+
+      const contactResponse = await ns1.query({
+        topK: 10,
+        vector: embedding.data[0].embedding,
+        includeMetadata: true,
+        filter: {
+          type: { $eq: "Lead" },
+        },
+      });
+
+      const contactMatches = contactResponse.matches;
+
+      console.log("Contact Match", contactMatches);
+
+      const notesResponse = await ns1.query({
+        topK: 10,
+        vector: embedding.data[0].embedding,
+        includeMetadata: true,
+        filter: {
+          type: { $eq: "NOTE" },
+        },
+      });
+
+      const notesMatches = notesResponse.matches;
+
+      console.log("Notes Match", notesMatches);
+
+      const matches = [...dealsMatches, ...contactMatches, ...notesMatches];
 
       console.log("Matches", matches);
 
       let queryArray = [];
 
-      if (type == "crm") {
-        await Promise.all(
-          matches.map(async (match, index) => {
-            const matchType = match.metadata.type;
-            if (matchType == "Deal") {
-              const options = {
-                method: "GET",
-                url: `https://api.unified.to/crm/${id}/deal/${match.id}`,
-                headers: {
-                  authorization:
-                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-                },
-              };
-              const results = await axios.request(options);
-              queryArray.push(results.data);
-            } else if (matchType == "Contact") {
-              const options = {
-                method: "GET",
-                url: `https://api.unified.to/crm/${id}/contact/${match.id}`,
-                headers: {
-                  authorization:
-                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-                },
-              };
-              const results = await axios.request(options);
-              queryArray.push(results.data);
-            } else if (matchType == "Company") {
-              const options = {
-                method: "GET",
-                url: `https://api.unified.to/crm/${id}/company/${match.id}`,
-                headers: {
-                  authorization:
-                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-                },
-              };
-              const results = await axios.request(options);
-              queryArray.push(results.data);
-            } else if (matchType == "NOTE") {
-              const options = {
-                method: "GET",
-                url: `https://api.unified.to/crm/${id}/event/${match.id}`,
-                headers: {
-                  authorization:
-                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-                },
-              };
-              const results = await axios.request(options);
-              queryArray.push(results.data);
-            } else if (matchType == "Lead") {
-              const options = {
-                method: "GET",
-                url: `https://api.unified.to/crm/${id}/lead/${match.id}`,
-                headers: {
-                  authorization:
-                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-                },
-              };
-              const results = await axios.request(options);
-              queryArray.push(results.data);
-            }
-          })
-        );
-      } else if (type == "airtable") {
-        const airtable_id = localStorage.getItem("connection_id");
-        console.log(matches);
-
-        for (const match of matches) {
-          const recordsURL = `https://api.airtable.com/v0/${match.metadata.baseID}/${match.metadata.tableID}/${match.id}`;
-          let recordResponse;
-          try {
-            recordResponse = await axios.get(recordsURL, {
+      await Promise.all(
+        matches.map(async (match, index) => {
+          const matchType = match.metadata.type;
+          console.log("Type", matchType);
+          if (matchType == "Deal") {
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${id}/deal/${match.id}`,
               headers: {
-                Authorization: `Bearer ${airtable_id}`,
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
               },
-            });
-          } catch (error) {
-            if (error) {
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (err) {
               await new Promise((resolve) => setTimeout(resolve, 2000));
-              recordResponse = await axios.get(recordsURL, {
-                headers: {
-                  Authorization: `Bearer ${airtable_id}`,
-                },
-              });
+              results = await axios.request(options);
             }
+            queryArray.push(results.data);
+          } else if (matchType == "Contact") {
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${id}/contact/${match.id}`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (err) {
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              results = await axios.request(options);
+            }
+            queryArray.push(results.data);
+          } else if (matchType == "Company") {
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${id}/company/${match.id}`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (err) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              results = await axios.request(options);
+            }
+            queryArray.push(results.data);
+          } else if (matchType == "NOTE") {
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${id}/event/${match.id}`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (err) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              results = await axios.request(options);
+            }
+            queryArray.push(results.data);
+          } else if (matchType == "Lead") {
+            const options = {
+              method: "GET",
+              url: `https://api.unified.to/crm/${id}/lead/${match.id}`,
+              headers: {
+                authorization:
+                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+              },
+            };
+            let results;
+            try {
+              results = await axios.request(options);
+            } catch (err) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              results = await axios.request(options);
+            }
+            queryArray.push(results.data);
           }
-          queryArray.push(recordResponse.data);
-        }
-      }
+        })
+      );
+
+      console.log("QueryArray", queryArray);
 
       const queryArrayString = queryArray
         .map((item) => `${JSON.stringify(item)}`)
@@ -277,8 +314,12 @@ function BoondogggleAI(props) {
             content: `The query is ${searchQuery}. And the relevent data is ${queryArrayString}`,
           },
         ],
-        model: "gpt-4",
+        model: "gpt-3.5-turbo",
       });
+      // const stream = OpenAIStream(queryCompletion);
+      // const response = new StreamingTextResponse(stream);
+      // console.log("Stream", response);
+      // console.log("QUERY COMPLETION", queryCompletion);
       temp_messages.push({
         role: "user",
         content: `The query is ${searchQuery}`,
@@ -348,7 +389,7 @@ function BoondogggleAI(props) {
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="container">
+      <div className="w-[100vw] h-[100vh] overflow-y-scroll">
         <div className="content-container">
           <Sidebar db={props.db} selectedTab={3} />
           <div
