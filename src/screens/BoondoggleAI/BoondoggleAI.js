@@ -158,8 +158,8 @@ function BoondogggleAI(props) {
       if (type != "airtable") {
         type = "crm";
       }
-      const ns1 = index.namespace(type == "airtable" ? uid : id);
-      // const ns1 = index.namespace("661ec76d6ccf24ccd623adf5");
+      // const ns1 = index.namespace(type == "airtable" ? uid : id);
+      const ns1 = index.namespace("6632c82f832eb6fb06d6e60a");
 
       const queryResponse = await ns1.query({
         topK: 20,
