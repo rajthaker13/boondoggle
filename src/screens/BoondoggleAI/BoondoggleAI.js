@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import UnifiedDirectory from "@unified-api/react-directory";
 import axios from "axios";
-import Stripe from "stripe";
 import "./BoondoggleAI.css";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
 import { useChat } from "ai/react";
-import { Configuration, OpenAIApi } from "openai-edge";
-import { Message, OpenAIStream, StreamingTextResponse } from "ai";
-
-//65eb615fb3dfb5cfb7c939c5
 
 function BoondogggleAI(props) {
   const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";

@@ -69,7 +69,7 @@ function Score(props) {
               </div>
               <div class="self-stretch">
                 <span class="text-gray-500 text-base font-normal font-['Inter'] leading-[31.01px]">
-                  Last Scan: 1 minute ago |{" "}
+                  Last Scan: Today |{" "}
                 </span>
                 <span class="text-gray-500 text-base font-bold font-['Inter'] leading-[31.01px]">
                   {props.issuesResolved ? "0" : "11"} issues{" "}
