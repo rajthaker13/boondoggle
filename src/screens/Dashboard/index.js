@@ -39,21 +39,6 @@ function Dashboard(props) {
       }
     }
 
-    async function storeDataDemo() {
-      setIsLoading(true);
-      const urlParams = new URLSearchParams(window.location.search);
-      const connection_id = urlParams.get("id");
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      setIsLoading(false);
-      setCRMScore(75);
-      localStorage.setItem("connection_id", connection_id);
-      var cleanUrl = window.location.href.split("?")[0];
-      window.history.replaceState({}, document.title, cleanUrl);
-      // window.location.reload();
-    }
-
     async function storeData() {
       setIsLoading(true);
       const urlParams = new URLSearchParams(window.location.search);
@@ -88,7 +73,7 @@ function Dashboard(props) {
       setCRMScore(75);
       var cleanUrl = window.location.href.split("?")[0];
       window.history.replaceState({}, document.title, cleanUrl);
-      window.location.reload();
+      // window.location.reload();
     }
 
     const urlParams = new URLSearchParams(window.location.search);

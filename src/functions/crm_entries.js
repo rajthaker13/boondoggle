@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import axios from "axios";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { Document } from "@langchain/core/documents";
 
 // Initialize OpenAI and Pinecone clients with API keys from environment variables
 const openai = new OpenAI({
@@ -40,8 +42,6 @@ export async function createPineconeIndexes(connection_id) {
 
   const [contactData, dealData, companyData, eventData, leadData] =
     await Promise.all(types.map(fetchData));
-  console.log("CONTACTATA", contactData);
-  console.log("EVENTDATA", eventData);
 
   // Function to generate embeddings
   const generateEmbeddings = async (data, type) => {
@@ -49,27 +49,52 @@ export async function createPineconeIndexes(connection_id) {
       data.map(async (item) => {
         try {
           const values = Object.values(item).join(" ");
-          const response = await openai.embeddings.create({
-            model: "text-embedding-3-small",
-            input: values,
-          });
-          const embedding = response.data[0].embedding;
 
-          return {
-            id: item.id,
-            values: embedding,
-            metadata: {
-              type,
-              ...item,
-              emails: JSON.stringify(item.emails),
-              telephones: JSON.stringify(item.telephones),
-              address: JSON.stringify(item.address),
-              note: item.note && JSON.stringify(item.note),
-              meeting: item.meeting && JSON.stringify(item.meeting),
-              call: item.call && JSON.stringify(item.call),
-              task: item.task && JSON.stringify(item.task),
-            },
-          };
+          const splitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 200,
+            chunkOverlap: 15,
+          });
+
+          const output = await splitter.splitDocuments([
+            new Document({ pageContent: JSON.stringify(item) }),
+          ]);
+          console.log("output", output);
+
+          let result = [];
+          await Promise.all(
+            output.map(async (chunk) => {
+              console.log("type", typeof chunk.pageContent, chunk.pageContent);
+
+              console.log("CONTENT", chunk.pageContent);
+
+              const response = await openai.embeddings.create({
+                model: "text-embedding-3-small",
+                input: chunk.pageContent,
+              });
+
+              const embedding = response.data[0].embedding;
+
+              const obj = {
+                id: item.id,
+                values: embedding,
+                metadata: {
+                  type,
+                  ...item,
+                  emails: JSON.stringify(item.emails),
+                  telephones: JSON.stringify(item.telephones),
+                  address: JSON.stringify(item.address),
+                  note: item.note && JSON.stringify(item.note),
+                  meeting: item.meeting && JSON.stringify(item.meeting),
+                  call: item.call && JSON.stringify(item.call),
+                  task: item.task && JSON.stringify(item.task),
+                },
+              };
+
+              result.push(obj);
+            })
+          );
+
+          return result;
         } catch (error) {
           console.error(`Error generating embedding for ${type}:`, error);
           return null;
@@ -84,17 +109,15 @@ export async function createPineconeIndexes(connection_id) {
   const events = await generateEmbeddings(eventData, "Event");
   const leads = await generateEmbeddings(leadData, "Lead");
 
-  // Filter out any failed embeddings (null values)
-  const filterEmbeddings = (embeddings) =>
-    embeddings.filter((embedding) => embedding);
-
   const allEmbeddings = {
-    contacts: filterEmbeddings(contacts),
-    deals: filterEmbeddings(deals),
-    companies: filterEmbeddings(companies),
-    events: filterEmbeddings(events),
-    leads: filterEmbeddings(leads),
+    contacts: contacts,
+    deals: deals,
+    companies: companies,
+    events: events,
+    leads: leads,
   };
+
+  console.log("ALL", allEmbeddings);
 
   const ns1 = index.namespace(connection_id);
 
@@ -102,7 +125,9 @@ export async function createPineconeIndexes(connection_id) {
   const upsertEmbeddings = async (embeddings, type) => {
     if (embeddings.length > 0) {
       try {
-        await ns1.upsert(embeddings);
+        embeddings.map(async (chunk) => {
+          await ns1.upsert(chunk);
+        });
         console.log(`${type} embeddings upserted successfully.`);
       } catch (error) {
         console.error(`Error upserting ${type} embeddings:`, error);
