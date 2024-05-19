@@ -151,7 +151,8 @@ function BoondogggleAI(props) {
       });
 
       const index = pinecone.index("boondoggle-data-2");
-      const id = localStorage.getItem("connection_id");
+      // const id = localStorage.getItem("connection_id");
+      const id = "662fcf7451a04d41e55dd0c3";
       const uid = localStorage.getItem("uid");
       let type = localStorage.getItem("crmType");
       if (type != "airtable") {

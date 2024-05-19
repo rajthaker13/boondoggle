@@ -1,13 +1,7 @@
 import "./App.css";
-import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Home from "./screens/Home/Home";
-import SignUp from "./screens/SignUp/SignUp";
-// import { Client, auth } from "twitter-api-sdk";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Link from "./screens/Link/Link";
-import Entries from "./screens/Entries/Entries";
-import Login from "./screens/Login/Login";
 import Performance from "./screens/Peformance/Performance";
 import Airtable from "./screens/Airtable/Airtable";
 import ConnectAirtable from "./screens/ConnectAirtable/ConnectAirtable";
@@ -20,10 +14,8 @@ import Settings from "./screens/Settings/Settings";
 import BoondogggleAI from "./screens/BoondoggleAI/BoondoggleAI";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import Invite from "./screens/Invite/Invite";
-import NewHome from "./screens/NewHome";
 import Workflows from "./screens/Workflows";
 import NewEntries from "./screens/NewEntries";
-import Demo from "./screens/Demo";
 import NewLogin from "./screens/NewLogin";
 import Dashboard from "./screens/Dashboard";
 
