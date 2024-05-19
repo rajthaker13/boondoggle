@@ -291,7 +291,7 @@ function NewEntries(props) {
             <div class="grow shrink basis-0 text-gray-700 text-base font-medium font-['Inter'] leading-normal">
               Activity Log
             </div>
-            <div class="h-[21px] justify-end items-center gap-2.5 flex">
+            {/* <div class="h-[21px] justify-end items-center gap-2.5 flex">
               <div class="w-[77.50px] px-2.5 py-0.5 bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 flex">
                 <div class="text-blue-700 text-xs font-normal font-['Inter']">
                   Review
@@ -320,7 +320,7 @@ function NewEntries(props) {
                   <div></div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
           <Table className="w-[100%]">
             <TableHead>
