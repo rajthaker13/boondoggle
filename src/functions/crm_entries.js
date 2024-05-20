@@ -55,9 +55,8 @@ export async function createPineconeIndexes(connection_id) {
             chunkOverlap: 15,
           });
 
-          const output = await splitter.splitDocuments([
-            new Document({ pageContent: JSON.stringify(item) }),
-          ]);
+          const output = await splitter.createDocuments([JSON.stringify(item)]);
+
           console.log("output", output);
 
           let result = [];
@@ -116,8 +115,6 @@ export async function createPineconeIndexes(connection_id) {
     events: events,
     leads: leads,
   };
-
-  console.log("ALL", allEmbeddings);
 
   const ns1 = index.namespace(connection_id);
 
