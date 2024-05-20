@@ -1,11 +1,5 @@
 // 'use client';
-import {
-  Card,
-  DonutChart,
-  List,
-  ListItem,
-  ProgressCircle,
-} from "@tremor/react";
+import { Card, List, ListItem, ProgressCircle } from "@tremor/react";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");

@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Unified from "unified-ts-client";
 import axios from "axios";
 import ClickAwayListener from "react-click-away-listener";
 import Sidebar from "../components/Sidebar/Sidebar";
 import LoadingOverlay from "react-loading-overlay";
 import {
-  Badge,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -15,12 +11,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@tremor/react";
-import {
-  RiFlag2Line,
-  RiLinkedinFill,
-  RiMailLine,
-  RiTwitterLine,
-} from "@remixicon/react";
+import { RiLinkedinFill, RiMailLine, RiTwitterLine } from "@remixicon/react";
 
 function NewEntries(props) {
   const [tableData, setTableData] = useState([]);

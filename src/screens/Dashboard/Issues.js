@@ -1,7 +1,7 @@
 import { Button } from "@tremor/react";
 import { RiUserLine, RiFireLine, RiTableLine } from "@remixicon/react";
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Issues(props) {
   const navigation = useNavigate();

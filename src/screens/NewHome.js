@@ -1,43 +1,12 @@
 /*global chrome*/
-import React, { createElement, useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import OpenAI from "openai";
-import { Pinecone } from "@pinecone-database/pinecone";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../components/Sidebar/Sidebar";
-import UnifiedDirectory from "@unified-api/react-directory";
-import { HiOutlineMail } from "@react-icons/all-files/hi/HiOutlineMail";
-import Instagram from "../assets/landing/integrations/social/Instagram.svg";
 import LoadingOverlay from "react-loading-overlay";
-import affinity from "../assets/landing/integrations/crm_svg/affinity.svg";
-import airtable from "../assets/landing/integrations/crm_svg/airtable.svg";
-import attio from "../assets/landing/integrations/crm_svg/attio.svg";
-import close from "../assets/landing/integrations/crm_svg/close.svg";
-import copper from "../assets/landing/integrations/crm_svg/copper.svg";
-import freshsales from "../assets/landing/integrations/crm_svg/freshsales.svg";
-
-import highlevel from "../assets/landing/integrations/crm_svg/highlevel.svg";
 import hubspot from "../assets/landing/integrations/crm_svg/hubspot.svg";
-import netsuite from "../assets/landing/integrations/crm_svg/netsuite.svg";
-import pipedrive from "../assets/landing/integrations/crm_svg/pipedrive.svg";
-import recruitcrm from "../assets/landing/integrations/crm_svg/recruitcrm.svg";
-import salesflare from "../assets/landing/integrations/crm_svg/salesflare.svg";
-import salesforce from "../assets/landing/integrations/crm_svg/salesforce.svg";
-import salesloft from "../assets/landing/integrations/crm_svg/salesloft.svg";
-import zendesksell from "../assets/landing/integrations/crm_svg/zendesksell.svg";
-import zohocrm from "../assets/landing/integrations/crm_svg/zohocrm.svg";
+import { Button, Card, Badge, Select, SelectItem } from "@tremor/react";
 import {
-  Callout,
-  Button,
-  Card,
-  Badge,
-  Select,
-  SelectItem,
-} from "@tremor/react";
-import {
-  RiAlarmWarningLine,
-  RiCheckboxCircleLine,
-  RiErrorWarningFill,
   RiMailLine,
   RiTwitterFill,
   RiAddLine,
@@ -45,7 +14,6 @@ import {
   RiAlignJustify,
   RiCheckLine,
 } from "@remixicon/react";
-
 import { createPineconeIndexes } from "../functions/crm_entries";
 import {
   TextAnalyticsClient,

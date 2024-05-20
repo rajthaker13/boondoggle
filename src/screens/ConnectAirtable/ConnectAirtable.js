@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import "./ConnectAirtable.css";
-import { useNavigate, useLocation } from "react-router-dom";
-import OpenAI from "openai";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 
 function ConnectAirtable(props) {

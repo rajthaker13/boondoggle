@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import "./Manager.css";
-import stripe from "../../assets/Stripe.svg";
-import toggle from "../../assets/Toggle.svg";
-import axios from "axios";
 
 function Manager(props) {
   const percentage = (98 / 150) * 100;

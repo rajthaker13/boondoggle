@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import axios from "axios";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { Document } from "@langchain/core/documents";
 
 // Initialize OpenAI and Pinecone clients with API keys from environment variables
 const openai = new OpenAI({
