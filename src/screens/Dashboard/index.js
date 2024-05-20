@@ -73,7 +73,7 @@ function Dashboard(props) {
       setCRMScore(75);
       var cleanUrl = window.location.href.split("?")[0];
       window.history.replaceState({}, document.title, cleanUrl);
-      window.location.reload();
+      setCRMConnected(true);
     }
 
     const urlParams = new URLSearchParams(window.location.search);
