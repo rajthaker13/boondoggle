@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
 import "./BoondoggleAI.css";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -24,7 +24,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
 function BoondogggleAI(props) {
-  const client_id = "989e97a9-d4ee-4979-9e50-f0d9909fc450";
+  const chatContentRef = useRef(null);
   const pinecone = new Pinecone({
     apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
@@ -63,83 +63,11 @@ function BoondogggleAI(props) {
     return onboardingValues;
   }
 
-  async function nextOnboardingStep() {
-    const uid = localStorage.getItem("uid");
-    await props.db
-      .from("user_data")
-      .update({
-        onboardingStep: onboardingStep + 1,
-      })
-      .eq("id", uid);
-
-    setOnboardingStep(onboardingStep + 1);
-  }
-
   useEffect(() => {
-    async function checkData() {
-      const onboardingValues = await checkOnBoarding();
-      setIsOnboarding(!onboardingValues.hasOnboarded);
-      setOnboardingStep(onboardingValues.onboardingStep);
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
     }
-
-    checkData();
-  }, []);
-
-  async function getAirtableRefreshToken() {
-    const id = localStorage.getItem("connection_id");
-    const { data, error } = await props.db
-      .from("users")
-      .select("")
-      .eq("crm_id", id);
-
-    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
-    const refreshTokenResponse = await axios.post(
-      url,
-      {
-        client_id: client_id,
-        refresh_token: data[0].refresh_token,
-        grant_type: "refresh_token",
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    const new_access_token = refreshTokenResponse.data.access_token;
-    const new_refresh_token = refreshTokenResponse.data.refresh_token;
-
-    await props.db
-      .from("users")
-      .update({
-        crm_id: new_access_token,
-        refresh_token: new_refresh_token,
-      })
-      .eq("id", localStorage.getItem("uid"));
-
-    await props.db
-      .from("data")
-      .update({
-        connection_id: new_access_token,
-      })
-      .eq("connection_id", id);
-    localStorage.setItem("connection_id", new_access_token);
-
-    return new_access_token;
-  }
-
-  async function getAirtableData(airtable_id) {
-    const { data, error } = await props.db
-      .from("data")
-      .select("")
-      .eq("connection_id", airtable_id);
-
-    return {
-      baseID: data[0].baseID,
-      tableID: data[0].tableID,
-    };
-  }
+  }, [langchainMessages]);
 
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
@@ -165,7 +93,7 @@ function BoondogggleAI(props) {
       `;
 
       const llm = new ChatOpenAI({
-        model: "gpt-3.5-turbo",
+        model: "gpt-3.5-turbo-0125",
         temperature: 0.2,
         openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
       });
@@ -198,7 +126,8 @@ function BoondogggleAI(props) {
         messages: [...temp_langchain, new HumanMessage(query)],
       });
 
-      const searchQuery = newQuery.content;
+      const searchQuery = query;
+      console.log("SEArch query", newQuery.content);
 
       setQuery("");
       const embedding = await openai.embeddings.create({
@@ -396,23 +325,20 @@ function BoondogggleAI(props) {
         new HumanMessage(searchQuery),
         new AIMessage(final.answer)
       );
-
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
 
       const aiAnswerText = document.createElement("p");
       aiAnswerText.className = "boondoggle-ai-chat-text";
 
-      const answerLines = final.answer.split("\n");
-      // aiAnswerContainer.appendChild(svgElement);
-      answerLines.forEach((line, index) => {
-        const textNode = document.createTextNode(line);
-        aiAnswerText.appendChild(textNode);
-        // Adding a line break after each line, except for the last line
-        if (line !== answerLines[answerLines.length - 1]) {
-          aiAnswerText.appendChild(document.createElement("br"));
-        }
-      });
+      // Convert markdown-like syntax to HTML
+      const formattedAnswer = final.answer
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+        .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
+
+      // Use innerHTML to set the formatted HTML content
+      aiAnswerText.innerHTML = formattedAnswer;
+
       aiAnswerContainer.appendChild(aiAnswerText);
       setIsLoading(false);
       boondoggleAiChatContent.appendChild(aiAnswerContainer);
@@ -445,6 +371,7 @@ function BoondogggleAI(props) {
                   ? { height: "69vh" }
                   : { marginTop: "2vh" }
               }
+              ref={chatContentRef}
             />
 
             <input
