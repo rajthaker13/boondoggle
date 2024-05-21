@@ -1,4 +1,4 @@
-import { Divider, TextInput } from "@tremor/react";
+import { TextInput } from "@tremor/react";
 import boondoggleai from "../assets/ui-update/new-logo-black.png";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

@@ -3,13 +3,7 @@ import OpenAI from "openai";
 import axios from "axios";
 import Sidebar from "../components/Sidebar/Sidebar";
 import WorkflowSidebar from "../components/WorkflowSidebar";
-import {
-  Button,
-  SearchSelect,
-  SearchSelectItem,
-  Dialog,
-  DialogPanel,
-} from "@tremor/react";
+import { Button, Dialog, DialogPanel } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../data/workflows";
 import ClickAwayListener from "react-click-away-listener";

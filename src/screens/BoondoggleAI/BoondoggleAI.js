@@ -7,10 +7,7 @@ import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
 import { useChat } from "ai/react";
 import "cheerio";
-import {
-  CharacterTextSplitter,
-  RecursiveCharacterTextSplitter,
-} from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai";
 import {
@@ -24,7 +21,6 @@ import {
 } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import { Document } from "@langchain/core/documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
 function BoondogggleAI(props) {
