@@ -48,21 +48,6 @@ function BoondogggleAI(props) {
   ]);
   const [langchainMessages, setLangChainMessages] = useState([]);
 
-  async function checkOnBoarding() {
-    const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db
-      .from("user_data")
-      .select("")
-      .eq("id", uid);
-    const onboardingValues = {
-      hasOnboarded: data[0].hasOnboarded,
-      onboardingStep: data[0].onboardingStep,
-      subscription_status: data[0].subscription_status,
-    };
-
-    return onboardingValues;
-  }
-
   useEffect(() => {
     if (chatContentRef.current) {
       chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
@@ -126,8 +111,7 @@ function BoondogggleAI(props) {
         messages: [...temp_langchain, new HumanMessage(query)],
       });
 
-      const searchQuery = query;
-      console.log("SEArch query", newQuery.content);
+      const searchQuery = newQuery.content;
 
       setQuery("");
       const embedding = await openai.embeddings.create({
@@ -274,16 +258,12 @@ function BoondogggleAI(props) {
         .map((item) => `${JSON.stringify(item)}`)
         .join("\n");
 
-      console.log(queryArrayString);
-
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 200,
         chunkOverlap: 15,
       });
 
       const splits = await textSplitter.createDocuments([queryArrayString]);
-
-      console.log(splits);
 
       const vectorStore = await MemoryVectorStore.fromDocuments(
         splits,
@@ -312,36 +292,61 @@ function BoondogggleAI(props) {
         answer: documentChain,
       });
 
-      const final = await conversationalRetrievalChain.invoke({
+      function formatText(text) {
+        const formattedAnswer = text
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+          .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
+        return formattedAnswer;
+      }
+
+      const aiAnswerContainer = document.createElement("div");
+      aiAnswerContainer.className = "boondoggle-ai-chat";
+
+      const aiAnswerText = document.createElement("p");
+      aiAnswerText.className = "boondoggle-ai-chat-text";
+      aiAnswerContainer.appendChild(aiAnswerText);
+
+      boondoggleAiChatContent.appendChild(aiAnswerContainer);
+
+      setIsLoading(false);
+
+      let finalAnswer = "";
+
+      const output = {};
+      let currentKey = null;
+
+      for await (const chunk of await conversationalRetrievalChain.stream({
         messages: [
           ...temp_langchain,
           new HumanMessage(
             `The query is ${searchQuery}. And the relevent data is ${queryArrayString}`
           ),
         ],
-      });
+      })) {
+        for (const key of Object.keys(chunk)) {
+          if (output[key] === undefined) {
+            output[key] = chunk[key];
+          } else {
+            output[key] += chunk[key];
+          }
+
+          if (key === currentKey) {
+            finalAnswer += chunk[key];
+            const formattedChunk = formatText(chunk[key]);
+            aiAnswerText.innerHTML += formattedChunk;
+          }
+          currentKey = key;
+        }
+      }
+
+      const fornattedFinalAnswer = formatText(finalAnswer);
+      aiAnswerText.innerHTML = fornattedFinalAnswer;
 
       temp_langchain.push(
         new HumanMessage(searchQuery),
-        new AIMessage(final.answer)
+        new AIMessage(finalAnswer)
       );
-      const aiAnswerContainer = document.createElement("div");
-      aiAnswerContainer.className = "boondoggle-ai-chat";
 
-      const aiAnswerText = document.createElement("p");
-      aiAnswerText.className = "boondoggle-ai-chat-text";
-
-      // Convert markdown-like syntax to HTML
-      const formattedAnswer = final.answer
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
-        .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
-
-      // Use innerHTML to set the formatted HTML content
-      aiAnswerText.innerHTML = formattedAnswer;
-
-      aiAnswerContainer.appendChild(aiAnswerText);
-      setIsLoading(false);
-      boondoggleAiChatContent.appendChild(aiAnswerContainer);
       setLangChainMessages(temp_langchain);
     }
   }
