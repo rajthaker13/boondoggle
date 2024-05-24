@@ -111,7 +111,7 @@ function BoondogggleAI(props) {
         messages: [...temp_langchain, new HumanMessage(query)],
       });
 
-      const searchQuery = newQuery.content;
+      const searchQuery = `User query: ${query}, Edited Query: ${newQuery.content}`;
 
       setQuery("");
       const embedding = await openai.embeddings.create({
