@@ -78,7 +78,7 @@ function BoondogggleAI(props) {
       `;
 
       const llm = new ChatOpenAI({
-        model: "gpt-3.5-turbo-0125",
+        model: "gpt-4o",
         temperature: 0.2,
         openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
       });
