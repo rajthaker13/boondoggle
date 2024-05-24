@@ -295,6 +295,8 @@ function BoondogggleAI(props) {
       function formatText(text) {
         const formattedAnswer = text
           .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+          .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
+          .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
           .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
         return formattedAnswer;
       }
