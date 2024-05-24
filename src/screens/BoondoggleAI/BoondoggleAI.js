@@ -78,7 +78,7 @@ function BoondogggleAI(props) {
       `;
 
       const llm = new ChatOpenAI({
-        model: "gpt-3.5-turbo-0125",
+        model: "gpt-4o",
         temperature: 0.2,
         openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
       });
@@ -111,7 +111,7 @@ function BoondogggleAI(props) {
         messages: [...temp_langchain, new HumanMessage(query)],
       });
 
-      const searchQuery = newQuery.content;
+      const searchQuery = `User query: ${query}, Edited Query: ${newQuery.content}`;
 
       setQuery("");
       const embedding = await openai.embeddings.create({
@@ -295,6 +295,8 @@ function BoondogggleAI(props) {
       function formatText(text) {
         const formattedAnswer = text
           .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+          .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
+          .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
           .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
         return formattedAnswer;
       }
