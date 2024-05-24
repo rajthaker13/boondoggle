@@ -5,7 +5,6 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
-import { useChat } from "ai/react";
 import "cheerio";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
@@ -317,6 +316,7 @@ function BoondogggleAI(props) {
 
       const output = {};
       let currentKey = null;
+      let accumulatedText = "";
 
       for await (const chunk of await conversationalRetrievalChain.stream({
         messages: [
@@ -335,17 +335,34 @@ function BoondogggleAI(props) {
 
           if (key === currentKey) {
             finalAnswer += chunk[key];
-            const formattedChunk = formatText(chunk[key]);
-            aiAnswerText.innerHTML += formattedChunk;
-            setAnswer(formattedChunk);
+            accumulatedText += chunk[key];
+
+            // Check for complete Markdown elements
+            let match;
+            while (
+              (match = accumulatedText.match(
+                /(\*\*.*?\*\*|#### .*(?=\n|$)|### .*(?=\n|$)|\n)/
+              ))
+            ) {
+              const completeElement = match[0];
+              const endIndex =
+                accumulatedText.indexOf(completeElement) +
+                completeElement.length;
+
+              // Format and append the complete element
+              const formattedChunk = formatText(
+                accumulatedText.substring(0, endIndex)
+              );
+              aiAnswerText.innerHTML += formattedChunk;
+              setAnswer(formattedChunk);
+
+              // Remove the processed part from accumulatedText
+              accumulatedText = accumulatedText.substring(endIndex);
+            }
           }
           currentKey = key;
         }
       }
-
-      const fornattedFinalAnswer = formatText(finalAnswer);
-      aiAnswerText.innerHTML = fornattedFinalAnswer;
-      setAnswer(fornattedFinalAnswer);
 
       temp_langchain.push(
         new HumanMessage(searchQuery),
