@@ -17,9 +17,9 @@ export async function createPineconeIndexes(connection_id) {
   const index = pinecone.index("boondoggle-data-2");
 
   // Define API request options
-  const apiOptions = (type) => ({
+  const apiOptions = (type, date) => ({
     method: "GET",
-    url: `https://api.unified.to/crm/${connection_id}/${type}`,
+    url: `https://api.unified.to/crm/${connection_id}/${type}?sort=updated_at&order=asc&updated_gte=${date}`,
     headers: {
       authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
     },
@@ -30,9 +30,23 @@ export async function createPineconeIndexes(connection_id) {
   // Fetch data from all endpoints
   const fetchData = async (type) => {
     try {
-      const response = await axios.request(apiOptions(type));
-      console.log(type, response.data);
-      return response.data;
+      let result = [];
+      let dataFetched = false;
+      let requests = 0;
+      let date = null;
+      while (!dataFetched) {
+        const response = await axios.request(apiOptions(type, date));
+        console.log(type, response.data);
+        if (response.data.length == 100) {
+          date = response.data[99].updated_at;
+          result = [...result, ...response.data];
+        } else {
+          result = [...result, ...response.data];
+          dataFetched = true;
+        }
+      }
+      console.log(type, result);
+      return result;
     } catch (error) {
       console.error(`Error fetching ${type} data:`, error);
       return [];
