@@ -5,7 +5,6 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
-import { useChat } from "ai/react";
 import "cheerio";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
@@ -36,10 +35,10 @@ function BoondogggleAI(props) {
 
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [answer, setAnswer] = useState("");
 
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
-  const { messages2, input, handleInputChange, handleSubmit } = useChat();
   const [messages, setMessages] = useState([
     {
       role: "system",
@@ -52,11 +51,12 @@ function BoondogggleAI(props) {
     if (chatContentRef.current) {
       chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
     }
-  }, [langchainMessages]);
+  }, [answer]);
 
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
       setIsLoading(true);
+      setAnswer("");
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
       );
@@ -316,6 +316,7 @@ function BoondogggleAI(props) {
 
       const output = {};
       let currentKey = null;
+      let accumulatedText = "";
 
       for await (const chunk of await conversationalRetrievalChain.stream({
         messages: [
@@ -334,15 +335,34 @@ function BoondogggleAI(props) {
 
           if (key === currentKey) {
             finalAnswer += chunk[key];
-            const formattedChunk = formatText(chunk[key]);
-            aiAnswerText.innerHTML += formattedChunk;
+            accumulatedText += chunk[key];
+
+            // Check for complete Markdown elements
+            let match;
+            while (
+              (match = accumulatedText.match(
+                /(\*\*.*?\*\*|#### .*(?=\n|$)|### .*(?=\n|$)|\n)/
+              ))
+            ) {
+              const completeElement = match[0];
+              const endIndex =
+                accumulatedText.indexOf(completeElement) +
+                completeElement.length;
+
+              // Format and append the complete element
+              const formattedChunk = formatText(
+                accumulatedText.substring(0, endIndex)
+              );
+              aiAnswerText.innerHTML += formattedChunk;
+              setAnswer(formattedChunk);
+
+              // Remove the processed part from accumulatedText
+              accumulatedText = accumulatedText.substring(endIndex);
+            }
           }
           currentKey = key;
         }
       }
-
-      const fornattedFinalAnswer = formatText(finalAnswer);
-      aiAnswerText.innerHTML = fornattedFinalAnswer;
 
       temp_langchain.push(
         new HumanMessage(searchQuery),
@@ -355,37 +375,20 @@ function BoondogggleAI(props) {
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div className="w-[100vw] h-[100vh] overflow-y-scroll">
-        <div className="content-container">
+        <div>
           <Sidebar db={props.db} selectedTab={3} />
-          <div
-            style={
-              isOnboarding && onboardingStep == 13
-                ? {
-                    flexDirection: "column",
-                    marginLeft: "2vw",
-                    filter: "blur(5px)",
-                  }
-                : { flexDirection: "column", marginLeft: "2vw" }
-            }
-          >
+          <div class="ml-[2vw] flex-col">
             <div
-              className="boondoggle-ai-chat-content"
+              class="flex flex-col items-start gap-[35px] self-stretch overflow-y-auto h-[80vh] mb-[2vh] mt-[2vh]"
               id="boondoggle-ai-chat-content"
-              style={
-                isOnboarding &&
-                (onboardingStep == 11 || onboardingStep == 12) &&
-                !isLoading
-                  ? { height: "69vh" }
-                  : { marginTop: "2vh" }
-              }
               ref={chatContentRef}
             />
 
             <input
               onKeyDown={async (event) => await onBoondoggleQuery(event)}
-              className="boondoggleai-query-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              className="flex w-[95vw] mb-[1vh] p-4 flex-col justify-center items-start gap-2 relative rounded-[24px] border border-brand-light bg-gradient-to-r from-[rgba(128,84,255,0.05)] to-[rgba(1,131,251,0.05)] bg-white bg-opacity-80 backdrop-blur-[50px]"
             ></input>
             <p>Press Enter to Query</p>
           </div>
