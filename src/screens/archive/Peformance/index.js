@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./Performance.css";
 import { useNavigate } from "react-router-dom";
-import OpenAI from "openai";
-import { BarChart, ResponsiveChartContainer } from "@mui/x-charts";
-import Unified from "unified-ts-client";
-import axios from "axios";
-import Sidebar from "../../components/Sidebar/Sidebar";
+import { BarChart } from "@mui/x-charts";
+import Sidebar from "../../../components/Sidebar";
 
 function Performance(props) {
   const navigation = useNavigate();

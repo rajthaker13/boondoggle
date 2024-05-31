@@ -1,46 +1,29 @@
 import React, { useEffect, useState } from "react";
 import OpenAI from "openai";
 import axios from "axios";
-import Sidebar from "../components/Sidebar/Sidebar";
-import WorkflowSidebar from "../components/WorkflowSidebar";
+import Header from "../../components/Header";
+import WorkflowSidebar from "../../components/WorkflowSidebar";
 import { Button, Dialog, DialogPanel } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
-import workflowData from "../data/workflows";
-import ClickAwayListener from "react-click-away-listener";
+import workflowData from "../../data/workflows";
 
 function Workflows(props) {
   const client_id = process.env.REACT_APP_AIRTABLE_KEY;
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedTab, setSelectedTab] = useState(0);
   const [twitterLinked, setTwitterLinked] = useState(false);
   const [emailLinked, setEmailLinked] = useState(false);
   const [linkedInLinked, setLinkedInLinked] = useState(false);
-  const [crmType, setCRMType] = useState("");
   const [crm, setCRM] = useState([]);
   const [toDos, setToDos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [image, setImage] = useState();
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [source, setSource] = useState("Email");
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
 
-  const [selectedBase, setSelectedBase] = useState([]);
   const [airtableTables, setAirtableTables] = useState([]);
   const [airtableFields, setAirtableFields] = useState([]);
   const [selectedTable, setSelectedTable] = useState("");
 
-  const [nameField, setNameField] = useState("");
-  const [emailField, setEmailField] = useState("");
-  const [twitterField, setTwitterField] = useState("");
-  const [linkedInField, setLinkedInField] = useState("");
-  const [socialField, setSocialField] = useState("");
-  const [notesField, setNotesField] = useState("");
-
-  const [isAdmin, setIsAdmin] = useState(true);
-  const [memberWelcome, setMemberWelcome] = useState(false);
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
@@ -1182,7 +1165,7 @@ function Workflows(props) {
           </DialogPanel>
         </Dialog>
 
-        <Sidebar db={props.db} selectedTab={1} />
+        <Header db={props.db} selectedTab={1} />
         <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
           <WorkflowSidebar
             selectedWorkflow={selectedWorkflow}

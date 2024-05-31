@@ -1,13 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import UnifiedDirectory from "@unified-api/react-directory";
-import axios from "axios";
-import Stripe from "stripe";
-import { loadStripe } from "@stripe/stripe-js";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Settings(props) {
-  const navigation = useNavigate();
-
   async function handleSubscription(stripe_id) {
     const { data, error } = await props.db.functions.invoke("stripe-portal", {
       body: {

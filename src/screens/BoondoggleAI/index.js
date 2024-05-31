@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
-import "./BoondoggleAI.css";
-import Sidebar from "../../components/Sidebar/Sidebar";
+import Header from "../../components/Header";
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import LoadingOverlay from "react-loading-overlay";
@@ -119,7 +118,7 @@ function BoondogggleAI(props) {
         input: `${searchQuery}`,
       });
 
-      const index = pinecone.index("boondoggle-data-2");
+      const index = pinecone.index("boondoggle-data-3");
       const id = localStorage.getItem("connection_id");
 
       const ns1 = index.namespace(id);
@@ -376,7 +375,7 @@ function BoondogggleAI(props) {
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div className="w-[100vw] h-[100vh] overflow-y-scroll">
         <div>
-          <Sidebar db={props.db} selectedTab={3} />
+          <Header db={props.db} selectedTab={3} />
           <div class="ml-[2vw] flex-col">
             <div
               class="flex flex-col items-start gap-[35px] self-stretch overflow-y-auto h-[80vh] mb-[2vh] mt-[2vh]"

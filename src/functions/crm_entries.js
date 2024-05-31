@@ -14,7 +14,221 @@ const pinecone = new Pinecone({
 });
 
 export async function createPineconeIndexes(connection_id) {
-  const index = pinecone.index("boondoggle-data-2");
+  const index = pinecone.index("boondoggle-data-3");
+
+  let score = 0;
+  let maxScore = 0;
+  let issuesArray = [];
+
+  const scoreCompleteness = (item, type) => {
+    let itemScore = 0;
+    let totalWeight = 0;
+
+    let criteria;
+
+    if (type === "Contact") {
+      criteria = {
+        fields: {
+          name: 25,
+          title: 10,
+          company: 20,
+          emails: {
+            email: 15,
+            type: 5,
+          },
+          telephones: {
+            telephone: 15,
+            type: 5,
+          },
+          deal_ids: 10,
+          company_ids: 10,
+          address: {
+            address1: 5,
+            address2: 2,
+            city: 5,
+            region: 5,
+            region_code: 2,
+            postal_code: 5,
+            country: 5,
+            country_code: 2,
+          },
+        },
+      };
+    } else if (type === "Deal") {
+      criteria = {
+        fields: {
+          name: 20,
+          amount: 25,
+          currency: 10,
+          stage: 20,
+          source: 10,
+          pipeline: 10,
+          probability: 10,
+          tags: 5,
+          closed_at: 2,
+          lost_reason: 1.5,
+          won_reason: 1.5,
+        },
+      };
+    } else if (type === "Company") {
+      criteria = {
+        fields: {
+          name: 25,
+          deal_ids: 10,
+          emails: {
+            email: 15,
+            type: 5,
+          },
+          telephones: {
+            telephone: 15,
+            type: 5,
+          },
+          websites: 10,
+          address: {
+            address1: 5,
+            address2: 2,
+            city: 5,
+            region: 5,
+            region_code: 2,
+            postal_code: 5,
+            country: 5,
+            country_code: 2,
+          },
+          is_active: 10,
+          tags: 5,
+          description: 10,
+          industry: 10,
+          link_urls: 5,
+          employees: 5,
+          timezone: 5,
+        },
+      };
+    } else if (type === "Event") {
+      criteria = {
+        fields: {
+          type: 25,
+          company_ids: 20,
+          contact_ids: 20,
+          lead_ids: 20,
+          ...(item.type === "NOTE" && {
+            note: {
+              description: 5,
+              title: 5,
+            },
+          }),
+          ...(item.type === "MEETING" && {
+            meeting: {
+              start_at: 5,
+              end_at: 5,
+              title: 5,
+              description: 5,
+            },
+          }),
+          ...(item.type === "EMAIL" && {
+            email: {
+              from: 5,
+              to: 5,
+              cc: 2,
+              subject: 5,
+              body: 5,
+              attachment_file_ids: 3,
+            },
+          }),
+          ...(item.type === "CALL" && {
+            call: {
+              duration: 5,
+              description: 5,
+              start_at: 5,
+            },
+          }),
+          ...(item.type === "TASK" && {
+            task: {
+              name: 5,
+              status: 5,
+              description: 5,
+              due_at: 5,
+            },
+          }),
+        },
+      };
+    } else if (type === "Lead") {
+      criteria = {
+        fields: {
+          name: 25,
+          user_id: 10,
+          creator_user_id: 5,
+          contact_id: 10,
+          company_id: 10,
+          company_name: 10,
+          is_active: 10,
+          address: {
+            address1: 5,
+            address2: 2,
+            city: 5,
+            region: 5,
+            region_code: 2,
+            postal_code: 5,
+            country: 5,
+            country_code: 2,
+          },
+          emails: {
+            email: 15,
+            type: 5,
+          },
+          telephones: {
+            telephone: 15,
+            type: 5,
+          },
+          source: 10,
+          status: 10,
+        },
+      };
+    }
+
+    let missingFields = [];
+
+    for (const [field, weight] of Object.entries(criteria.fields)) {
+      if (typeof weight === "object") {
+        // Nested object handling for note field
+        if (item[field] !== undefined) {
+          for (const [subField, subWeight] of Object.entries(weight)) {
+            totalWeight += subWeight;
+            if (item[field][subField] !== undefined) {
+              itemScore += subWeight;
+            } else {
+              missingFields.push(`${field}.${subField}`);
+            }
+          }
+        } else {
+          for (const subField of Object.keys(weight)) {
+            totalWeight += weight[subField];
+            missingFields.push(`${field}.${subField}`);
+          }
+        }
+      } else {
+        totalWeight += weight;
+        if (item[field] !== undefined) {
+          itemScore += weight;
+        } else {
+          missingFields.push(field);
+        }
+      }
+    }
+
+    if (missingFields.length > 0) {
+      issuesArray.push({
+        item: item,
+        type: type,
+        missingFields: missingFields,
+      });
+    }
+    console.log(type, item, "SCORE", itemScore, "Weight", totalWeight);
+
+    return {
+      itemScore: itemScore,
+      totalWeight: totalWeight,
+    };
+  };
 
   // Define API request options
   const apiOptions = (type, date) => ({
@@ -24,8 +238,6 @@ export async function createPineconeIndexes(connection_id) {
       authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
     },
   });
-
-  const types = ["contact", "deal", "company", "event", "lead"];
 
   // Fetch data from all endpoints
   const fetchData = async (type) => {
@@ -41,13 +253,13 @@ export async function createPineconeIndexes(connection_id) {
             break; // Exit the loop if the request is successful
           } catch (err) {
             if (attempt === 3) {
-              throw err; // Rethrow the error after the final attempt
+              throw err;
+              // Rethrow the error after the final attempt
             }
             await new Promise((resolve) => setTimeout(resolve, attempt * 5000)); // Increase delay with each attempt
           }
         }
 
-        console.log(type, response.data);
         if (response.data.length == 100) {
           date = response.data[99].updated_at;
           result = [...result, ...response.data];
@@ -56,7 +268,6 @@ export async function createPineconeIndexes(connection_id) {
           dataFetched = true;
         }
       }
-      console.log(type, result);
       await new Promise((resolve) => setTimeout(resolve, 2000)); // Increase delay with each attempt
       return result;
     } catch (error) {
@@ -70,9 +281,6 @@ export async function createPineconeIndexes(connection_id) {
   const companyData = await fetchData("company");
   const eventData = await fetchData("event");
   const leadData = await fetchData("lead");
-
-  // const [contactData, dealData, companyData, eventData, leadData] =
-  //   await Promise.all(types.map(fetchData));
 
   const generateEmbeddings = async (data, type) => {
     const chunkData = (array, size) =>
@@ -95,6 +303,10 @@ export async function createPineconeIndexes(connection_id) {
             const output = await splitter.createDocuments([
               JSON.stringify(item),
             ]);
+
+            const completenessScore = scoreCompleteness(item, type);
+            score += completenessScore.itemScore;
+            maxScore += completenessScore.totalWeight;
 
             let result = [];
             await Promise.all(
@@ -195,4 +407,19 @@ export async function createPineconeIndexes(connection_id) {
       upsertEmbeddings(embeddings, type)
     )
   );
+
+  const finalScore = Math.round((score / maxScore) * 100);
+
+  console.log("Points", score);
+  console.log("Max", maxScore);
+
+  console.log("FINAL SCORE", finalScore);
+  console.log("ISSUEs", issuesArray);
+
+  return {
+    score: finalScore,
+    issuesArray: issuesArray,
+    points: score,
+    maxPoints: maxScore,
+  };
 }
