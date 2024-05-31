@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import OpenAI from "openai";
 import axios from "axios";
 import Header from "../../components/Header";
@@ -8,107 +8,16 @@ import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 
 function Workflows(props) {
-  const client_id = process.env.REACT_APP_AIRTABLE_KEY;
-  const [twitterLinked, setTwitterLinked] = useState(false);
-  const [emailLinked, setEmailLinked] = useState(false);
-  const [linkedInLinked, setLinkedInLinked] = useState(false);
-  const [crm, setCRM] = useState([]);
-  const [toDos, setToDos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [source, setSource] = useState("Email");
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
 
-  const [airtableTables, setAirtableTables] = useState([]);
-  const [airtableFields, setAirtableFields] = useState([]);
-  const [selectedTable, setSelectedTable] = useState("");
-
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
   });
-
-  async function getAirtableRefreshToken() {
-    const id = localStorage.getItem("connection_id");
-    const { data, error } = await props.db
-      .from("users")
-      .select("")
-      .eq("crm_id", id);
-
-    const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://airtable.com/oauth2/v1/token`;
-    const refreshTokenResponse = await axios.post(
-      url,
-      {
-        client_id: client_id,
-        refresh_token: data[0].refresh_token,
-        grant_type: "refresh_token",
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-    const new_access_token = refreshTokenResponse.data.access_token;
-    const new_refresh_token = refreshTokenResponse.data.refresh_token;
-
-    await props.db
-      .from("users")
-      .update({
-        crm_id: new_access_token,
-        refresh_token: new_refresh_token,
-      })
-      .eq("id", localStorage.getItem("uid"));
-
-    await props.db
-      .from("data")
-      .update({
-        connection_id: new_access_token,
-      })
-      .eq("connection_id", id);
-    localStorage.setItem("connection_id", new_access_token);
-
-    return new_access_token;
-  }
-
-  async function selectTable(event) {
-    console.log(event);
-    setSelectedTable(event);
-    if (event != "") {
-      const tableObject = airtableTables.find((table) => table.id == event);
-      console.log(tableObject);
-      setAirtableFields(tableObject.fields);
-    } else {
-      setAirtableFields([]);
-    }
-  }
-
-  useEffect(() => {
-    async function checkData() {
-      console.log("Hey");
-      const id = localStorage.getItem("connection_id");
-      const options = {
-        method: "GET",
-        url: `https://api.unified.to/crm/${id}/deal`,
-        headers: {
-          authorization:
-            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-        },
-      };
-      const results = await axios.request(options);
-
-      console.log("RESULTS", results);
-    }
-
-    async function compareStrings() {
-      console.log("Compaire");
-    }
-
-    compareStrings();
-
-    // checkData();
-  }, []);
 
   async function twitterCredentials() {
     const uid = localStorage.getItem("uid");
@@ -131,12 +40,6 @@ function Workflows(props) {
   }
 
   async function updateCRM(userData) {
-    const connection_id = localStorage.getItem("connection_id");
-    const { data, error } = await props.db
-      .from("data")
-      .select()
-      .eq("connection_id", connection_id);
-
     const fetch_crm = await getCRMData();
 
     let admin_crm_update = fetch_crm.admin_crm_data;
@@ -144,11 +47,6 @@ function Workflows(props) {
     let user_crm_update = fetch_crm.user_crm_data;
     let user_to_dos = fetch_crm.user_to_dos;
     let new_crm_data = [];
-
-    let type = fetch_crm.type;
-    let baseID = fetch_crm.baseID;
-    let tableID = fetch_crm.tableID;
-    let fieldOptions = fetch_crm.fieldOptions;
 
     let twitter_messages = [];
 
@@ -161,7 +59,7 @@ function Workflows(props) {
           (item) => item.id === lead.messageData.dm_conversation_id
         );
         if (itemIndex !== -1) {
-          if (lead.userData[0].username != meUser) {
+          if (lead.userData[0].username !== meUser) {
             twitter_messages[itemIndex].customer = lead.userData[0].name;
             twitter_messages[itemIndex].messages = [
               ...twitter_messages[itemIndex].messages,
@@ -302,11 +200,8 @@ function Workflows(props) {
         tasks: user_to_dos,
       })
       .eq("id", uid);
-    setTwitterLinked(true);
     setIsLoading(false);
     localStorage.setItem("twitterLinked", true);
-    setCRM(user_crm_update);
-    setToDos(user_to_dos);
     localStorage.setItem("to_dos", user_to_dos);
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
@@ -693,11 +588,8 @@ function Workflows(props) {
                 linkedinLinked: true,
               })
               .eq("id", uid);
-            setLinkedInLinked(true);
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
-            setCRM(user_crm_update);
-            setToDos(user_to_dos);
             localStorage.setItem("to_dos", user_to_dos);
             setOpenCookieModal(false);
             window.location.reload();
@@ -762,40 +654,6 @@ function Workflows(props) {
 
     await Promise.all(
       emails.map(async (email) => {
-        // let spamRespone;
-        // try {
-        //   spamRespone = await axios.post(
-        //     "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
-        //     {
-        //       email: email.latestDraftOrMessage.body,
-        //       options: "short",
-        //     },
-        //     {
-        //       headers: {
-        //         Accept: "application/json",
-        //         "Content-Type": "application/json",
-        //       },
-        //     }
-        //   );
-        // } catch (error) {
-        //   if (error) {
-        //     await new Promise((resolve) => setTimeout(resolve, 5000));
-        //     spamRespone = await axios.post(
-        //       "https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://spamcheck.postmarkapp.com/filter",
-        //       {
-        //         email: email.latestDraftOrMessage.body,
-        //         options: "short",
-        //       },
-        //       {
-        //         headers: {
-        //           Accept: "application/json",
-        //           "Content-Type": "application/json",
-        //         },
-        //       }
-        //     );
-        //   }
-        // }
-
         if (
           email.latestDraftOrMessage.from[0].name != "" &&
           !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
@@ -859,13 +717,6 @@ function Workflows(props) {
           );
 
           let status = "Completed";
-          // if (spamRespone.data.score >= 7) {
-          //   status = "Completed";
-          // } else if (spamRespone.data.score >= 5) {
-          //   status = "Pending";
-          // } else {
-          //   status = "Rejected";
-          // }
 
           if (fromIndex != -1) {
             new_emails[fromIndex].snippet = [
@@ -1062,15 +913,8 @@ function Workflows(props) {
         emailLinked: true,
       })
       .eq("id", uid);
-    setEmailLinked(true);
 
     await sendToCRM(new_crm_data, "Email");
-
-    // if (type == "airtable") {
-    //   await pushToAirtable(new_crm_data, "Email");
-    // } else {
-    //   await sendToCRM(new_crm_data, "Email");
-    // }
 
     setIsLoading(false);
 
