@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../../components/Sidebar/Sidebar";
+import Header from "../../components/Header";
 import Accounts from "./Accounts";
 import Issues from "./Issues";
 import Score from "./Score";
@@ -16,6 +16,7 @@ function Dashboard(props) {
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [modalStep, setModalStep] = useState(0);
   const [crmScore, setCRMScore] = useState(0);
+  const [numIssues, setNumIssues] = useState(0);
   const [issuesResolved, setIssuesResolved] = useState(false);
   const [linkedInLinked, setLinkedInLinked] = useState(false);
 
@@ -33,7 +34,8 @@ function Dashboard(props) {
             setLinkedInLinked(true);
           }
         } else {
-          setCRMScore(75);
+          setCRMScore(localStorage.getItem("score"));
+          setNumIssues(localStorage.getItem("numIssues"));
           setCRMConnected(true);
         }
       }
@@ -44,7 +46,9 @@ function Dashboard(props) {
       const urlParams = new URLSearchParams(window.location.search);
       const connection_id = urlParams.get("id");
 
-      await createPineconeIndexes(connection_id);
+      const scanResult = await createPineconeIndexes(connection_id);
+      const newScore = scanResult.score;
+      const issuesArray = scanResult.issuesArray;
 
       await props.db.from("data").insert({
         connection_id: connection_id,
@@ -67,10 +71,14 @@ function Dashboard(props) {
           },
         ],
       });
+
       //Scoring here
       setIsLoading(false);
       localStorage.setItem("connection_id", connection_id);
-      setCRMScore(75);
+      localStorage.setItem("score", newScore);
+      localStorage.setItem("numIssues", issuesArray.length);
+      setNumIssues(issuesArray.length);
+      setCRMScore(newScore);
       var cleanUrl = window.location.href.split("?")[0];
       window.history.replaceState({}, document.title, cleanUrl);
       setCRMConnected(true);
@@ -129,12 +137,13 @@ function Dashboard(props) {
         </DialogPanel>
       </Dialog>
       <div className="justify-center items-center w-[100vw] h-[100vh]">
-        <Sidebar selectedTab={0} db={props.db} />
+        <Header selectedTab={0} db={props.db} />
         <Score
           crmConnected={crmConnected}
           setCRMConnected={setCRMConnected}
           setIsLoading={true}
           crmScore={crmScore}
+          numIssues={numIssues}
           issuesResolved={issuesResolved}
         />
 

@@ -12,7 +12,7 @@ function Score(props) {
       const workspace_id = "65c02dbec9810ed1f215c33b";
       const integrations = await (
         await fetch(
-          `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&`
+          `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=crm`
         )
       ).json();
       console.log("Integrations", integrations);
@@ -72,7 +72,7 @@ function Score(props) {
                   Last Scan: Today |{" "}
                 </span>
                 <span class="text-gray-500 text-base font-bold font-['Inter'] leading-[31.01px]">
-                  {props.issuesResolved ? "0" : "11"} issues{" "}
+                  {props.issuesResolved ? "0" : props.numIssues} issues{" "}
                 </span>
                 <span class="text-gray-500 text-base font-normal font-['Inter'] leading-[31.01px]">
                   identified

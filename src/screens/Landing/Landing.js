@@ -3,7 +3,6 @@ import "./Landing.css";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function Landing(props) {
-  const [category, selectCategory] = useState("crm");
   const { state } = useLocation();
   const navigation = useNavigate();
 

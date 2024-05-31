@@ -1,10 +1,10 @@
 import { TextInput } from "@tremor/react";
-import boondoggleai from "../assets/ui-update/new-logo-black.png";
+import boondoggleai from "../../assets/ui-update/new-logo-black.png";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isMobile } from "react-device-detect";
 
-export default function NewLogin(props) {
+export default function Login(props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

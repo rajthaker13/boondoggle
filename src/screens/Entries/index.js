@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import ClickAwayListener from "react-click-away-listener";
-import Sidebar from "../components/Sidebar/Sidebar";
-import LoadingOverlay from "react-loading-overlay";
+import Header from "../../components/Header";
 import {
   Table,
   TableBody,
@@ -275,7 +273,7 @@ function NewEntries(props) {
 
   return (
     <div>
-      <Sidebar selectedTab={2} db={props.db} />
+      <Header selectedTab={2} db={props.db} />
       <div class="w-[100vw] h-[90vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] flex-col">
         <div class="w-[95vw] h-[85vh] p-6 bg-white rounded-[5.13px] shadow border border-gray-200 flex-col justify-start items-center gap-6 inline-flex">
           <div class="w-[90vw] h-6 justify-start items-center gap-2.5 inline-flex">
