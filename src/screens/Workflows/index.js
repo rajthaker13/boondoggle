@@ -550,7 +550,7 @@ function Workflows(props) {
             //Generates title, summary, to-do item, response for each chat history
             await Promise.all(
               messageArray.map(async (messageData) => {
-                
+                const customer = messageData.name;
                 const response = await generateLinkedinCRMData(messageData)
 
                 const date = Date.now();
