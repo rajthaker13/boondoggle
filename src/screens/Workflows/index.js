@@ -30,7 +30,7 @@ function Workflows(props) {
   }
 
   /**
-   * Gets the twitter dms of a user using their credentials and calls updateCRM with the data
+   * Gets the twitter dms of a user using their credentials and calls uploadTwitter with the data
    */
   async function twitterContacts() {
     const twitterInfo = await twitterCredentials();
@@ -42,7 +42,7 @@ function Workflows(props) {
       },
     });
     if (data) {
-      await updateCRM(data);
+      await uploadTwitter(data);
     }
   }
 
@@ -59,7 +59,7 @@ function Workflows(props) {
    * 
    * @param userData - Twitter DM data with which the CRM is to be updated
    */
-  async function updateCRM(userData) {
+  async function uploadTwitter(userData) {
     const fetch_crm = await getCRMData();
 
     let admin_crm_update = fetch_crm.admin_crm_data;
@@ -117,11 +117,49 @@ function Workflows(props) {
       })
     );
 
-    //Generates title, summary, to-do item, response for each chat history
     await Promise.all(
       twitter_messages.map(async (dm) => {
         // if (dm.customer != meName) {
-        const messagesString = dm.messages
+        
+        const response = await generateTwitterCRMData(dm)
+
+        const date = Date.now();
+
+        //saves title, summary, todos, and response in data objects
+        var obj = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: response.title,
+          summary: response.summary,
+          date: date,
+          source: "Twitter",
+          status: "Completed",
+        };
+        var toDoObject = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: response.toDoTitle,
+          response: response.toDoResponse,
+          date: date,
+          source: "Twitter",
+          status: "Incomplete",
+        };
+        admin_crm_update.push(obj);
+        user_crm_update.push(obj);
+        new_crm_data.push(obj);
+        admin_to_dos.push(toDoObject);
+        user_to_dos.push(toDoObject);
+        // }
+      })
+    );
+
+    /**
+     * Generates title, summary, to-do item, response for each twitter chat history
+     * @param dm An instance of a Twitter chat
+     * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+     */
+    async function generateTwitterCRMData(dm) {
+      const messagesString = dm.messages
           .map(
             (message) =>
               `${message.name} (${message.username}): ${message.text}`
@@ -171,35 +209,15 @@ function Workflows(props) {
         });
 
         const toDoResponse = responseCompletion.choices[0].message.content;
-        const date = Date.now();
 
-        //saves title, summary, todos, and response in data objects
-        var obj = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: title,
+        return {
+          title: titleCompletion,
           summary: summary,
-          date: date,
-          source: "Twitter",
-          status: "Completed",
+          toDoTitle: toDoTitle,
+          toDoResponse: toDoResponse
         };
-        var toDoObject = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: toDoTitle,
-          response: toDoResponse,
-          date: date,
-          source: "Twitter",
-          status: "Incomplete",
-        };
-        admin_crm_update.push(obj);
-        user_crm_update.push(obj);
-        new_crm_data.push(obj);
-        admin_to_dos.push(toDoObject);
-        user_to_dos.push(toDoObject);
-        // }
-      })
-    );
+    }
+
 
     const type_crm = localStorage.getItem("crmType");
     //Updates the CRM
@@ -235,7 +253,7 @@ function Workflows(props) {
 
   /**
    * captures the OAuth verifier from the URL, and retrieves stored OAuth tokens from localStorage. Calls Supabase function to fetch Twitter DMs,
-   * if successful, calls updateCRM() to update the CRM with the fetched data.
+   * if successful, calls uploadTwitter() to update the CRM with the fetched data.
    */
   async function captureOauthVerifier() {
     setIsLoading(true);
@@ -249,7 +267,7 @@ function Workflows(props) {
       body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
     });
     if (data) {
-      await updateCRM(data);
+      await uploadTwitter(data);
     }
   }
 
@@ -490,7 +508,7 @@ function Workflows(props) {
    * 
    * These objects are then saved in the Supabase db.
    */
-  async function getSessionCookie() {
+  async function uploadLinkedin() {
     // Extension ID
     setIsLoading(true);
 
@@ -532,80 +550,9 @@ function Workflows(props) {
             //Generates title, summary, to-do item, response for each chat history
             await Promise.all(
               messageArray.map(async (messageData) => {
-                const customer = messageData.name;
-                const messagesString = messageData.messages
-                  .map(
-                    (messageObject) =>
-                      `${messageObject.sender}: ${messageObject.text}`
-                  )
-                  .join("\n");
-                const titleCompletion = await openai.chat.completions.create({
-                  messages: [
-                    {
-                      role: "system",
-                      content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
-                    },
-                    {
-                      role: "user",
-                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                    },
-                  ],
-                  model: "gpt-4",
-                });
-                const title = titleCompletion.choices[0].message.content;
-                const summaryCompletion = await openai.chat.completions.create({
-                  messages: [
-                    {
-                      role: "system",
-                      content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                    },
-                    {
-                      role: "user",
-                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                    },
-                  ],
-                  model: "gpt-4",
-                });
-                const summary = summaryCompletion.choices[0].message.content;
+                
+                const response = await generateLinkedinCRMData(messageData)
 
-                const toDoTitleCompletion =
-                  await openai.chat.completions.create({
-                    messages: [
-                      {
-                        role: "system",
-                        content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                      },
-                      {
-                        role: "user",
-                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                      },
-                    ],
-                    model: "gpt-4",
-                  });
-                const toDoTitle =
-                  toDoTitleCompletion.choices[0].message.content;
-
-                const responseCompletion = await openai.chat.completions.create(
-                  {
-                    messages: [
-                      {
-                        role: "system",
-                        content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                      },
-                      {
-                        role: "user",
-                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                      },
-                    ],
-                    model: "gpt-4",
-                  }
-                );
-                const toDoResponse =
-                  responseCompletion.choices[0].message.content;
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
 
@@ -615,8 +562,8 @@ function Workflows(props) {
                 var obj = {
                   id: uniqueId,
                   customer: customer,
-                  title: title,
-                  summary: summary,
+                  title: response.title,
+                  summary: response.summary,
                   date: date,
                   url: messageData.url,
                   source: "LinkedIn",
@@ -626,8 +573,8 @@ function Workflows(props) {
                 var toDoObject = {
                   id: uniqueId,
                   customer: customer,
-                  title: toDoTitle,
-                  response: toDoResponse,
+                  title: response.toDoTitle,
+                  response: response.toDoResponse,
                   date: date,
                   source: "LinkedIn",
                   status: "Incomplete",
@@ -678,6 +625,95 @@ function Workflows(props) {
       setCookieError("Extension");
       setIsLoading(false);
     }
+  }
+
+  /**
+   * Generates title, summary, to-do item, and reponse for a Linkedin message
+   * @param messageData - A Linkedin chat history
+   * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+   */
+  async function generateLinkedinCRMData(messageData) {
+    const customer = messageData.name;
+    const messagesString = messageData.messages
+      .map(
+        (messageObject) =>
+          `${messageObject.sender}: ${messageObject.text}`
+      )
+      .join("\n");
+    const titleCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
+        },
+        {
+          role: "user",
+          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+        },
+      ],
+      model: "gpt-4",
+    });
+    const title = titleCompletion.choices[0].message.content;
+    const summaryCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+        },
+        {
+          role: "user",
+          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+        },
+      ],
+      model: "gpt-4",
+    });
+    const summary = summaryCompletion.choices[0].message.content;
+
+    const toDoTitleCompletion =
+      await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          },
+          {
+            role: "user",
+            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          },
+        ],
+        model: "gpt-4",
+      });
+    const toDoTitle =
+      toDoTitleCompletion.choices[0].message.content;
+
+    const responseCompletion = await openai.chat.completions.create(
+      {
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          },
+          {
+            role: "user",
+            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          },
+        ],
+        model: "gpt-4",
+      }
+    );
+    const toDoResponse =
+      responseCompletion.choices[0].message.content;
+
+    return {
+      title: title,
+      summary: summary,
+      toDoTitle: toDoTitle,
+      toDoResponse: toDoResponse
+    };
   }
 
   /**
@@ -765,7 +801,7 @@ function Workflows(props) {
     await Promise.all(
         new_emails.map(async (email) => {
             if (email.customer) {
-                const { title, summary, toDoTitle, toDoResponse } = await generateCRMData(email, userEmail);
+                const { title, summary, toDoTitle, toDoResponse } = await generateEmailCRMData(email, userEmail);
                 const date = Date.now();
 
                 const obj = {
@@ -913,12 +949,12 @@ function Workflows(props) {
   }
 
   /**
- * Generates CRM data for an email.
+ * Generates title, summary, to-do item, and response for an email.
  * @param {Object} email - The email data.
  * @param {string} userEmail - The user's email address.
  * @returns An object containing title, summary, toDoTitle, and toDoResponse.
  */
-async function generateCRMData(email, userEmail) {
+async function generateEmailCRMData(email, userEmail) {
   const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
   const subject = email.data.subject;
 
