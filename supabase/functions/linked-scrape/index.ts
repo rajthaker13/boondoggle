@@ -3,100 +3,85 @@
 // This enables autocomplete, go to definition, etc.
 
 import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  const { session_cookie } = await req.json()
+  try {
+    const { session_cookie } = await req.json();
 
-  console.log("SESSION COOKIE", session_cookie)
+    console.log("SESSION COOKIE", session_cookie);
 
-  const browser = await puppeteer.connect({
-    browserWSEndpoint: `wss://chrome.browserless.io?token=c751be2b-0d3d-4e26-8516-f4c774e0df6f`
-  });
-
-  const page = await browser.newPage();
-  const url = "https://www.linkedin.com/"
-  // const cookies = await page.cookies()
-  await page.setCookie({ name: "li_at", value: session_cookie, domain: "www.linkedin.com" })
-  await page.goto(url);
-  await page.click('a[href="https://www.linkedin.com/messaging/?"]');
-  // await page.waitForNavigation();
-
-  const test = await page.content()
-
-  console.log("test", test)
-
-  const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link', links => links.map(link => link.href));
-
-  // console.log("Conversations", conversationLinks)
-
-
-  const conversationContents = [];
-  const result = []
-
-  for (const link of conversationLinks) {
-    // console.log(link)
-    // await page.click(link)
-    const relativePath = new URL(link).pathname;
-    console.log(relativePath)
-    await page.click(`a[href="${relativePath}"]`)
-    // await page.waitForNavigation()
-    await page.waitForSelector('body');
-    const fullPageContent = await page.content()
-    console.log(fullPageContent);
-    conversationContents.push(fullPageContent)
-
-    const messages = await page.$$eval('p.msg-s-event-listitem__body', paragraphs => {
-      return paragraphs.map(paragraph => paragraph.textContent.trim());
-    });
-    const profileURL = await page.$$eval('a.app-aware-link.msg-thread__link-to-profile', links => links.map(link => link.href)); 
-
-    console.log("PRIFLE", profileURL)
-
-    const name = await page.$$eval('h2.msg-entity-lockup__entity-title', paragraphs => {
-      return paragraphs.map(paragraph => paragraph.textContent.trim());
-    }); 
-
-    const senders = await page.$$eval('span.msg-s-message-group__profile-link.msg-s-message-group__name', spans => {
-      return spans.map(span => span.textContent.trim());
+    const browser = await puppeteer.connect({
+      browserWSEndpoint: `wss://chrome.browserless.io?token=c751be2b-0d3d-4e26-8516-f4c774e0df6f`
     });
 
-    let messageData = []
+    const page = await browser.newPage();
+    const url = "https://www.linkedin.com/";
+    await page.setCookie({ name: "li_at", value: session_cookie, domain: "www.linkedin.com" });
+    await page.goto(url);
 
-    messages.map((message, index) => {
+    const profileLink = await page.$eval('a[href^="/in/"]', (a) => a.href.split('/')[4]);
+    console.log("Profile Link:", profileLink);
 
-      var messageObject = {
-        text: message,
-        sender: senders[index]
+    await page.click('a[href="https://www.linkedin.com/messaging/?"]');
+
+    await page.waitForSelector('a.msg-conversation-listitem__link', { timeout: 10000 });
+    const conversationLinks = await page.$$eval('a.msg-conversation-listitem__link', links => links.map(link => link.href));
+
+    const result = [];
+
+    for (const link of conversationLinks) {
+      try {
+        const relativePath = new URL(link).pathname;
+        console.log(relativePath);
+        await page.click(`a[href="${relativePath}"]`);
+        await page.waitForSelector('body');
+        await page.waitForTimeout(2000); // Ensure content loads properly
+
+        const messages = await page.$$eval('p.msg-s-event-listitem__body', paragraphs => {
+          return paragraphs.map(paragraph => paragraph.textContent.trim());
+        });
+
+        const profileURL = await page.$$eval('a.app-aware-link.msg-thread__link-to-profile', links => links.map(link => link.href));
+
+        const name = await page.$$eval('h2.msg-entity-lockup__entity-title', paragraphs => {
+          return paragraphs.map(paragraph => paragraph.textContent.trim());
+        });
+
+        const senders = await page.$$eval('span.msg-s-message-group__profile-link.msg-s-message-group__name', spans => {
+          return spans.map(span => span.textContent.trim());
+        });
+
+        let messageData = [];
+        messages.forEach((message, index) => {
+          messageData.push({ text: message, sender: senders[index] });
+        });
+
+        const data = {
+          name: name[0],
+          url: profileURL[0],
+          messages: messageData,
+          profile: profileLink,
+        };
+        result.push(data);
+      } catch (err) {
+        console.error(`Error processing conversation link ${link}:`, err);
       }
-    
-      messageData.push(messageObject)
-
-    })
-
-    const data = {
-      name: name[0],
-      url: profileURL[0],
-      messages: messageData,
     }
-    result.push(data)
+
+    await browser.close();
+
+    const responseData = { text: result };
+    return new Response(JSON.stringify(responseData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (err) {
+    console.error('Error:', err);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-
-  const data = {
-    text: result
-  }
-  await browser.close();
-
-
-  return new Response(
-    JSON.stringify(data),
-    { headers: {...corsHeaders, "Content-Type": "application/json" } },
-  )
-})
+});
 
 /* To invoke locally:
 
