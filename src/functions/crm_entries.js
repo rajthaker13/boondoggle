@@ -12,20 +12,182 @@ const openai = new OpenAI({
 const pinecone = new Pinecone({
   apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
 });
-
+// Create Pinecone indexes and manage data embedding and upsertion
 export async function createPineconeIndexes(connection_id) {
   const index = pinecone.index("boondoggle-data-3");
 
   let score = 0;
   let maxScore = 0;
   let issuesArray = [];
-
+  // Calculate completeness score for different types of CRM data
   const scoreCompleteness = (item, type) => {
     let itemScore = 0;
     let totalWeight = 0;
 
     let criteria;
-
+    // Define scoring criteria based on data type (Contact, Deal, etc.)
+    // Potential Score
+    // if (type === "Contact") {
+    //   criteria = {
+    //     fields: {
+    //       name: 30,
+    //       title: 5,
+    //       company: 25,
+    //       emails: {
+    //         email: 20,
+    //         type: 5,
+    //       },
+    //       telephones: {
+    //         telephone: 20,
+    //         type: 5,
+    //       },
+    //       deal_ids: 15,
+    //       company_ids: 15,
+    //       address: {
+    //         address1: 10,
+    //         address2: 1,
+    //         city: 10,
+    //         region: 10,
+    //         region_code: 1,
+    //         postal_code: 10,
+    //         country: 10,
+    //         country_code: 1,
+    //       },
+    //     },
+    //   };
+    // } else if (type === "Deal") {
+    //   criteria = {
+    //     fields: {
+    //       name: 20,
+    //       amount: 30,
+    //       currency: 5,
+    //       stage: 25,
+    //       source: 10,
+    //       pipeline: 15,
+    //       probability: 10,
+    //       tags: 5,
+    //       closed_at: 5,
+    //       lost_reason: 2,
+    //       won_reason: 2,
+    //     },
+    //   };
+    // } else if (type === "Company") {
+    //   criteria = {
+    //     fields: {
+    //       name: 30,
+    //       deal_ids: 15,
+    //       emails: {
+    //         email: 20,
+    //         type: 5,
+    //       },
+    //       telephones: {
+    //         telephone: 20,
+    //         type: 5,
+    //       },
+    //       websites: 10,
+    //       address: {
+    //         address1: 10,
+    //         address2: 1,
+    //         city: 10,
+    //         region: 10,
+    //         region_code: 1,
+    //         postal_code: 10,
+    //         country: 10,
+    //         country_code: 1,
+    //       },
+    //       is_active: 10,
+    //       tags: 5,
+    //       description: 10,
+    //       industry: 10,
+    //       link_urls: 5,
+    //       employees: 5,
+    //       timezone: 5,
+    //     },
+    //   };
+    // } else if (type === "Event") {
+    //   criteria = {
+    //     fields: {
+    //       type: 25,
+    //       company_ids: 20,
+    //       contact_ids: 20,
+    //       lead_ids: 20,
+    //       ...(item.type === "NOTE" && {
+    //         note: {
+    //           description: 5,
+    //           title: 5,
+    //         },
+    //       }),
+    //       ...(item.type === "MEETING" && {
+    //         meeting: {
+    //           start_at: 10,
+    //           end_at: 10,
+    //           title: 10,
+    //           description: 10,
+    //         },
+    //       }),
+    //       ...(item.type === "EMAIL" && {
+    //         email: {
+    //           from: 5,
+    //           to: 5,
+    //           cc: 3,
+    //           subject: 5,
+    //           body: 5,
+    //           attachment_file_ids: 5,
+    //         },
+    //       }),
+    //       ...(item.type === "CALL" && {
+    //         call: {
+    //           duration: 5,
+    //           description: 5,
+    //           start_at: 5,
+    //         },
+    //       }),
+    //       ...(item.type === "TASK" && {
+    //         task: {
+    //           name: 5,
+    //           status: 5,
+    //           description: 5,
+    //           due_at: 5,
+    //         },
+    //       }),
+    //     },
+    //   };
+    // } else if (type === "Lead") {
+    //   criteria = {
+    //     fields: {
+    //       name: 30,
+    //       user_id: 5,
+    //       creator_user_id: 5,
+    //       contact_id: 20,
+    //       company_id: 20,
+    //       company_name: 20,
+    //       is_active: 10,
+    //       address: {
+    //         address1: 10,
+    //         address2: 1,
+    //         city: 10,
+    //         region: 10,
+    //         region_code: 1,
+    //         postal_code: 10,
+    //         country: 10,
+    //         country_code: 1,
+    //       },
+    //       emails: {
+    //         email: 20,
+    //         type: 5,
+    //       },
+    //       telephones: {
+    //         telephone: 20,
+    //         type: 5,
+    //       },
+    //       source: 10,
+    //       status: 10,
+    //     },
+    //   };
+    // }
+    
+        
+    // Original One
     if (type === "Contact") {
       criteria = {
         fields: {
@@ -186,7 +348,8 @@ export async function createPineconeIndexes(connection_id) {
     }
 
     let missingFields = [];
-
+    // Calculate score based on presence of fields and their weighted importance
+    // Add missing fields to the issue arrays
     for (const [field, weight] of Object.entries(criteria.fields)) {
       if (typeof weight === "object") {
         // Nested object handling for note field
@@ -201,7 +364,7 @@ export async function createPineconeIndexes(connection_id) {
           }
         } else {
           for (const subField of Object.keys(weight)) {
-            totalWeight += weight[subField];
+            totalWeight += weight[subField]; 
             missingFields.push(`${field}.${subField}`);
           }
         }
@@ -231,6 +394,7 @@ export async function createPineconeIndexes(connection_id) {
   };
 
   // Define API request options
+  // Based on type and date
   const apiOptions = (type, date) => ({
     method: "GET",
     url: `https://api.unified.to/crm/${connection_id}/${type}?sort=updated_at&order=asc&updated_gte=${date}`,
@@ -259,7 +423,7 @@ export async function createPineconeIndexes(connection_id) {
             await new Promise((resolve) => setTimeout(resolve, attempt * 5000)); // Increase delay with each attempt
           }
         }
-
+        // Handle pagination
         if (response.data.length == 100) {
           date = response.data[99].updated_at;
           result = [...result, ...response.data];
@@ -281,8 +445,9 @@ export async function createPineconeIndexes(connection_id) {
   const companyData = await fetchData("company");
   const eventData = await fetchData("event");
   const leadData = await fetchData("lead");
-
+  // Handle embedding generation and upsert operations for each type
   const generateEmbeddings = async (data, type) => {
+    // Chunk large array into small chunks
     const chunkData = (array, size) =>
       array.reduce((acc, _, i) => {
         if (i % size === 0) acc.push(array.slice(i, i + size));
@@ -371,7 +536,7 @@ export async function createPineconeIndexes(connection_id) {
 
     return allResults;
   };
-
+  // Fetch all data types and process embeddings
   const contacts = await generateEmbeddings(contactData, "Contact");
   const deals = await generateEmbeddings(dealData, "Deal");
   const companies = await generateEmbeddings(companyData, "Company");
@@ -407,7 +572,7 @@ export async function createPineconeIndexes(connection_id) {
       upsertEmbeddings(embeddings, type)
     )
   );
-
+  // Calc final score
   const finalScore = Math.round((score / maxScore) * 100);
 
   console.log("Points", score);
