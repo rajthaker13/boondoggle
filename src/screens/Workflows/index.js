@@ -613,6 +613,12 @@ function Workflows(props) {
       .select("")
       .eq("id", uid);
 
+    console.log("uid")
+    console.log(uid)
+
+    console.log("email creds")
+    console.log(data)
+
     return {
       id: data[0].email_grant_id,
       userEmail: data[0].connected_email,
@@ -625,17 +631,24 @@ function Workflows(props) {
     const urlWithoutParams = currentUrl.split("?")[0];
 
     const emailCreds = await getEmailCredentials();
-    console.log("CREDS", emailCreds);
     const id = emailCreds.id;
     const userEmail = emailCreds.userEmail;
 
-    const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { identifier: id, source: urlWithoutParams },
-    });
-
     const connection_id = localStorage.getItem("connection_id");
 
-    const emails = data.data.data;
+    console.log("connection_id")
+    console.log(connection_id)
+
+    const { data, error } = await props.db.functions.invoke("get-emails", {
+      body: { connection_id: connection_id, user_id: id },
+      //body: { identifier: id, source: urlWithoutParams },
+    });
+
+    console.log("This is the email data")
+    console.log(data)
+    console.log(error)
+
+    let emails = data;
 
     const fetch_crm = await getCRMData();
 
@@ -994,13 +1007,13 @@ function Workflows(props) {
                   localStorage.setItem("linkedinLinked", true);
                   setOpenCookieModal(false);
                   setIsLoading(false);
-                  // if (source == "Email") {
-                  //   await uploadEmails();
-                  // } else if (source == "LinkedIn") {
-                  //   await getSessionCookie();
-                  // } else if (source == "Twitter") {
-                  //   await twitterContacts();
-                  // }
+                   if (source == "Email") { //just uncommedted all these if statements, run something with emails in workflows, leave console.log for notes
+                     await uploadEmails();
+                   } else if (source == "LinkedIn") {
+                     await getSessionCookie();
+                   } else if (source == "Twitter") {
+                     await twitterContacts();
+                   }
                 }}
               >
                 Confirm
