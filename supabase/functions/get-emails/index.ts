@@ -9,14 +9,18 @@ Deno.serve(async (req) => {
 
   const { connection_id, user_id } = await req.json()
 
-  const url = `https://api.unified.to/messaging/${connection_id}/message`;
+  console.log("This is the connection_id", connection_id)
+
+  const url = `https://api.unified.to/messaging/${user_id}/message`;
   const options = {
     method: "GET",
     headers: {
       'Authorization':
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
     },
-    params: {}
+    params: {
+      limit: 50
+    }
   }
 
   let results;
@@ -38,77 +42,12 @@ Deno.serve(async (req) => {
   console.log("This is the response")
   console.log(data)
 
-  /*const urlChannel = `https://api.unified.to/messaging/${connection_id}/channel`;
-  const optionsChannel = {
-    method: "GET",
-    headers: {
-      'Authorization':
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-    },
-    params: {}
-  }
-
-  let resultsChannel;
-
-  try {
-    resultsChannel = await fetch(urlChannel, optionsChannel);
-  
-  }
-  catch {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    resultsChannel = await fetch(urlChannel, optionsChannel);
-  }
-
-  const responseChannel = await resultsChannel.json()
-  const dataChannel = {
-    data: responseChannel
-  }
-
-  console.log("channel results")
-  console.log(dataChannel)*/
-
   return new Response(
     JSON.stringify(data),
     { headers: {...corsHeaders },
       status: 200
   })
 })
-
-  /*const { identifier, source } = await req.json()
-
-  const config = {
-    clientId: "bcfea5e3-89e3-4586-8251-1f7f82e41c98",
-    callbackUri: source,
-    apiKey: "nyk_v0_Dk8U2N1IQwzWQ8XvAmPcDuoJzQCuwQFodQhUu7uQ7XnbtZ9eJaf6ILrvRKypOSM7",
-    apiUri: "https://api.us.nylas.com",
-  };
-
-
-  const nylas = new Nylas({
-    apiKey: config.apiKey,
-    apiUri: config.apiUri
-  });
-
-
-  const messages = await nylas.threads.list({
-    identifier,
-    queryParams: {
-      limit: 50,
-    },
-  });
-
-  console.log('Recent Threads:', messages)
-
-  const data = {
-    data: messages,
-  }
-
-
-  return new Response(
-    JSON.stringify(data),
-    { headers: {...corsHeaders, "Content-Type": "application/json" } },
-  )
-})*/
 
 /* To invoke locally:
 

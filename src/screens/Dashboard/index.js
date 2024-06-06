@@ -21,7 +21,6 @@ function Dashboard(props) {
   const [linkedInLinked, setLinkedInLinked] = useState(false);
 
   useEffect(() => {
-
     /**
      * Retrieves dashboard data including CRM score based on resolved issues and LinkedIn connectedness.
      * If a connection ID is stored in the local storage, it fetches data accordingly and updates the dashboard state.
@@ -158,7 +157,7 @@ function Dashboard(props) {
           issuesResolved={issuesResolved}
         />
 
-        <Accounts crmConnected={crmConnected} linkedInLinked={linkedInLinked} />
+        <Accounts crmConnected={crmConnected} linkedInLinked={linkedInLinked} db={props.db}/>
         {crmConnected && (
           <Issues
             crmConnected={crmConnected}

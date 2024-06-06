@@ -733,9 +733,10 @@ function Workflows(props) {
     console.log("email creds")
     console.log(data)
 
+    console.log("crm id: ", data[0].crm_id)
+
     return {
       id: data[0].email_grant_id,
-      userEmail: data[0].connected_email,
     };
   }
 
@@ -756,20 +757,18 @@ function Workflows(props) {
     const id = emailCreds.id;
     const userEmail = emailCreds.userEmail;
 
-    const connection_id = localStorage.get("connection_id")
+    const connection_id = localStorage.getItem("connection_id")
 
     //fetches emails
-    const { data, error } = await props.db.functions.invoke("get-emails", {
+    const { emails, error } = await props.db.functions.invoke("get-emails", {
       body: { connection_id: connection_id, user_id: id },
       //body: { identifier: id, source: urlWithoutParams },
     });
 
     console.log("This is the email data")
-    console.log(data)
+    console.log(emails) //showing up as null even though the request is working, break point
+    console.log("This is the error")
     console.log(error)
-
-    let emails = data;
-
 
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
@@ -788,24 +787,38 @@ function Workflows(props) {
     let new_emails = [];
 
     //Filters and processes each email
-    await Promise.all(
-      emails.map(async (email) => {
-        if (shouldProcessEmail(email)) {
-          const fromIndex = new_emails.findIndex(
-              (item) => item.customer === email.latestDraftOrMessage.from[0].name
-          );
-          const toIndex = new_emails.findIndex(
-              (item) => item.customer === email.latestDraftOrMessage.to[0].name
-          );
+    for(const email of emails) {
+      if (shouldProcessEmail(email)) {
+        const fromIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+        );
+        const toIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+        );
 
-          if (fromIndex !== -1 || toIndex !== -1) {
-              updateExistingEmail(new_emails, fromIndex, toIndex, email);
-          } else {
-              createNewEmail(new_emails, email, userEmail);
-          }
+        if (fromIndex !== -1 || toIndex !== -1) {
+            updateExistingEmail(new_emails, fromIndex, toIndex, email);
+        } else {
+            createNewEmail(new_emails, email, userEmail);
         }
-      })
-    );
+      }
+    }
+    /*emails.map(async (email) => {
+      if (shouldProcessEmail(email)) {
+        const fromIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+        );
+        const toIndex = new_emails.findIndex(
+            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+        );
+
+        if (fromIndex !== -1 || toIndex !== -1) {
+            updateExistingEmail(new_emails, fromIndex, toIndex, email);
+        } else {
+            createNewEmail(new_emails, email, userEmail);
+        }
+      }
+    })*/
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -1080,7 +1093,7 @@ async function generateEmailCRMData(email, userEmail) {
                   localStorage.setItem("linkedinLinked", true);
                   setOpenCookieModal(false);
                   setIsLoading(false);
-                   if (source == "Email") { //just uncommedted all these if statements, run something with emails in workflows, leave console.log for notes
+                   if (source == "Email") { //just uncommedted all these if statements
                      await uploadEmails();
                    } else if (source == "LinkedIn") {
                      await uploadLinkedin();
