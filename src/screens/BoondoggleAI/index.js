@@ -22,6 +22,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
 function BoondogggleAI(props) {
+  // References and states to manage component behavior
   const chatContentRef = useRef(null);
   const pinecone = new Pinecone({
     apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
@@ -32,12 +33,13 @@ function BoondogggleAI(props) {
     dangerouslyAllowBrowser: true,
   });
 
-  const [query, setQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [answer, setAnswer] = useState("");
+  const [query, setQuery] = useState(""); // Store user's query input
+  const [isLoading, setIsLoading] = useState(false); // Loading state for async
+  const [answer, setAnswer] = useState(""); // Store answer output
 
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  // Init system message for the AI assistant
   const [messages, setMessages] = useState([
     {
       role: "system",
@@ -47,11 +49,12 @@ function BoondogggleAI(props) {
   const [langchainMessages, setLangChainMessages] = useState([]);
 
   useEffect(() => {
+    // Scroll chat window
     if (chatContentRef.current) {
       chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
     }
   }, [answer]);
-
+  // Handle user submits a query
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
       setIsLoading(true);
@@ -68,7 +71,7 @@ function BoondogggleAI(props) {
       boondoggleAiChatContent.appendChild(userQueryContainer);
 
       let temp_langchain = langchainMessages;
-
+      // System Prompt here
       const SYSTEM_TEMPLATE = `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions
 
       <context>
@@ -81,12 +84,12 @@ function BoondogggleAI(props) {
         temperature: 0.2,
         openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
       });
-
+      // Generate answering prompt
       const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
         ["system", SYSTEM_TEMPLATE],
         new MessagesPlaceholder("messages"),
       ]);
-
+      // Set up the Document Chain
       const documentChain = await createStuffDocumentsChain({
         llm: llm,
         prompt: questionAnsweringPrompt,
@@ -95,7 +98,7 @@ function BoondogggleAI(props) {
       const parseRetrieverInput = (params) => {
         return params.messages[params.messages.length - 1].content;
       };
-
+      // Transform user's input into a search query
       const queryTransformPrompt = ChatPromptTemplate.fromMessages([
         new MessagesPlaceholder("messages"),
         [
@@ -105,19 +108,20 @@ function BoondogggleAI(props) {
       ]);
 
       const queryTransformationChain = queryTransformPrompt.pipe(llm);
-
+      // Generate query based on previous conversation
       const newQuery = await queryTransformationChain.invoke({
         messages: [...temp_langchain, new HumanMessage(query)],
       });
-
+      // Get the new search quergy
       const searchQuery = `User query: ${query}, Edited Query: ${newQuery.content}`;
 
       setQuery("");
+      //Generate embeddings for a semantic search
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: `${searchQuery}`,
       });
-
+      // Perform top k semantic search in pinecone based on different type
       const index = pinecone.index("boondoggle-data-3");
       const id = localStorage.getItem("connection_id");
 
@@ -155,11 +159,11 @@ function BoondogggleAI(props) {
       });
 
       const notesMatches = notesResponse.matches;
-
+      // Combine all results
       const matches = [...dealsMatches, ...contactMatches, ...notesMatches];
-
+      // Fetch all results from unified based on matches
       let queryArray = [];
-
+      // REST API calls
       await Promise.all(
         matches.map(async (match, index) => {
           const matchType = match.metadata.type;
@@ -252,7 +256,7 @@ function BoondogggleAI(props) {
           }
         })
       );
-
+      // Create a string from the query result array
       const queryArrayString = queryArray
         .map((item) => `${JSON.stringify(item)}`)
         .join("\n");
@@ -261,9 +265,9 @@ function BoondogggleAI(props) {
         chunkSize: 200,
         chunkOverlap: 15,
       });
-
+      // Divide the large string into smaller document chunks
       const splits = await textSplitter.createDocuments([queryArrayString]);
-
+      // Convert these text chunks into vector embeddings
       const vectorStore = await MemoryVectorStore.fromDocuments(
         splits,
         new OpenAIEmbeddings({
@@ -271,9 +275,10 @@ function BoondogggleAI(props) {
           model: "text-embedding-3-small",
         })
       );
-
-      const retriever = vectorStore.asRetriever(25);
-
+      // Define retriever
+      const retriever = vectorStore.asRetriever(15);
+      // Get context based on retriever from the fetch results
+      // Functions for answer streaming
       const queryTransformingRetrieverChain = RunnableBranch.from([
         [
           (params) => params.messages.length === 1,
@@ -281,7 +286,7 @@ function BoondogggleAI(props) {
         ],
         queryTransformPrompt
           .pipe(llm)
-          .pipe(new StringOutputParser())
+          .pipe(new StringOutputParser()) // Output Parser
           .pipe(retriever),
       ]).withConfig({ runName: "chat_retriever_chain" });
 
@@ -299,7 +304,7 @@ function BoondogggleAI(props) {
           .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
         return formattedAnswer;
       }
-
+      // Add Ai response frontend container
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
 

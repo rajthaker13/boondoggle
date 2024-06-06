@@ -21,8 +21,13 @@ import axios from "axios";
 function Accounts(props) {
   const [availableEnrichment, setAvailableEnrichment] = useState([]);
   useEffect(() => {
+
+    /**
+     * Fetches enrichment integrations from the API and updates state.
+     */
     async function getEnrichmentIntegrations() {
       const workspace_id = "65c02dbec9810ed1f215c33b";
+      //fetch integrations
       const integrations = await (
         await fetch(
           `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=enrich`
@@ -30,10 +35,12 @@ function Accounts(props) {
       ).json();
       console.log("Enrichment Integrations", integrations);
       let integrationData = [];
+      //iterates over all integrations
       await Promise.all(
         integrations.map(async (integration) => {
           const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}`;
           const urlResponse = await axios.get(url);
+          //constructs and saves obj containing integration data + auth URL
           integrationData.push({
             data: integration,
             url: urlResponse.data,

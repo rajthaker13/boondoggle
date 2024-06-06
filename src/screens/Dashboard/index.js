@@ -21,6 +21,11 @@ function Dashboard(props) {
   const [linkedInLinked, setLinkedInLinked] = useState(false);
 
   useEffect(() => {
+
+    /**
+     * Retrieves dashboard data including CRM score based on resolved issues and LinkedIn connectedness.
+     * If a connection ID is stored in the local storage, it fetches data accordingly and updates the dashboard state.
+     */
     async function getDashboardData() {
       const connection_id = localStorage.getItem("connection_id");
       if (connection_id != null) {
@@ -41,11 +46,16 @@ function Dashboard(props) {
       }
     }
 
+    /**
+     * Stores data related to the current session including CRM connection information,
+     * user details, and updates dashboard state with the retrieved data.
+     */
     async function storeData() {
       setIsLoading(true);
       const urlParams = new URLSearchParams(window.location.search);
       const connection_id = urlParams.get("id");
 
+      //retrieve the CRM scan score and the array of issues
       const scanResult = await createPineconeIndexes(connection_id);
       const newScore = scanResult.score;
       const issuesArray = scanResult.issuesArray;
@@ -91,6 +101,7 @@ function Dashboard(props) {
 
     getDashboardData();
   }, []);
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>

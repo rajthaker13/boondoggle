@@ -8,8 +8,17 @@ function Score(props) {
   const [crmType, setCRMType] = useState("");
 
   useEffect(() => {
+
+    /**
+     * Retrieves CRM integrations and connection details from the Unified API.
+     * Integrations are fetched based on the workspace ID, and authentication
+     * URLs are obtained for each integration. Connection details are retrieved
+     * if a connection ID is available in the localStorage.
+     */
     async function getCRMIntegrations() {
       const workspace_id = "65c02dbec9810ed1f215c33b";
+
+      // Fetch CRM integrations from the Unified API
       const integrations = await (
         await fetch(
           `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=crm`
@@ -17,10 +26,14 @@ function Score(props) {
       ).json();
       console.log("Integrations", integrations);
       let integrationData = [];
+
+      // Retrieve authentication URLs for each integration
       await Promise.all(
         integrations.map(async (integration) => {
           const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
           const urlResponse = await axios.get(url);
+
+          // Push integration data (integration object and authentication URL) to integrationData array
           integrationData.push({
             data: integration,
             url: urlResponse.data,
@@ -33,6 +46,7 @@ function Score(props) {
         return textA < textB ? -1 : textA > textB ? 1 : 0;
       });
 
+      // Retrieve CRM type
       if (localStorage.getItem("connection_id") != null) {
         const id = localStorage.getItem("connection_id");
 
