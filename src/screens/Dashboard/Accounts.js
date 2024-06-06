@@ -1,6 +1,5 @@
 import {
   RiMailLine,
-  RiTwitterFill,
   RiLinkedinBoxFill,
   RiGridLine,
   RiUserAddLine,

@@ -29,15 +29,6 @@ const data = [
   },
   {
     id: 2,
-    title: "Update CRM Contacts via Twitter Messages",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: twitterContacts,
-    source: "Twitter",
-    destination: "crm",
-  },
-  {
-    id: 3,
     title: "Update CRM Deal Status via Emails",
     description:
       "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
@@ -46,7 +37,7 @@ const data = [
     destination: "crm",
   },
   {
-    id: 4,
+    id: 3,
     title: "Update CRM Deal Status via LinkedIn Messages",
     description:
       "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
@@ -55,16 +46,7 @@ const data = [
     destination: "crm",
   },
   {
-    id: 5,
-    title: "Update CRM Deal Status via Twitter Messages",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: twitterDeal,
-    source: "Twitter",
-    destination: "crm",
-  },
-  {
-    id: 6,
+    id: 4,
     title: "Update CRM Deal Status & Contacts via Emails",
     description:
       "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
@@ -73,21 +55,12 @@ const data = [
     destination: "crm",
   },
   {
-    id: 7,
+    id: 5,
     title: "Update CRM Deal Status & Contacts via LinkedIn Messages",
     description:
       "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
     src: linkedInBoth,
     source: "LinkedIn",
-    destination: "crm",
-  },
-  {
-    id: 8,
-    title: "Update CRM Deal Status & Contacts via Twitter Messages",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: twitterBoth,
-    source: "Twitter",
     destination: "crm",
   },
 ];

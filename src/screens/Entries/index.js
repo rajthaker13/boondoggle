@@ -210,9 +210,8 @@ function NewEntries(props) {
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
-      // const connection_id = localStorage.getItem("connection_id")
-      const connection_id = "662fcf7451a04d41e55dd0c3";
-      // const connection_id = "65f85a82aad1a3b83ecf1efd";
+      const connection_id = localStorage.getItem("connection_id");
+      // const connection_id = "662fcf7451a04d41e55dd0c3";
       const isAdmin = localStorage.getItem("isAdmin");
 
       if (isAdmin == "true") {
@@ -220,6 +219,8 @@ function NewEntries(props) {
           .from("data")
           .select()
           .eq("connection_id", connection_id);
+        console.log("CONNECTION ID", connection_id);
+        console.log("crm_data");
         setTableData(data[0].crm_data);
         setTasks(data[0].tasks);
       } else {
@@ -227,6 +228,10 @@ function NewEntries(props) {
           .from("users")
           .select()
           .eq("id", uid);
+        console.log(
+          "CONNECTION ID in the users users users users",
+          connection_id
+        );
         setTableData(data[0].crm_data);
         setTasks(data[0].tasks);
       }
@@ -280,36 +285,6 @@ function NewEntries(props) {
             <div class="grow shrink basis-0 text-gray-700 text-base font-medium font-['Inter'] leading-normal">
               Activity Log
             </div>
-            {/* <div class="h-[21px] justify-end items-center gap-2.5 flex">
-              <div class="w-[77.50px] px-2.5 py-0.5 bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 flex">
-                <div class="text-blue-700 text-xs font-normal font-['Inter']">
-                  Review
-                </div>
-                <div class="p-[0.75px] bg-blue-500 rounded-sm justify-start items-start gap-[3px] flex">
-                  <div class="w-[9px] h-[9px] relative"></div>
-                </div>
-              </div>
-              <div class="w-[91.50px] px-2.5 py-0.5 bg-white bg-opacity-90 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
-                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
-                  <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                    Approved
-                  </div>
-                </div>
-                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
-                  <div></div>
-                </div>
-              </div>
-              <div class="w-[86.50px] px-2.5 py-0.5 bg-rose-100 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
-                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
-                  <div class="text-rose-700 text-xs font-normal font-['Inter']">
-                    Rejected
-                  </div>
-                </div>
-                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
-                  <div></div>
-                </div>
-              </div>
-            </div> */}
           </div>
           <Table className="w-[100%]">
             <TableHead>
