@@ -26,193 +26,32 @@ export async function createPineconeIndexes(connection_id) {
 
     let criteria;
     // Define scoring criteria based on data type (Contact, Deal, etc.)
-    // Potential Score
-    // if (type === "Contact") {
-    //   criteria = {
-    //     fields: {
-    //       name: 30,
-    //       title: 5,
-    //       company: 25,
-    //       emails: {
-    //         email: 20,
-    //         type: 5,
-    //       },
-    //       telephones: {
-    //         telephone: 20,
-    //         type: 5,
-    //       },
-    //       deal_ids: 15,
-    //       company_ids: 15,
-    //       address: {
-    //         address1: 10,
-    //         address2: 1,
-    //         city: 10,
-    //         region: 10,
-    //         region_code: 1,
-    //         postal_code: 10,
-    //         country: 10,
-    //         country_code: 1,
-    //       },
-    //     },
-    //   };
-    // } else if (type === "Deal") {
-    //   criteria = {
-    //     fields: {
-    //       name: 20,
-    //       amount: 30,
-    //       currency: 5,
-    //       stage: 25,
-    //       source: 10,
-    //       pipeline: 15,
-    //       probability: 10,
-    //       tags: 5,
-    //       closed_at: 5,
-    //       lost_reason: 2,
-    //       won_reason: 2,
-    //     },
-    //   };
-    // } else if (type === "Company") {
-    //   criteria = {
-    //     fields: {
-    //       name: 30,
-    //       deal_ids: 15,
-    //       emails: {
-    //         email: 20,
-    //         type: 5,
-    //       },
-    //       telephones: {
-    //         telephone: 20,
-    //         type: 5,
-    //       },
-    //       websites: 10,
-    //       address: {
-    //         address1: 10,
-    //         address2: 1,
-    //         city: 10,
-    //         region: 10,
-    //         region_code: 1,
-    //         postal_code: 10,
-    //         country: 10,
-    //         country_code: 1,
-    //       },
-    //       is_active: 10,
-    //       tags: 5,
-    //       description: 10,
-    //       industry: 10,
-    //       link_urls: 5,
-    //       employees: 5,
-    //       timezone: 5,
-    //     },
-    //   };
-    // } else if (type === "Event") {
-    //   criteria = {
-    //     fields: {
-    //       type: 25,
-    //       company_ids: 20,
-    //       contact_ids: 20,
-    //       lead_ids: 20,
-    //       ...(item.type === "NOTE" && {
-    //         note: {
-    //           description: 5,
-    //           title: 5,
-    //         },
-    //       }),
-    //       ...(item.type === "MEETING" && {
-    //         meeting: {
-    //           start_at: 10,
-    //           end_at: 10,
-    //           title: 10,
-    //           description: 10,
-    //         },
-    //       }),
-    //       ...(item.type === "EMAIL" && {
-    //         email: {
-    //           from: 5,
-    //           to: 5,
-    //           cc: 3,
-    //           subject: 5,
-    //           body: 5,
-    //           attachment_file_ids: 5,
-    //         },
-    //       }),
-    //       ...(item.type === "CALL" && {
-    //         call: {
-    //           duration: 5,
-    //           description: 5,
-    //           start_at: 5,
-    //         },
-    //       }),
-    //       ...(item.type === "TASK" && {
-    //         task: {
-    //           name: 5,
-    //           status: 5,
-    //           description: 5,
-    //           due_at: 5,
-    //         },
-    //       }),
-    //     },
-    //   };
-    // } else if (type === "Lead") {
-    //   criteria = {
-    //     fields: {
-    //       name: 30,
-    //       user_id: 5,
-    //       creator_user_id: 5,
-    //       contact_id: 20,
-    //       company_id: 20,
-    //       company_name: 20,
-    //       is_active: 10,
-    //       address: {
-    //         address1: 10,
-    //         address2: 1,
-    //         city: 10,
-    //         region: 10,
-    //         region_code: 1,
-    //         postal_code: 10,
-    //         country: 10,
-    //         country_code: 1,
-    //       },
-    //       emails: {
-    //         email: 20,
-    //         type: 5,
-    //       },
-    //       telephones: {
-    //         telephone: 20,
-    //         type: 5,
-    //       },
-    //       source: 10,
-    //       status: 10,
-    //     },
-    //   };
-    // }
-    
-        
-    // Original One
+    //Potential Score
     if (type === "Contact") {
       criteria = {
         fields: {
-          name: 25,
-          title: 10,
-          company: 20,
+          name: 30,
+          title: 5,
+          company: 25,
           emails: {
-            email: 15,
+            email: 20,
             type: 5,
           },
           telephones: {
-            telephone: 15,
+            telephone: 20,
             type: 5,
           },
-          deal_ids: 10,
-          company_ids: 10,
+          deal_ids: 15,
+          company_ids: 15,
           address: {
-            address1: 5,
-            address2: 2,
-            city: 5,
-            region: 5,
-            region_code: 2,
-            postal_code: 5,
-            country: 5,
-            country_code: 2,
+            address1: 10,
+            address2: 1,
+            city: 10,
+            region: 10,
+            region_code: 1,
+            postal_code: 10,
+            country: 10,
+            country_code: 1,
           },
         },
       };
@@ -220,41 +59,41 @@ export async function createPineconeIndexes(connection_id) {
       criteria = {
         fields: {
           name: 20,
-          amount: 25,
-          currency: 10,
-          stage: 20,
+          amount: 30,
+          currency: 5,
+          stage: 25,
           source: 10,
-          pipeline: 10,
+          pipeline: 15,
           probability: 10,
           tags: 5,
-          closed_at: 2,
-          lost_reason: 1.5,
-          won_reason: 1.5,
+          closed_at: 5,
+          lost_reason: 2,
+          won_reason: 2,
         },
       };
     } else if (type === "Company") {
       criteria = {
         fields: {
-          name: 25,
-          deal_ids: 10,
+          name: 30,
+          deal_ids: 15,
           emails: {
-            email: 15,
+            email: 20,
             type: 5,
           },
           telephones: {
-            telephone: 15,
+            telephone: 20,
             type: 5,
           },
           websites: 10,
           address: {
-            address1: 5,
-            address2: 2,
-            city: 5,
-            region: 5,
-            region_code: 2,
-            postal_code: 5,
-            country: 5,
-            country_code: 2,
+            address1: 10,
+            address2: 1,
+            city: 10,
+            region: 10,
+            region_code: 1,
+            postal_code: 10,
+            country: 10,
+            country_code: 1,
           },
           is_active: 10,
           tags: 5,
@@ -280,20 +119,20 @@ export async function createPineconeIndexes(connection_id) {
           }),
           ...(item.type === "MEETING" && {
             meeting: {
-              start_at: 5,
-              end_at: 5,
-              title: 5,
-              description: 5,
+              start_at: 10,
+              end_at: 10,
+              title: 10,
+              description: 10,
             },
           }),
           ...(item.type === "EMAIL" && {
             email: {
               from: 5,
               to: 5,
-              cc: 2,
+              cc: 3,
               subject: 5,
               body: 5,
-              attachment_file_ids: 3,
+              attachment_file_ids: 5,
             },
           }),
           ...(item.type === "CALL" && {
@@ -316,29 +155,29 @@ export async function createPineconeIndexes(connection_id) {
     } else if (type === "Lead") {
       criteria = {
         fields: {
-          name: 25,
-          user_id: 10,
+          name: 30,
+          user_id: 5,
           creator_user_id: 5,
-          contact_id: 10,
-          company_id: 10,
-          company_name: 10,
+          contact_id: 20,
+          company_id: 20,
+          company_name: 20,
           is_active: 10,
           address: {
-            address1: 5,
-            address2: 2,
-            city: 5,
-            region: 5,
-            region_code: 2,
-            postal_code: 5,
-            country: 5,
-            country_code: 2,
+            address1: 10,
+            address2: 1,
+            city: 10,
+            region: 10,
+            region_code: 1,
+            postal_code: 10,
+            country: 10,
+            country_code: 1,
           },
           emails: {
-            email: 15,
+            email: 20,
             type: 5,
           },
           telephones: {
-            telephone: 15,
+            telephone: 20,
             type: 5,
           },
           source: 10,
@@ -364,7 +203,7 @@ export async function createPineconeIndexes(connection_id) {
           }
         } else {
           for (const subField of Object.keys(weight)) {
-            totalWeight += weight[subField]; 
+            totalWeight += weight[subField];
             missingFields.push(`${field}.${subField}`);
           }
         }
