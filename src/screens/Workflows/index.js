@@ -756,6 +756,8 @@ function Workflows(props) {
     const id = emailCreds.id;
     const userEmail = emailCreds.userEmail;
 
+    const connection_id = localStorage.get("connection_id")
+
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { connection_id: connection_id, user_id: id },
@@ -1081,9 +1083,9 @@ async function generateEmailCRMData(email, userEmail) {
                    if (source == "Email") { //just uncommedted all these if statements, run something with emails in workflows, leave console.log for notes
                      await uploadEmails();
                    } else if (source == "LinkedIn") {
-                     await getSessionCookie();
+                     await uploadLinkedin();
                    } else if (source == "Twitter") {
-                     await twitterContacts();
+                     await uploadTwitter();
                    }
                 }}
               >
