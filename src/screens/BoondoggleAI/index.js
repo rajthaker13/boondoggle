@@ -137,7 +137,7 @@ function BoondogggleAI(props) {
       });
 
       const dealsMatches = dealsResponse.matches;
-      
+
       const contactResponse = await ns1.query({
         topK: 20,
         vector: embedding.data[0].embedding,
@@ -276,7 +276,7 @@ function BoondogggleAI(props) {
         })
       );
       // Define retriever
-      const retriever = vectorStore.asRetriever(25);
+      const retriever = vectorStore.asRetriever(15);
       // Get context based on retriever from the fetch results
       // Functions for answer streaming
       const queryTransformingRetrieverChain = RunnableBranch.from([
@@ -311,7 +311,6 @@ function BoondogggleAI(props) {
       const aiAnswerText = document.createElement("p");
       aiAnswerText.className = "boondoggle-ai-chat-text";
       aiAnswerContainer.appendChild(aiAnswerText);
-
 
       boondoggleAiChatContent.appendChild(aiAnswerContainer);
 

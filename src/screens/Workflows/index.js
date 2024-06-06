@@ -19,12 +19,19 @@ function Workflows(props) {
     dangerouslyAllowBrowser: true,
   });
 
+  /**
+   * Uses an id variable in local storage to get twitter account credentials from Supabase
+   * @returns Information about a user's twitter account
+   */
   async function twitterCredentials() {
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db.from("users").select().eq("id", uid);
     return data[0].twitter_info;
   }
 
+  /**
+   * Gets the twitter dms of a user using their credentials and calls uploadTwitter with the data
+   */
   async function twitterContacts() {
     const twitterInfo = await twitterCredentials();
     const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
@@ -35,11 +42,24 @@ function Workflows(props) {
       },
     });
     if (data) {
-      await updateCRM(data);
+      await uploadTwitter(data);
     }
   }
 
-  async function updateCRM(userData) {
+  /**
+   * Updates CRM and database based on Twitter DMs.
+   * 
+   * Gets current CRM data then iterates through each message within the new data that it is passed.
+   * If the chat history exists, it is updated. If it doesn't exist, a message object is created and pushed to twitter_messages. 
+   * 
+   * twitter_messages (now updated) is iterated through, and for each chat history, a title, summary, to-do item, and response is 
+   * generated and saved as data objects. An array of these objects is sent to the CRM and saved.
+   * 
+   * These objects are then saved in the Supabase db.
+   * 
+   * @param userData - Twitter DM data with which the CRM is to be updated
+   */
+  async function uploadTwitter(userData) {
     const fetch_crm = await getCRMData();
 
     let admin_crm_update = fetch_crm.admin_crm_data;
@@ -53,6 +73,7 @@ function Workflows(props) {
     const meUser = userData.meUser.data.username;
     const meName = userData.meUser.data.name;
 
+    //Updates twitter_messages with new data
     await Promise.all(
       userData.messages.map(async (lead) => {
         const itemIndex = twitter_messages.findIndex(
@@ -99,7 +120,46 @@ function Workflows(props) {
     await Promise.all(
       twitter_messages.map(async (dm) => {
         // if (dm.customer != meName) {
-        const messagesString = dm.messages
+        
+        const response = await generateTwitterCRMData(dm)
+
+        const date = Date.now();
+
+        //saves title, summary, todos, and response in data objects
+        var obj = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: response.title,
+          summary: response.summary,
+          date: date,
+          source: "Twitter",
+          status: "Completed",
+        };
+        var toDoObject = {
+          id: dm.id,
+          customer: dm.customer != meName ? dm.customer : "No Response",
+          title: response.toDoTitle,
+          response: response.toDoResponse,
+          date: date,
+          source: "Twitter",
+          status: "Incomplete",
+        };
+        admin_crm_update.push(obj);
+        user_crm_update.push(obj);
+        new_crm_data.push(obj);
+        admin_to_dos.push(toDoObject);
+        user_to_dos.push(toDoObject);
+        // }
+      })
+    );
+
+    /**
+     * Generates title, summary, to-do item, response for each twitter chat history
+     * @param dm An instance of a Twitter chat
+     * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+     */
+    async function generateTwitterCRMData(dm) {
+      const messagesString = dm.messages
           .map(
             (message) =>
               `${message.name} (${message.username}): ${message.text}`
@@ -149,40 +209,24 @@ function Workflows(props) {
         });
 
         const toDoResponse = responseCompletion.choices[0].message.content;
-        const date = Date.now();
-        var obj = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: title,
+
+        return {
+          title: titleCompletion,
           summary: summary,
-          date: date,
-          source: "Twitter",
-          status: "Completed",
+          toDoTitle: toDoTitle,
+          toDoResponse: toDoResponse
         };
-        var toDoObject = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: toDoTitle,
-          response: toDoResponse,
-          date: date,
-          source: "Twitter",
-          status: "Incomplete",
-        };
-        admin_crm_update.push(obj);
-        user_crm_update.push(obj);
-        new_crm_data.push(obj);
-        admin_to_dos.push(toDoObject);
-        user_to_dos.push(toDoObject);
-        // }
-      })
-    );
+    }
+
 
     const type_crm = localStorage.getItem("crmType");
+    //Updates the CRM
     await sendToCRM(new_crm_data, "Twitter");
 
     const new_connection_id = localStorage.getItem("connection_id");
     const uid = localStorage.getItem("uid");
 
+    //Updates Supabase
     await props.db
       .from("data")
       .update({
@@ -207,6 +251,10 @@ function Workflows(props) {
     window.history.replaceState({}, document.title, cleanUrl);
   }
 
+  /**
+   * captures the OAuth verifier from the URL, and retrieves stored OAuth tokens from localStorage. Calls Supabase function to fetch Twitter DMs,
+   * if successful, calls uploadTwitter() to update the CRM with the fetched data.
+   */
   async function captureOauthVerifier() {
     setIsLoading(true);
     const urlParams = new URLSearchParams(window.location.search);
@@ -219,10 +267,14 @@ function Workflows(props) {
       body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
     });
     if (data) {
-      await updateCRM(data);
+      await uploadTwitter(data);
     }
   }
 
+  /**
+   * Generates a unique id based on time+random num.
+   * @returns 10 digit unique ID string
+   */
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
     const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
@@ -230,6 +282,10 @@ function Workflows(props) {
     return uniqueId; // Extract first 10 characters to ensure 10-digit length
   }
 
+  /**
+   * Gets saved CRM data from Supabase based on the uid and returns it as an object
+   * @returns An object containing the CRM data as well as to-do tasks for the user
+   */
   async function getUserCRMData() {
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db.from("users").select().eq("id", uid);
@@ -239,6 +295,11 @@ function Workflows(props) {
     };
   }
 
+  /**
+   * Queries Unified for the CRM data of a particular customer
+   * @param {JSON} options parameters for the Axios request to Unified API, including customer name
+   * @returns Reponse from Unified containg CRM data for a particular customer
+   */
   async function searchCRMforContact(options) {
     try {
       // Attempt the request
@@ -256,9 +317,16 @@ function Workflows(props) {
     }
   }
 
+  /**
+   * For each new data object, the CRM is queried using Unified for its particular contact. 
+   * A Supabase function is called to update the CRM if the contact exists, if not, a Supabase function creates a new contact in the CRM.
+   * @param new_crm_data - an array of data objects
+   * @param {string} source - what 3rd party the data came from
+   */
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
 
+    //iterates through all new data objects
     await Promise.all(
       new_crm_data.map(async (update) => {
         if (
@@ -301,6 +369,8 @@ function Workflows(props) {
             //   await new Promise((resolve) => setTimeout(resolve, 2000));
             //   results = await axios.request(options);
             // }
+
+            //queries for CRM data of a particular contact
             const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
 
@@ -314,7 +384,7 @@ function Workflows(props) {
             };
 
             let idResults;
-
+            //queries for ID  of a particular contact
             try {
               idResults = await axios.request(idOptions);
             } catch {
@@ -323,6 +393,7 @@ function Workflows(props) {
             }
             const user_crm_id = idResults.data[0].id;
 
+            //if contanct exists, updates the contact in the CRM
             if (current_crm != undefined) {
               const event = {
                 id: current_crm.id,
@@ -344,7 +415,7 @@ function Workflows(props) {
                   body: { connection_id: connection_id, event: event },
                 }
               );
-            } else {
+            } else { //if contact does not exist, creates contact in the CRM
               let contact;
               if (source == "Twitter") {
                 contact = {
@@ -385,6 +456,10 @@ function Workflows(props) {
     );
   }
 
+  /**
+   * Gets saved CRM data from Supabase based on the connection_id and returns it as an object
+   * @returns an object containing fields for all relevant CRM data
+   */
   async function getCRMData() {
     const connection_id = localStorage.getItem("connection_id");
     const { data, error } = await props.db
@@ -423,7 +498,17 @@ function Workflows(props) {
     };
   }
 
-  async function getSessionCookie() {
+  /**
+   * Updates CRM and database based on Linkedin messages.
+   * 
+   * Fetches Linkedin session cookie and if successful, calls Supabase function to scrape Linkedin messages. 
+   * 
+   * Iterates through chat histories and for each chat history, a title, summary, to-do item, and response is 
+   * generated and saved as data objects. An array of these objects is sent to the CRM and saved.
+   * 
+   * These objects are then saved in the Supabase db.
+   */
+  async function uploadLinkedin() {
     // Extension ID
     setIsLoading(true);
 
@@ -437,6 +522,7 @@ function Workflows(props) {
     };
 
     try {
+      //Fetches Linkedin cookie
       window.chrome.runtime.sendMessage(
         extensionId,
         message,
@@ -460,92 +546,24 @@ function Workflows(props) {
             let type = fetch_crm.type;
             let baseID = fetch_crm.baseID;
             let fieldOptions = fetch_crm.fieldOptions;
+
+            //Generates title, summary, to-do item, response for each chat history
             await Promise.all(
               messageArray.map(async (messageData) => {
                 const customer = messageData.name;
-                const messagesString = messageData.messages
-                  .map(
-                    (messageObject) =>
-                      `${messageObject.sender}: ${messageObject.text}`
-                  )
-                  .join("\n");
-                const titleCompletion = await openai.chat.completions.create({
-                  messages: [
-                    {
-                      role: "system",
-                      content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
-                    },
-                    {
-                      role: "user",
-                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                    },
-                  ],
-                  model: "gpt-4",
-                });
-                const title = titleCompletion.choices[0].message.content;
-                const summaryCompletion = await openai.chat.completions.create({
-                  messages: [
-                    {
-                      role: "system",
-                      content:
-                        "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                    },
-                    {
-                      role: "user",
-                      content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                    },
-                  ],
-                  model: "gpt-4",
-                });
-                const summary = summaryCompletion.choices[0].message.content;
+                const response = await generateLinkedinCRMData(messageData)
 
-                const toDoTitleCompletion =
-                  await openai.chat.completions.create({
-                    messages: [
-                      {
-                        role: "system",
-                        content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                      },
-                      {
-                        role: "user",
-                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                      },
-                    ],
-                    model: "gpt-4",
-                  });
-                const toDoTitle =
-                  toDoTitleCompletion.choices[0].message.content;
-
-                const responseCompletion = await openai.chat.completions.create(
-                  {
-                    messages: [
-                      {
-                        role: "system",
-                        content:
-                          "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-                      },
-                      {
-                        role: "user",
-                        content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-                      },
-                    ],
-                    model: "gpt-4",
-                  }
-                );
-                const toDoResponse =
-                  responseCompletion.choices[0].message.content;
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
 
                 console.log("MessageData", messageData);
 
+                //saves title, summary, todos, and response in data objects
                 var obj = {
                   id: uniqueId,
                   customer: customer,
-                  title: title,
-                  summary: summary,
+                  title: response.title,
+                  summary: response.summary,
                   date: date,
                   url: messageData.url,
                   source: "LinkedIn",
@@ -555,8 +573,8 @@ function Workflows(props) {
                 var toDoObject = {
                   id: uniqueId,
                   customer: customer,
-                  title: toDoTitle,
-                  response: toDoResponse,
+                  title: response.toDoTitle,
+                  response: response.toDoResponse,
                   date: date,
                   source: "LinkedIn",
                   status: "Incomplete",
@@ -569,10 +587,13 @@ function Workflows(props) {
               })
             );
             const type_crm = localStorage.getItem("crmType");
+            //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
             const new_connection_id = localStorage.getItem("connection_id");
             const uid = localStorage.getItem("uid");
+
+            //updates Supabase
             await props.db
               .from("data")
               .update({
@@ -606,6 +627,99 @@ function Workflows(props) {
     }
   }
 
+  /**
+   * Generates title, summary, to-do item, and reponse for a Linkedin message
+   * @param messageData - A Linkedin chat history
+   * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+   */
+  async function generateLinkedinCRMData(messageData) {
+    const customer = messageData.name;
+    const messagesString = messageData.messages
+      .map(
+        (messageObject) =>
+          `${messageObject.sender}: ${messageObject.text}`
+      )
+      .join("\n");
+    const titleCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
+        },
+        {
+          role: "user",
+          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+        },
+      ],
+      model: "gpt-4",
+    });
+    const title = titleCompletion.choices[0].message.content;
+    const summaryCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+        },
+        {
+          role: "user",
+          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+        },
+      ],
+      model: "gpt-4",
+    });
+    const summary = summaryCompletion.choices[0].message.content;
+
+    const toDoTitleCompletion =
+      await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          },
+          {
+            role: "user",
+            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          },
+        ],
+        model: "gpt-4",
+      });
+    const toDoTitle =
+      toDoTitleCompletion.choices[0].message.content;
+
+    const responseCompletion = await openai.chat.completions.create(
+      {
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          },
+          {
+            role: "user",
+            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          },
+        ],
+        model: "gpt-4",
+      }
+    );
+    const toDoResponse =
+      responseCompletion.choices[0].message.content;
+
+    return {
+      title: title,
+      summary: summary,
+      toDoTitle: toDoTitle,
+      toDoResponse: toDoResponse
+    };
+  }
+
+  /**
+   * Gets email credentials based on the uid
+   * @returns An object containing the email and its id
+   */
   async function getEmailCredentials() {
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db
@@ -619,6 +733,14 @@ function Workflows(props) {
     };
   }
 
+  /**
+   * Uploads emails, processes them, and updates the CRM with relevant information.
+   * 
+   * Fetches email credentials and retrieves emails from the server using Nylas. Iterates through all emails, filtering out undesirable emails.
+   * If an email exists in the CRM, it is updated, if not, it is created and added to new_emails.
+   * 
+   * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
+   */
   async function uploadEmails() {
     setIsLoading(true);
     const currentUrl = window.location.href;
@@ -629,6 +751,7 @@ function Workflows(props) {
     const id = emailCreds.id;
     const userEmail = emailCreds.userEmail;
 
+    //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { identifier: id, source: urlWithoutParams },
     });
@@ -637,6 +760,8 @@ function Workflows(props) {
 
     const emails = data.data.data;
 
+
+    //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
 
     let admin_crm_update = fetch_crm.admin_crm_data;
@@ -652,275 +777,226 @@ function Workflows(props) {
 
     let new_emails = [];
 
+    //Filters and processes each email
     await Promise.all(
       emails.map(async (email) => {
-        if (
-          email.latestDraftOrMessage.from[0].name != "" &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("verify") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("verification") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("alert") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("confirmation") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("invitation") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("activation") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("webinar") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("unsubscribe") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("confirmation") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("considering") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("tax") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("taxes") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("notification") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("demo") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("hesitate") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("invitation") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("registration") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("contact us") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("faq") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("luma") &&
-          !email.latestDraftOrMessage.body.toLowerCase().includes("receipt") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("automation") &&
-          !email.latestDraftOrMessage.body
-            .toLowerCase()
-            .includes("automated") &&
-          email.folders[0] != "DRAFT"
-        ) {
+        if (shouldProcessEmail(email)) {
           const fromIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+              (item) => item.customer === email.latestDraftOrMessage.from[0].name
           );
-
           const toIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+              (item) => item.customer === email.latestDraftOrMessage.to[0].name
           );
 
-          let status = "Completed";
-
-          if (fromIndex != -1) {
-            new_emails[fromIndex].snippet = [
-              ...new_emails[fromIndex].snippet,
-              {
-                message: email.snippet,
-                sender: email.latestDraftOrMessage?.from[0]?.name
-                  ? email.latestDraftOrMessage?.from[0]?.name
-                  : email.latestDraftOrMessage?.from[0]?.email,
-              },
-            ];
-          } else if (toIndex != -1) {
-            new_emails[toIndex].snippet = [
-              ...new_emails[toIndex].snippet,
-              {
-                message: email.snippet,
-                sender: email.latestDraftOrMessage?.from[0]?.name
-                  ? email.latestDraftOrMessage?.from[0]?.name
-                  : email.latestDraftOrMessage?.from[0]?.email,
-              },
-            ];
+          if (fromIndex !== -1 || toIndex !== -1) {
+              updateExistingEmail(new_emails, fromIndex, toIndex, email);
           } else {
-            if (email.latestDraftOrMessage.from[0]?.email == userEmail) {
-              var obj = {
-                id: email.id,
-                customer: email.latestDraftOrMessage?.to[0]?.name
-                  ? email.latestDraftOrMessage?.to[0]?.name
-                  : email.latestDraftOrMessage?.to[0]?.email,
-                email: email.latestDraftOrMessage.to[0].email,
-                data: email,
-                snippet: [
-                  {
-                    message: email.snippet,
-                    sender: email.latestDraftOrMessage?.from[0]?.name
-                      ? email.latestDraftOrMessage?.from[0]?.name
-                      : email.latestDraftOrMessage?.from[0]?.email,
-                  },
-                ],
-                participants: email.participants,
-                type: "OUTBOUND",
-                status: status,
-              };
-
-              new_emails.push(obj);
-            } else {
-              var obj = {
-                id: email.id,
-                customer: email.latestDraftOrMessage?.from[0]?.name
-                  ? email.latestDraftOrMessage?.from[0]?.name
-                  : email.latestDraftOrMessage?.from[0]?.email,
-                email: email.latestDraftOrMessage.from[0].email,
-                data: email,
-                snippet: [
-                  {
-                    message: email.snippet,
-                    sender: email.latestDraftOrMessage?.from[0]?.name
-                      ? email.latestDraftOrMessage?.from[0]?.name
-                      : email.latestDraftOrMessage?.from[0]?.email,
-                  },
-                ],
-                participants: email.participants,
-                type: "INBOUND",
-                status: status,
-              };
-
-              new_emails.push(obj);
-            }
+              createNewEmail(new_emails, email, userEmail);
           }
         }
       })
     );
 
+    // Generate CRM entries for new emails
     await Promise.all(
-      new_emails.map(async (email) => {
-        if (email.customer) {
-          const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
-          const subject = email.data.subject;
+        new_emails.map(async (email) => {
+            if (email.customer) {
+                const { title, summary, toDoTitle, toDoResponse } = await generateEmailCRMData(email, userEmail);
+                const date = Date.now();
 
-          const snippetString = email.snippet
-            .map((message) => `${message.sender}: ${message.message}`)
-            .join("\n");
+                const obj = {
+                    id: email.id,
+                    customer: email.customer,
+                    email: email.email,
+                    title: title,
+                    summary: summary,
+                    date: date,
+                    source: "Email",
+                    status: email.status,
+                };
 
-          const participantsString = email.participants
-            .map((user) => {
-              if (user.name && user.name.trim() !== "") {
-                return `${user.name}: ${user.email}`;
-              } else {
-                return user.email;
-              }
-            })
-            .join("\n");
+                const toDoObject = {
+                    id: email.id,
+                    customer: email.customer,
+                    title: toDoTitle,
+                    response: toDoResponse,
+                    date: date,
+                    type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
+                    source: "Email",
+                    status: "Incomplete",
+                    emailStatus: email.status,
+                };
 
-          const emailContext = `You are an automated CRM entry assistant. I have an conversation sent from ${from} with these participants ${participantsString}. This is an array containing the content of the conversaton: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context you are the user associated with ${userEmail}.`;
-
-          const titleCompletion = await openai.chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: `${emailContext} Give a short title that captures what this email thread was about.`,
-              },
-            ],
-            model: "gpt-4",
-          });
-          const title = titleCompletion.choices[0].message.content;
-          const summaryCompletion = await openai.chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
-              },
-            ],
-            model: "gpt-4",
-          });
-          const summary = summaryCompletion.choices[0].message.content;
-
-          const date = Date.now();
-
-          var obj = {
-            id: email.id,
-            customer: email.customer,
-            email: email.email,
-            title: title,
-            summary: summary,
-            date: date,
-            source: "Email",
-            status: email.status,
-          };
-
-          admin_crm_update.push(obj);
-          user_crm_update.push(obj);
-          new_crm_data.push(obj);
-
-          const toDoTitleCompletion = await openai.chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.`,
-              },
-            ],
-            model: "gpt-4",
-          });
-
-          const toDoTitle = toDoTitleCompletion.choices[0].message.content;
-
-          let responseType;
-          if (email.type == "OUTBOUND") {
-            responseType = "Follow-Up";
-          } else {
-            responseType = "Response";
-          }
-
-          const responseCompletion = await openai.chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
-              },
-            ],
-            model: "gpt-4",
-          });
-
-          const toDoResponse = responseCompletion.choices[0].message.content;
-
-          var toDoObject = {
-            id: email.id,
-            customer: email.customer,
-            title: toDoTitle,
-            response: toDoResponse,
-            date: date,
-            type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
-            source: "Email",
-            status: "Incomplete",
-            emailStatus: email.status,
-          };
-          admin_to_dos.push(toDoObject);
-          user_to_dos.push(toDoObject);
-        }
-      })
+                admin_crm_update.push(obj);
+                user_crm_update.push(obj);
+                new_crm_data.push(obj);
+                admin_to_dos.push(toDoObject);
+                user_to_dos.push(toDoObject);
+            }
+        })
     );
 
+    // Update CRM with new data
     await props.db
-      .from("data")
-      .update({
-        crm_data: admin_crm_update,
-        tasks: admin_to_dos,
-      })
-      .eq("connection_id", connection_id);
+        .from("data")
+        .update({
+            crm_data: admin_crm_update,
+            tasks: admin_to_dos,
+        })
+        .eq("connection_id", connection_id);
+
     const uid = localStorage.getItem("uid");
+
     await props.db
-      .from("users")
-      .update({
-        crm_data: user_crm_update,
-        tasks: user_to_dos,
-        emailLinked: true,
-      })
-      .eq("id", uid);
+        .from("users")
+        .update({
+            crm_data: user_crm_update,
+            tasks: user_to_dos,
+            emailLinked: true,
+        })
+        .eq("id", uid);
 
     await sendToCRM(new_crm_data, "Email");
 
+    // End loading indicator
     setIsLoading(false);
 
+    // Clean up URL by removing query parameters
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
   }
+
+  /**
+   * Checks if an email should be processed based on certain criteria.
+   * @param {Object} email - The email to check.
+   * @returns {boolean} - Whether the email should be processed.
+   */
+  function shouldProcessEmail(email) {
+    const body = email.latestDraftOrMessage.body.toLowerCase();
+    return (
+        email.latestDraftOrMessage.from[0].name !== "" &&
+        !body.includes("verify") &&
+        !body.includes("verification") &&
+        !body.includes("alert") &&
+        !body.includes("confirmation") &&
+        !body.includes("invitation") &&
+        !body.includes("webinar") &&
+        !body.includes("activation") &&
+        !body.includes("unsubscribe") &&
+        !body.includes("considering") &&
+        !body.includes("tax") &&
+        !body.includes("taxes") &&
+        !body.includes("notification") &&
+        !body.includes("demo") &&
+        !body.includes("hesitate") &&
+        !body.includes("registration") &&
+        !body.includes("contact us") &&
+        !body.includes("faq") &&
+        !body.includes("luma") &&
+        !body.includes("receipt") &&
+        !body.includes("automation") &&
+        !body.includes("automated") &&
+        email.folders[0] !== "DRAFT"
+    );
+  }
+
+  /**
+   * Updates an existing email entry in the new_emails array.
+   * @param new_emails - The array of new emails.
+   * @param fromIndex - The index of the email with the matching 'from' field.
+   * @param toIndex - The index of the email with the matching 'to' field.
+   * @param email - The email data to update.
+   */
+  function updateExistingEmail(new_emails, fromIndex, toIndex, email) {
+    const sender = email.latestDraftOrMessage.from[0].name
+        ? email.latestDraftOrMessage.from[0].name
+        : email.latestDraftOrMessage.from[0].email;
+
+    if (fromIndex !== -1) {
+        new_emails[fromIndex].snippet.push({ message: email.snippet, sender });
+    } else if (toIndex !== -1) {
+        new_emails[toIndex].snippet.push({ message: email.snippet, sender });
+    }
+  }
+
+  /**
+  * Creates a new email entry in the new_emails array.
+  * @param new_emails - The array of new emails.
+  * @param email - The email data to add.
+  * @param userEmail - The user's email address.
+  */
+  function createNewEmail(new_emails, email, userEmail) {
+    const sender = email.latestDraftOrMessage.from[0].name
+        ? email.latestDraftOrMessage.from[0].name
+        : email.latestDraftOrMessage.from[0].email;
+
+    const obj = {
+        id: email.id,
+        customer: email.latestDraftOrMessage.from[0].email === userEmail
+            ? email.latestDraftOrMessage.to[0].name || email.latestDraftOrMessage.to[0].email
+            : email.latestDraftOrMessage.from[0].name || email.latestDraftOrMessage.from[0].email,
+        email: email.latestDraftOrMessage.from[0].email === userEmail
+            ? email.latestDraftOrMessage.to[0].email
+            : email.latestDraftOrMessage.from[0].email,
+        data: email,
+        snippet: [{ message: email.snippet, sender }],
+        participants: email.participants,
+        type: email.latestDraftOrMessage.from[0].email === userEmail ? "OUTBOUND" : "INBOUND",
+        status: "Completed",
+    };
+
+    new_emails.push(obj);
+  }
+
+  /**
+ * Generates title, summary, to-do item, and response for an email.
+ * @param {Object} email - The email data.
+ * @param {string} userEmail - The user's email address.
+ * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+ */
+async function generateEmailCRMData(email, userEmail) {
+  const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
+  const subject = email.data.subject;
+
+  const snippetString = email.snippet
+      .map((message) => `${message.sender}: ${message.message}`)
+      .join("\n");
+
+  const participantsString = email.participants
+      .map((user) => user.name ? `${user.name}: ${user.email}` : user.email)
+      .join("\n");
+
+  const emailContext = `You are an automated CRM entry assistant. I have a conversation sent from ${from} with these participants: ${participantsString}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context, you are the user associated with ${userEmail}.`;
+
+  const titleCompletion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: `${emailContext} Give a short title that captures what this email thread was about.` }],
+      model: "gpt-4",
+  });
+
+  const summaryCompletion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: `${emailContext} Generate me a summary of this email thread in a few short sentences.` }],
+      model: "gpt-4",
+  });
+
+  const toDoTitleCompletion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.` }],
+      model: "gpt-4",
+  });
+
+  const responseType = email.type === "OUTBOUND" ? "Follow-Up" : "Response";
+
+  const responseCompletion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.` }],
+      model: "gpt-4",
+  });
+
+  return {
+      title: titleCompletion.choices[0].message.content,
+      summary: summaryCompletion.choices[0].message.content,
+      toDoTitle: toDoTitleCompletion.choices[0].message.content,
+      toDoResponse: responseCompletion.choices[0].message.content,
+  };
+}
 
   async function linkWithTwitter() {
     const url = window.location.href;
