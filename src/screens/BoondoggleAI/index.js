@@ -272,7 +272,7 @@ function BoondogggleAI(props) {
         })
       );
 
-      const retriever = vectorStore.asRetriever(25);
+      const retriever = vectorStore.asRetriever(15);
 
       const queryTransformingRetrieverChain = RunnableBranch.from([
         [
