@@ -19,7 +19,7 @@ export default function App() {
     <Router>
       <SpeedInsights />
       <Routes>
-        <Route path="/" element={<Dashboard db={supabase} />} />
+        <Route path="/" element={<Landing db={supabase} />} />
         <Route
           path="/signup"
           element={<Login db={supabase} isNewAccount={true} />}

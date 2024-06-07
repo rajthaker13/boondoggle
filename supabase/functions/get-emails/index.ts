@@ -11,32 +11,50 @@ Deno.serve(async (req) => {
 
   console.log("This is the connection_id", connection_id)
 
-  const url = `https://api.unified.to/messaging/${user_id}/message`;
-  const options = {
+  const channelUrl = `https://api.unified.to/messaging/${user_id}/channel`;
+  const channelOptions = {
     method: "GET",
     headers: {
-      'Authorization':
-      "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-    },
-    params: {
-      limit: 50
+      authorization: "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+    }
+  }
+  const emailUrl = `https://api.unified.to/messaging/${user_id}/message?limit=50`;
+  const emailOptions = {
+    method: "GET",
+    headers: {
+      authorization: "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
     }
   }
 
-  let results;
+  let channelResults;
 
   try {
-    results = await fetch(url, options);
-  
+    channelResults = await fetch(channelUrl, channelOptions);
   }
   catch {
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    results = await fetch(url, options);
+    channelResults = await fetch(channelUrl, channelOptions);
   }
 
-  const response = await results.json()
+  const channelResponse = await channelResults.json()
+  console.log(channelResponse)
+
+  let emailResults;
+
+  try {
+    emailResults = await fetch(emailUrl, emailOptions);
+  }
+  catch {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    emailResults = await fetch(emailUrl, emailOptions);
+  }
+
+  const emailResponse = await emailResults.json()
+  console.log(emailResponse)
+  
   const data = {
-    data: response
+    channelData: channelResponse,
+    emailData: emailResponse
   }
 
   console.log("This is the response")
@@ -44,9 +62,7 @@ Deno.serve(async (req) => {
 
   return new Response(
     JSON.stringify(data),
-    { headers: {...corsHeaders },
-      status: 200
-  })
+    { headers: {...corsHeaders, "Content-Type": "application/json" }, })
 })
 
 /* To invoke locally:

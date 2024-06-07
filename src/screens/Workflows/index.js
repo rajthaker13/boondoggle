@@ -755,20 +755,25 @@ function Workflows(props) {
 
     const emailCreds = await getEmailCredentials();
     const id = emailCreds.id;
-    const userEmail = emailCreds.userEmail;
 
     const connection_id = localStorage.getItem("connection_id")
 
     //fetches emails
-    const { emails, error } = await props.db.functions.invoke("get-emails", {
-      body: { connection_id: connection_id, user_id: id },
-      //body: { identifier: id, source: urlWithoutParams },
+    const { data, error } = await props.db.functions.invoke("get-emails", {
+      body: { connection_id: connection_id, user_id: id }
     });
 
     console.log("This is the email data")
-    console.log(emails) //showing up as null even though the request is working, break point
+    console.log(data) 
     console.log("This is the error")
     console.log(error)
+
+    let channels = data.channelData
+    let emails = data.emailData
+    console.log("emails: ", typeof(emails))
+    console.log(emails)
+
+    let userEmail = channels[0].members[0].email
 
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
@@ -790,10 +795,10 @@ function Workflows(props) {
     for(const email of emails) {
       if (shouldProcessEmail(email)) {
         const fromIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.from[0].name
+            (item) => item.customer === email.author_member.name
         );
         const toIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.to[0].name
+            (item) => item.customer === email.destination_members[0].name
         );
 
         if (fromIndex !== -1 || toIndex !== -1) {
@@ -803,22 +808,6 @@ function Workflows(props) {
         }
       }
     }
-    /*emails.map(async (email) => {
-      if (shouldProcessEmail(email)) {
-        const fromIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.from[0].name
-        );
-        const toIndex = new_emails.findIndex(
-            (item) => item.customer === email.latestDraftOrMessage.to[0].name
-        );
-
-        if (fromIndex !== -1 || toIndex !== -1) {
-            updateExistingEmail(new_emails, fromIndex, toIndex, email);
-        } else {
-            createNewEmail(new_emails, email, userEmail);
-        }
-      }
-    })*/
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -895,9 +884,10 @@ function Workflows(props) {
    * @returns {boolean} - Whether the email should be processed.
    */
   function shouldProcessEmail(email) {
-    const body = email.latestDraftOrMessage.body.toLowerCase();
+    const body = email.message.toLowerCase();
+    const author = email.author_member.name;
     return (
-        email.latestDraftOrMessage.from[0].name !== "" &&
+        author !== "" &&
         !body.includes("verify") &&
         !body.includes("verification") &&
         !body.includes("alert") &&
@@ -919,7 +909,7 @@ function Workflows(props) {
         !body.includes("receipt") &&
         !body.includes("automation") &&
         !body.includes("automated") &&
-        email.folders[0] !== "DRAFT"
+        email.channel_id !== "DRAFT"
     );
   }
 
@@ -931,14 +921,14 @@ function Workflows(props) {
    * @param email - The email data to update.
    */
   function updateExistingEmail(new_emails, fromIndex, toIndex, email) {
-    const sender = email.latestDraftOrMessage.from[0].name
-        ? email.latestDraftOrMessage.from[0].name
-        : email.latestDraftOrMessage.from[0].email;
+    const sender = email.author_member.name
+        ? email.author_member.name
+        : email.author_member.email;
 
     if (fromIndex !== -1) {
-        new_emails[fromIndex].snippet.push({ message: email.snippet, sender });
+        new_emails[fromIndex].snippet.push({ message: email.message, sender });
     } else if (toIndex !== -1) {
-        new_emails[toIndex].snippet.push({ message: email.snippet, sender });
+        new_emails[toIndex].snippet.push({ message: email.message, sender });
     }
   }
 
@@ -949,26 +939,62 @@ function Workflows(props) {
   * @param userEmail - The user's email address.
   */
   function createNewEmail(new_emails, email, userEmail) {
-    const sender = email.latestDraftOrMessage.from[0].name
-        ? email.latestDraftOrMessage.from[0].name
-        : email.latestDraftOrMessage.from[0].email;
+    const sender = email.author_member.name
+    ? email.author_member.name
+    : email.author_member.email;
+   
 
-    const obj = {
+    if (email.author_member.email == userEmail) {
+      var obj = {
         id: email.id,
-        customer: email.latestDraftOrMessage.from[0].email === userEmail
-            ? email.latestDraftOrMessage.to[0].name || email.latestDraftOrMessage.to[0].email
-            : email.latestDraftOrMessage.from[0].name || email.latestDraftOrMessage.from[0].email,
-        email: email.latestDraftOrMessage.from[0].email === userEmail
-            ? email.latestDraftOrMessage.to[0].email
-            : email.latestDraftOrMessage.from[0].email,
+        customer: email.destination_members[0].name
+          ? email.destination_members[0].name
+          : email.destination_members[0].email,
+        email: email.destination_members[0].email,
         data: email,
-        snippet: [{ message: email.snippet, sender }],
-        participants: email.participants,
-        type: email.latestDraftOrMessage.from[0].email === userEmail ? "OUTBOUND" : "INBOUND",
+        snippet: [
+          {
+            message: email.message,
+            sender: sender
+          },
+        ],
+        participants: [
+          ...(email.mentioned_members || []),
+          ...(email.hidden_members || []),
+          ...(email.destination_members || []),
+          email.author_member
+        ],
+        type: "OUTBOUND",
         status: "Completed",
-    };
+      };
 
-    new_emails.push(obj);
+      new_emails.push(obj);
+    } else {
+      var obj = {
+        id: email.id,
+        customer: email.author_member.name
+          ? email.author_member.name
+          : email.author_member.email,
+        email: email.author_member.email,
+        data: email,
+        snippet: [
+          {
+            message: email.message,
+            sender: sender
+          },
+        ],
+        participants: [
+          ...(email.mentioned_members || []),
+          ...(email.hidden_members || []),
+          ...(email.destination_members || []),
+          email.author_member
+        ],
+        type: "INBOUND",
+        status: "Completed",
+      };
+
+      new_emails.push(obj);
+    }
   }
 
   /**
@@ -978,7 +1004,7 @@ function Workflows(props) {
  * @returns An object containing title, summary, toDoTitle, and toDoResponse.
  */
 async function generateEmailCRMData(email, userEmail) {
-  const from = `${email.data.latestDraftOrMessage.from[0].name} (${email.data.latestDraftOrMessage.from[0].email})`;
+  const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
   const subject = email.data.subject;
 
   const snippetString = email.snippet

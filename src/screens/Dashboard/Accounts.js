@@ -26,26 +26,6 @@ function Accounts(props) {
   const [emailConnected, setEmailConnected] = useState(false);
 
   useEffect(() => {
-
-    /**
-     * Extracts the id from URL parameters and saves it to db
-     */ 
-    async function getIdFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has("id")) {
-        const uid = localStorage.getItem("uid");
-        await props.db
-        .from("users")
-        .update({
-            email_grant_id: urlParams.get("id"),
-            emailLinked: true
-        })
-        .eq("id", uid);
-
-        setEmailConnected(true);
-      }
-    };
-
     /**
      * Fetches enrichment integrations from the API and updates state.
      */
@@ -62,7 +42,7 @@ function Accounts(props) {
       //iterates over all integrations
       await Promise.all(
         integrations.map(async (integration) => {
-          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}`;
+          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
           const urlResponse = await axios.get(url);
           //constructs and saves obj containing integration data + auth URL
           integrationData.push({
@@ -105,7 +85,7 @@ function Accounts(props) {
       //iterates over all integrations
       await Promise.all(
         integrations.map(async (integration) => {
-          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}`;
+          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
           const urlResponse = await axios.get(url);
           //constructs and saves obj containing integration data + auth URL
           integrationData.push({
@@ -123,17 +103,18 @@ function Accounts(props) {
       setAvailableEmail(integrationData);
     }
 
+    /**
+     * Check if email is connected from database
+     */
+    async function checkEmailConnected() {
+      const { data, error } = await props.db.from("users").select().eq("id", localStorage.getItem("uid"));
+      let dbEmailConnected = data[0].emailLinked
+      setEmailConnected(dbEmailConnected)
+    }
+
     getEmailIntegrations();
     getEnrichmentIntegrations();
-    getIdFromUrl();
   }, []);
-
-  // Function to handle the button click event
-  const handleConnectButton = (integration) => {
-    if(integration.url != null) {
-      window.open(integration.url, "_self");
-    }
-  };
 
   return (
     <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
@@ -177,6 +158,8 @@ function Accounts(props) {
                 <SelectItem 
                   onClick={() => {
                     setSelectedEmail(integration)
+                    window.open(integration.url, "_self");
+                    localStorage.setItem("selectedIntegrationCat", integration.categories[0])
                   }}
                 >
                   {imageElement}
@@ -185,7 +168,7 @@ function Accounts(props) {
               );
             })}
           </Select>
-          <Button variant="primary" className="w-[100%] mt-[5%]" onClick={handleConnectButton(selectedEmail)}>
+          <Button variant="primary" className="w-[100%] mt-[5%]">
             Connect Email
           </Button>
         </AccordionBody>
@@ -289,6 +272,8 @@ function Accounts(props) {
                 <SelectItem 
                   onClick={() => {
                     setSelectedEnrichment(integration)
+                    window.open(integration.url, "_self");
+                    localStorage.setItem("selectedIntegrationCat", integration.categories[0])
                   }}
                 >
                   {imageElement}
@@ -297,7 +282,7 @@ function Accounts(props) {
               );
             })}
           </Select>
-          <Button variant="primary" className="w-[100%] mt-[5%]" onClick={handleConnectButton(selectedEnrichment)}>
+          <Button variant="primary" className="w-[100%] mt-[5%]">
             Connect Enrichment
           </Button>
         </AccordionBody>

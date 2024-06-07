@@ -50,47 +50,66 @@ function Dashboard(props) {
      * user details, and updates dashboard state with the retrieved data.
      */
     async function storeData() {
-      setIsLoading(true);
-      const urlParams = new URLSearchParams(window.location.search);
-      const connection_id = urlParams.get("id");
+      const integrationCategory = localStorage.getItem("selectedIntegrationCat");
+      if(integrationCategory == "crm") {
+        setIsLoading(true);
+        const urlParams = new URLSearchParams(window.location.search);
+        const connection_id = urlParams.get("id");
 
-      //retrieve the CRM scan score and the array of issues
-      const scanResult = await createPineconeIndexes(connection_id);
-      const newScore = scanResult.score;
-      const issuesArray = scanResult.issuesArray;
+        //retrieve the CRM scan score and the array of issues
+        const scanResult = await createPineconeIndexes(connection_id);
+        const newScore = scanResult.score;
+        const issuesArray = scanResult.issuesArray;
 
-      await props.db.from("data").insert({
-        connection_id: connection_id,
-        crm_data: [],
-        twitter_messages: [],
-        twitterLinked: false,
-        type: "crm",
-      });
+        await props.db.from("data").insert({
+          connection_id: connection_id,
+          crm_data: [],
+          twitter_messages: [],
+          twitterLinked: false,
+          type: "crm",
+        });
 
-      const uid = localStorage.getItem("uid");
+        const uid = localStorage.getItem("uid");
 
-      await props.db.from("users").insert({
-        id: uid,
-        crm_id: connection_id,
-        teamMembers: [
-          {
-            email: localStorage.getItem("email"),
-            uid: localStorage.getItem("uid"),
-            isAdmin: true,
-          },
-        ],
-      });
+        await props.db.from("users").insert({
+          id: uid,
+          crm_id: connection_id,
+          teamMembers: [
+            {
+              email: localStorage.getItem("email"),
+              uid: localStorage.getItem("uid"),
+              isAdmin: true,
+            },
+          ],
+        });
 
-      //Scoring here
-      setIsLoading(false);
-      localStorage.setItem("connection_id", connection_id);
-      localStorage.setItem("score", newScore);
-      localStorage.setItem("numIssues", issuesArray.length);
-      setNumIssues(issuesArray.length);
-      setCRMScore(newScore);
-      var cleanUrl = window.location.href.split("?")[0];
-      window.history.replaceState({}, document.title, cleanUrl);
-      setCRMConnected(true);
+        //Scoring here
+        setIsLoading(false);
+        localStorage.setItem("connection_id", connection_id);
+        localStorage.setItem("score", newScore);
+        localStorage.setItem("numIssues", issuesArray.length);
+        setNumIssues(issuesArray.length);
+        setCRMScore(newScore);
+        var cleanUrl = window.location.href.split("?")[0];
+        window.history.replaceState({}, document.title, cleanUrl);
+        setCRMConnected(true);
+      }
+      else if(integrationCategory == "messaging") {
+        /**
+        * Extracts the id from URL parameters and saves it to db
+        */ 
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has("id")) {
+          const uid = localStorage.getItem("uid");
+          await props.db
+          .from("users")
+          .update({
+              email_grant_id: urlParams.get("id"),
+              emailLinked: true
+          })
+          .eq("id", uid);
+        }
+      }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
