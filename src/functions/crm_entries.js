@@ -19,8 +19,13 @@ export async function createPineconeIndexes(connection_id) {
   let score = 0;
   let maxScore = 0;
   let issuesArray = [];
+  const typeCounter = {};
   // Calculate completeness score for different types of CRM data
   const scoreCompleteness = (item, type) => {
+    if (!typeCounter[type]) {
+      typeCounter[type] = 0;
+    }
+    typeCounter[type] += 1;
     let itemScore = 0;
     let totalWeight = 0;
 
@@ -216,13 +221,20 @@ export async function createPineconeIndexes(connection_id) {
         }
       }
     }
+    // Calculate priority based on recency of update
+    const lastUpdated = new Date(item.updated_at);
+    const today = new Date();
+    const daysSinceUpdate = (today - lastUpdated) / (1000 * 3600 * 24);
+    const priority = Math.max(0, 100 - Math.floor(daysSinceUpdate));
 
-    if (missingFields.length > 0) {
+    if (missingFields.length > 0 && type !== "Deal" && type !== "Event") {
       issuesArray.push({
-        item: item,
+        UnifiedID: item.id,
+        itemData: item,
         type: type,
         missingFields: missingFields,
-      });
+        priority: priority,
+      })
     }
     console.log(type, item, "SCORE", itemScore, "Weight", totalWeight);
 
@@ -418,11 +430,15 @@ export async function createPineconeIndexes(connection_id) {
   console.log("Max", maxScore);
 
   console.log("FINAL SCORE", finalScore);
+  // Sort issuesArray based on priority, descending
+  issuesArray.sort((a, b) => b.priority - a.priority);
+  console.log("TYPECNT", typeCounter)
   console.log("ISSUEs", issuesArray);
 
   return {
     score: finalScore,
     issuesArray: issuesArray,
+    typeCounter: typeCounter,
     points: score,
     maxPoints: maxScore,
   };
