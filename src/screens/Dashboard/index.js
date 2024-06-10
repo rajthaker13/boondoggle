@@ -51,6 +51,7 @@ function Dashboard(props) {
      */
     async function storeData() {
       const integrationCategory = localStorage.getItem("selectedIntegrationCat");
+      console.log("Integration Category: ", integrationCategory);
       if(integrationCategory == "crm") {
         setIsLoading(true);
         const urlParams = new URLSearchParams(window.location.search);

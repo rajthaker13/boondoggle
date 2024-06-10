@@ -329,6 +329,7 @@ function Workflows(props) {
     //iterates through all new data objects
     await Promise.all(
       new_crm_data.map(async (update) => {
+        console.log(update);
         if (
           (source == "Email" && update.status == "Completed") ||
           source == "Twitter" ||
@@ -391,6 +392,7 @@ function Workflows(props) {
               await new Promise((resolve) => setTimeout(resolve, 2000));
               idResults = await axios.request(idOptions);
             }
+            console.log(idResults)
             const user_crm_id = idResults.data[0].id;
 
             //if contanct exists, updates the contact in the CRM
