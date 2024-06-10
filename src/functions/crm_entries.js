@@ -19,14 +19,18 @@ export async function createPineconeIndexes(connection_id) {
   let score = 0;
   let maxScore = 0;
   let issuesArray = [];
+  const typeCounter = {};
   // Calculate completeness score for different types of CRM data
   const scoreCompleteness = (item, type) => {
+    if (!typeCounter[type]) {
+      typeCounter[type] = 0;
+    }
+    typeCounter[type] += 1;
     let itemScore = 0;
     let totalWeight = 0;
 
-    let criteria;
     // Define scoring criteria based on data type (Contact, Deal, etc.)
-    //Potential Score
+    let criteria;
     if (type === "Contact") {
       criteria = {
         fields: {
@@ -35,23 +39,17 @@ export async function createPineconeIndexes(connection_id) {
           company: 25,
           emails: {
             email: 20,
-            type: 5,
           },
           telephones: {
             telephone: 20,
-            type: 5,
           },
-          deal_ids: 15,
-          company_ids: 15,
           address: {
             address1: 10,
-            address2: 1,
             city: 10,
             region: 10,
             region_code: 1,
             postal_code: 10,
             country: 10,
-            country_code: 1,
           },
         },
       };
@@ -60,57 +58,42 @@ export async function createPineconeIndexes(connection_id) {
         fields: {
           name: 20,
           amount: 30,
-          currency: 5,
           stage: 25,
           source: 10,
           pipeline: 15,
           probability: 10,
           tags: 5,
-          closed_at: 5,
-          lost_reason: 2,
-          won_reason: 2,
         },
       };
     } else if (type === "Company") {
       criteria = {
         fields: {
           name: 30,
-          deal_ids: 15,
           emails: {
             email: 20,
-            type: 5,
           },
           telephones: {
             telephone: 20,
-            type: 5,
           },
           websites: 10,
           address: {
             address1: 10,
-            address2: 1,
             city: 10,
             region: 10,
             region_code: 1,
             postal_code: 10,
             country: 10,
-            country_code: 1,
           },
-          is_active: 10,
           tags: 5,
           description: 10,
           industry: 10,
           link_urls: 5,
           employees: 5,
-          timezone: 5,
         },
       };
     } else if (type === "Event") {
       criteria = {
         fields: {
-          type: 25,
-          company_ids: 20,
-          contact_ids: 20,
-          lead_ids: 20,
           ...(item.type === "NOTE" && {
             note: {
               description: 5,
@@ -132,7 +115,6 @@ export async function createPineconeIndexes(connection_id) {
               cc: 3,
               subject: 5,
               body: 5,
-              attachment_file_ids: 5,
             },
           }),
           ...(item.type === "CALL" && {
@@ -156,15 +138,9 @@ export async function createPineconeIndexes(connection_id) {
       criteria = {
         fields: {
           name: 30,
-          user_id: 5,
-          creator_user_id: 5,
-          contact_id: 20,
-          company_id: 20,
           company_name: 20,
-          is_active: 10,
           address: {
             address1: 10,
-            address2: 1,
             city: 10,
             region: 10,
             region_code: 1,
@@ -174,11 +150,9 @@ export async function createPineconeIndexes(connection_id) {
           },
           emails: {
             email: 20,
-            type: 5,
           },
           telephones: {
             telephone: 20,
-            type: 5,
           },
           source: 10,
           status: 10,
@@ -187,6 +161,7 @@ export async function createPineconeIndexes(connection_id) {
     }
 
     let missingFields = [];
+    let missingFieldsPenalty = 0;
     // Calculate score based on presence of fields and their weighted importance
     // Add missing fields to the issue arrays
     for (const [field, weight] of Object.entries(criteria.fields)) {
@@ -195,16 +170,28 @@ export async function createPineconeIndexes(connection_id) {
         if (item[field] !== undefined) {
           for (const [subField, subWeight] of Object.entries(weight)) {
             totalWeight += subWeight;
-            if (item[field][subField] !== undefined) {
+            if (Array.isArray(item[field])) {
+              if (
+                item[field][0] !== undefined &&
+                item[field][0][subField] !== undefined
+              ) {
+                itemScore += subWeight;
+              } else {
+                missingFields.push(`${field}[0].${subField}`);
+                missingFieldsPenalty += subWeight;
+              }
+            } else if (item[field][subField] !== undefined) {
               itemScore += subWeight;
             } else {
               missingFields.push(`${field}.${subField}`);
+              missingFieldsPenalty += subWeight;
             }
           }
         } else {
           for (const subField of Object.keys(weight)) {
             totalWeight += weight[subField];
             missingFields.push(`${field}.${subField}`);
+            missingFieldsPenalty += weight[subField];
           }
         }
       } else {
@@ -213,22 +200,79 @@ export async function createPineconeIndexes(connection_id) {
           itemScore += weight;
         } else {
           missingFields.push(field);
+          missingFieldsPenalty += weight;
         }
       }
     }
 
-    if (missingFields.length > 0) {
+    // Calculate recency score based on the updated_at field
+    const lastUpdated = new Date(item.updated_at);
+    const createdAt = new Date(item.created_at);
+    const today = new Date();
+
+    // Calculate days since last update
+    const daysSinceUpdate = (today - lastUpdated) / (1000 * 3600 * 24);
+    const recencyScore = Math.max(0, 100 - Math.floor(daysSinceUpdate));
+
+    // Calculate days since creation
+    const daysSinceCreation = (today - createdAt) / (1000 * 3600 * 24);
+    const creationScore = Math.max(0, 100 - Math.floor(daysSinceCreation));
+
+    // Check if the item is active
+    if (item.is_active === false) {
+      return null; // Discard inactive items
+    }
+
+    // Calculate final weighted priority score
+    
+    // Calculate raw priority score
+    // const rawPriorityScore =
+    //   itemScore + recencyScore + creationScore - missingFieldsPenalty;
+
+    // Normalize priority score to a scale of 1-100
+    // const maxPossibleScore = totalWeight + 200; // Maximum possible score, considering recency, creation, and no missing fields
+    // const normalizedPriorityScore = Math.min(
+    //   100,
+    //   Math.max(1, (rawPriorityScore / maxPossibleScore) * 100)
+    // );
+
+    const maxPossibleScore = 100; // Maximum possible score, considering recency, creation, and no missing fields
+    // Normalize item score to 0-100 scale
+    const completenessScore = Math.max(0, (missingFieldsPenalty / totalWeight) * 100); // Missing fields normalized score
+    const scaledPriority = Math.round((completenessScore * 0.3) + (recencyScore * 0.4) + (creationScore * 0.3));
+    const normalizedPriorityScore = Math.min(
+      100,
+      Math.max(1, Math.round((itemScore/totalWeight) * (50 + 0.5 * scaledPriority)))
+    );
+
+    if (
+      missingFields.length > 0 &&
+      type !== "Deal" &&
+      type !== "Event" &&
+      type !== "Lead"
+    ) {
       issuesArray.push({
-        item: item,
+        UnifiedID: item.id,
+        itemData: item,
         type: type,
         missingFields: missingFields,
+        priority: scaledPriority,
       });
     }
-    console.log(type, item, "SCORE", itemScore, "Weight", totalWeight);
+    console.log(
+      type,
+      item,
+      "PriorityScore",
+      scaledPriority,
+      "OjectScore",
+      normalizedPriorityScore,
+      "ObjectMaxScore",
+      maxPossibleScore
+    );
 
     return {
-      itemScore: itemScore,
-      totalWeight: totalWeight,
+      itemScore: normalizedPriorityScore, // Adjusted score calculation
+      totalWeight: maxPossibleScore, // Account for recency weight in the total weight
     };
   };
 
@@ -283,7 +327,6 @@ export async function createPineconeIndexes(connection_id) {
   const dealData = await fetchData("deal");
   const companyData = await fetchData("company");
   const eventData = await fetchData("event");
-  const leadData = await fetchData("lead");
   // Handle embedding generation and upsert operations for each type
   const generateEmbeddings = async (data, type) => {
     // Chunk large array into small chunks
@@ -297,11 +340,9 @@ export async function createPineconeIndexes(connection_id) {
       return await Promise.all(
         chunk.map(async (item) => {
           try {
-            const values = Object.values(item).join(" ");
-
             const splitter = new RecursiveCharacterTextSplitter({
-              chunkSize: 200,
-              chunkOverlap: 15,
+              chunkSize: 500,
+              chunkOverlap: 100,
             });
 
             const output = await splitter.createDocuments([
@@ -380,14 +421,12 @@ export async function createPineconeIndexes(connection_id) {
   const deals = await generateEmbeddings(dealData, "Deal");
   const companies = await generateEmbeddings(companyData, "Company");
   const events = await generateEmbeddings(eventData, "Event");
-  const leads = await generateEmbeddings(leadData, "Lead");
 
   const allEmbeddings = {
     contacts: contacts,
     deals: deals,
     companies: companies,
     events: events,
-    leads: leads,
   };
 
   const ns1 = index.namespace(connection_id);
@@ -418,11 +457,15 @@ export async function createPineconeIndexes(connection_id) {
   console.log("Max", maxScore);
 
   console.log("FINAL SCORE", finalScore);
+  // Sort issuesArray based on priority, descending
+  issuesArray.sort((a, b) => b.priority - a.priority);
+  console.log("TYPECNT", typeCounter);
   console.log("ISSUEs", issuesArray);
 
   return {
     score: finalScore,
     issuesArray: issuesArray,
+    typeCounter: typeCounter,
     points: score,
     maxPoints: maxScore,
   };
