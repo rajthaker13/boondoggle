@@ -20,258 +20,6 @@ function Workflows(props) {
   });
 
   /**
-   * Uses an id variable in local storage to get twitter account credentials from Supabase
-   * @returns Information about a user's twitter account
-   */
-  async function twitterCredentials() {
-    const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db.from("users").select().eq("id", uid);
-    return data[0].twitter_info;
-  }
-
-  /**
-   * Gets the twitter dms of a user using their credentials and calls uploadTwitter with the data
-   */
-  async function twitterContacts() {
-    const twitterInfo = await twitterCredentials();
-    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
-      body: {
-        token: twitterInfo.token,
-        secret: twitterInfo.secret,
-        oauthVerifier: twitterInfo.oauthVerifier,
-      },
-    });
-    if (data) {
-      await uploadTwitter(data);
-    }
-  }
-
-  /**
-   * Updates CRM and database based on Twitter DMs.
-   * 
-   * Gets current CRM data then iterates through each message within the new data that it is passed.
-   * If the chat history exists, it is updated. If it doesn't exist, a message object is created and pushed to twitter_messages. 
-   * 
-   * twitter_messages (now updated) is iterated through, and for each chat history, a title, summary, to-do item, and response is 
-   * generated and saved as data objects. An array of these objects is sent to the CRM and saved.
-   * 
-   * These objects are then saved in the Supabase db.
-   * 
-   * @param userData - Twitter DM data with which the CRM is to be updated
-   */
-  async function uploadTwitter(userData) {
-    const fetch_crm = await getCRMData();
-
-    let admin_crm_update = fetch_crm.admin_crm_data;
-    let admin_to_dos = fetch_crm.admin_to_dos;
-    let user_crm_update = fetch_crm.user_crm_data;
-    let user_to_dos = fetch_crm.user_to_dos;
-    let new_crm_data = [];
-
-    let twitter_messages = [];
-
-    const meUser = userData.meUser.data.username;
-    const meName = userData.meUser.data.name;
-
-    //Updates twitter_messages with new data
-    await Promise.all(
-      userData.messages.map(async (lead) => {
-        const itemIndex = twitter_messages.findIndex(
-          (item) => item.id === lead.messageData.dm_conversation_id
-        );
-        if (itemIndex !== -1) {
-          if (lead.userData[0].username !== meUser) {
-            twitter_messages[itemIndex].customer = lead.userData[0].name;
-            twitter_messages[itemIndex].messages = [
-              ...twitter_messages[itemIndex].messages,
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ];
-          } else {
-            twitter_messages[itemIndex].messages = [
-              ...twitter_messages[itemIndex].messages,
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ];
-          }
-        } else {
-          twitter_messages.push({
-            id: lead.messageData.dm_conversation_id,
-            customer: lead.userData[0].name,
-            messages: [
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ],
-          });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      })
-    );
-
-    await Promise.all(
-      twitter_messages.map(async (dm) => {
-        // if (dm.customer != meName) {
-        
-        const response = await generateTwitterCRMData(dm)
-
-        const date = Date.now();
-
-        //saves title, summary, todos, and response in data objects
-        var obj = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: response.title,
-          summary: response.summary,
-          date: date,
-          source: "Twitter",
-          status: "Completed",
-        };
-        var toDoObject = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: response.toDoTitle,
-          response: response.toDoResponse,
-          date: date,
-          source: "Twitter",
-          status: "Incomplete",
-        };
-        admin_crm_update.push(obj);
-        user_crm_update.push(obj);
-        new_crm_data.push(obj);
-        admin_to_dos.push(toDoObject);
-        user_to_dos.push(toDoObject);
-        // }
-      })
-    );
-
-    /**
-     * Generates title, summary, to-do item, response for each twitter chat history
-     * @param dm An instance of a Twitter chat
-     * @returns An object containing title, summary, toDoTitle, and toDoResponse.
-     */
-    async function generateTwitterCRMData(dm) {
-      const messagesString = dm.messages
-          .map(
-            (message) =>
-              `${message.name} (${message.username}): ${message.text}`
-          )
-          .join("\n");
-        const titleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a short title that captures what this conversation was about.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const title = titleCompletion.choices[0].message.content;
-        const summaryCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a brief summary of this conversation that captures what it was about.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const summary = summaryCompletion.choices[0].message.content;
-
-        const toDoTitleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a title for a to-do action item based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-
-        const toDoTitle = toDoTitleCompletion.choices[0].message.content;
-
-        const responseCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a response to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-
-        const toDoResponse = responseCompletion.choices[0].message.content;
-
-        return {
-          title: titleCompletion,
-          summary: summary,
-          toDoTitle: toDoTitle,
-          toDoResponse: toDoResponse
-        };
-    }
-
-
-    const type_crm = localStorage.getItem("crmType");
-    //Updates the CRM
-    await sendToCRM(new_crm_data, "Twitter");
-
-    const new_connection_id = localStorage.getItem("connection_id");
-    const uid = localStorage.getItem("uid");
-
-    //Updates Supabase
-    await props.db
-      .from("data")
-      .update({
-        crm_data: admin_crm_update,
-        twitter_messages: userData.messages,
-        twitterLinked: true,
-        tasks: admin_to_dos,
-      })
-      .eq("connection_id", new_connection_id);
-    await props.db
-      .from("users")
-      .update({
-        crm_data: user_crm_update,
-        twitterLinked: true,
-        tasks: user_to_dos,
-      })
-      .eq("id", uid);
-    setIsLoading(false);
-    localStorage.setItem("twitterLinked", true);
-    localStorage.setItem("to_dos", user_to_dos);
-    var cleanUrl = window.location.href.split("?")[0];
-    window.history.replaceState({}, document.title, cleanUrl);
-  }
-
-  /**
-   * captures the OAuth verifier from the URL, and retrieves stored OAuth tokens from localStorage. Calls Supabase function to fetch Twitter DMs,
-   * if successful, calls uploadTwitter() to update the CRM with the fetched data.
-   */
-  async function captureOauthVerifier() {
-    setIsLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const oauthVerifier = urlParams.get("oauth_verifier");
-
-    // Now oauthVerifier contains the value of oauth_verifier parameter
-    const token = localStorage.getItem("oauth_token");
-    const secret = localStorage.getItem("oauth_secret");
-    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
-      body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
-    });
-    if (data) {
-      await uploadTwitter(data);
-    }
-  }
-
-  /**
    * Generates a unique id based on time+random num.
    * @returns 10 digit unique ID string
    */
@@ -331,25 +79,14 @@ function Workflows(props) {
       new_crm_data.map(async (update) => {
         console.log(update);
         if (
-          (source == "Email" && update.status == "Completed") ||
-          source == "Twitter" ||
-          source == "LinkedIn"
+          (source == "Email" && update.status == "Completed") || source == "LinkedIn"
         ) {
           if (update.customer != "") {
             let regexCustomer;
-            if (source == "Twitter") {
-              regexCustomer = update.customer.replace(
-                /\s(?=[\uD800-\uDFFF])/g,
-                ""
-              );
-            } else if (source == "Email") {
+            if (source == "Email") {
               regexCustomer = update.email;
             } else if (source == "LinkedIn") {
               regexCustomer = update.customer;
-            }
-
-            if (update.customer == "Blake Faulkner 🌉") {
-              regexCustomer = "Blake Faulkner";
             }
             const options = {
               method: "GET",
@@ -419,11 +156,7 @@ function Workflows(props) {
               );
             } else { //if contact does not exist, creates contact in the CRM
               let contact;
-              if (source == "Twitter") {
-                contact = {
-                  name: regexCustomer,
-                };
-              } else if (source == "Email") {
+              if (source == "Email") {
                 contact = {
                   name: update.customer,
                   emails: [
@@ -1125,8 +858,6 @@ async function generateEmailCRMData(email, userEmail) {
                      await uploadEmails();
                    } else if (source == "LinkedIn") {
                      await uploadLinkedin();
-                   } else if (source == "Twitter") {
-                     await uploadTwitter();
                    }
                 }}
               >
