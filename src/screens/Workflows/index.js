@@ -77,7 +77,6 @@ function Workflows(props) {
     //iterates through all new data objects
     await Promise.all(
       new_crm_data.map(async (update) => {
-        console.log(update);
         if (
           (source == "Email" && update.status == "Completed") || source == "LinkedIn"
         ) {
@@ -100,37 +99,53 @@ function Workflows(props) {
                 query: regexCustomer,
               },
             };
-            // let results;
-            // try {
-            //   results = await axios.request(options);
-            // } catch {
-            //   await new Promise((resolve) => setTimeout(resolve, 2000));
-            //   results = await axios.request(options);
-            // }
 
             //queries for CRM data of a particular contact
             const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
+            const uid = localStorage.getItem("uid")
+            let user_crm_id;
+            const { data, error } = await props.db
+              .from("users")
+              .select("")
+              .eq("id", uid);
+            //if employee_id isn't stored, find it using user email and save
+            if(!data[0].employee_id) {
+              let idResults;
+              const idOptions = {
+                method: "GET",
+                url: `https://api.unified.to/hris/${connection_id}/employee`,
+                headers: {
+                  authorization:
+                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+                },
+              };
 
-            const idOptions = {
-              method: "GET",
-              url: `https://api.unified.to/hris/${connection_id}/employee`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-
-            let idResults;
-            //queries for ID  of a particular contact
-            try {
-              idResults = await axios.request(idOptions);
-            } catch {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              idResults = await axios.request(idOptions);
+              //queries for ID  of a particular contact
+              try {
+                idResults = await axios.request(idOptions);
+              } catch {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                idResults = await axios.request(idOptions);
+              }
+              let foundEmail = false
+              const userEmail = localStorage.getItem("user_email")
+              for(const employee of idResults.data) {
+                //find id based on useremail in local store and save to db,
+                if(foundEmail) { break; }
+                let employeeEmails = employee.emails
+                for(const email of employeeEmails) {
+                  if(email.email == userEmail) {
+                    user_crm_id = employee.id
+                    foundEmail = true
+                    break;
+                  }
+                }
+              }
             }
-            console.log(idResults)
-            const user_crm_id = idResults.data[0].id;
+            else {
+              user_crm_id = data[0].employee_id
+            }
 
             //if contanct exists, updates the contact in the CRM
             if (current_crm != undefined) {
@@ -139,10 +154,8 @@ function Workflows(props) {
                 type: "NOTE",
                 note: {
                   description:
-                    update.title +
-                    "\n" +
-                    update.summary +
-                    "\n Summarized by Boondoggle AI",
+                  `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
+                  title: update.title //Unified docs say to put title in like this, doesn't show up on HubSpot
                 },
                 company_ids: current_crm.company_ids,
                 contact_ids: [current_crm.id],
@@ -178,8 +191,7 @@ function Workflows(props) {
                     connection_id: connection_id,
                     contact: contact,
                     title: update.title,
-                    description:
-                      update.summary + "\n Summarized by Boondoggle AI",
+                    description: `${update.summary}<br/><br/>Summarized by Boondoggle AI`,
                     user_id: user_crm_id,
                   },
                 }
@@ -405,7 +417,6 @@ function Workflows(props) {
       model: "gpt-4",
     });
     const summary = summaryCompletion.choices[0].message.content;
-
     const toDoTitleCompletion =
       await openai.chat.completions.create({
         messages: [
@@ -462,53 +473,38 @@ function Workflows(props) {
       .select("")
       .eq("id", uid);
 
-    console.log("uid")
-    console.log(uid)
-
-    console.log("email creds")
-    console.log(data)
-
-    console.log("crm id: ", data[0].crm_id)
-
     return {
-      id: data[0].email_grant_id,
+      id: data[0].email_data[0].connection_id,
+      email: data[0].email_data[0].email
     };
   }
 
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
    * 
-   * Fetches email credentials and retrieves emails from the server using Nylas. Iterates through all emails, filtering out undesirable emails.
+   * Fetches email credentials and retrieves emails from the server using Unified. Iterates through all emails, filtering out undesirable emails.
    * If an email exists in the CRM, it is updated, if not, it is created and added to new_emails.
    * 
    * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
    */
   async function uploadEmails() {
     setIsLoading(true);
-    const currentUrl = window.location.href;
-    const urlWithoutParams = currentUrl.split("?")[0];
-
     const emailCreds = await getEmailCredentials();
     const id = emailCreds.id;
+    const userEmail = emailCreds.email;
 
     const connection_id = localStorage.getItem("connection_id")
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { connection_id: connection_id, user_id: id }
+      body: { user_id: id }
     });
-
-    console.log("This is the email data")
-    console.log(data) 
-    console.log("This is the error")
-    console.log(error)
 
     let channels = data.channelData
     let emails = data.emailData
-    console.log("emails: ", typeof(emails))
-    console.log(emails)
 
-    let userEmail = channels[0].members[0].email
+    //let userEmail = channels[0].members[0].email //only works for gmail
+    localStorage.setItem("user_email", userEmail) 
 
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
@@ -678,7 +674,6 @@ function Workflows(props) {
     ? email.author_member.name
     : email.author_member.email;
    
-
     if (email.author_member.email == userEmail) {
       var obj = {
         id: email.id,
@@ -775,22 +770,12 @@ async function generateEmailCRMData(email, userEmail) {
   });
 
   return {
-      title: titleCompletion.choices[0].message.content,
+      title: titleCompletion.choices[0].message.content.replace(/^"(.*)"$/, '$1'),
       summary: summaryCompletion.choices[0].message.content,
       toDoTitle: toDoTitleCompletion.choices[0].message.content,
       toDoResponse: responseCompletion.choices[0].message.content,
   };
 }
-
-  async function linkWithTwitter() {
-    const url = window.location.href;
-    const { data, error } = await props.db.functions.invoke("twitter-login-3", {
-      body: { url },
-    });
-    localStorage.setItem("oauth_token", data.url.oauth_token);
-    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
-    window.open(data.url.url, "_self");
-  }
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">

@@ -8,6 +8,7 @@ import { Dialog, DialogPanel, Button } from "@tremor/react";
 import ContactsDemo from "./DemoData/ContactsDemo";
 import DealsDemo from "./DemoData/DealsDemo";
 import { createPineconeIndexes } from "../../functions/crm_entries";
+import axios from "axios";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -102,10 +103,48 @@ function Dashboard(props) {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has("id")) {
           const uid = localStorage.getItem("uid");
+          const emailConnectionID = urlParams.get("id")
+          var cleanUrl = window.location.href.split("?")[0];
+          window.history.replaceState({}, document.title, cleanUrl);
+          
+          const connectionOptions = {
+            method: "GET",
+            url: `https://api.unified.to/unified/connection/${emailConnectionID}`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+          };
+  
+          const connectionResponse = await axios.request(connectionOptions);
+          let emailIDObj = { email : connectionResponse.data.auth.emails[0],
+                             connection_id : emailConnectionID
+                           }
+          console.log("connect resp: ", connectionResponse)
+          console.log(emailIDObj)
+          
+          const { data, error } = await props.db.from("users").select().eq("id", uid)
+          console.log("error: ", error)
+          console.log("data: ", data)
+          console.log(data[0].email_data)
+
+          // Check if emailIDObj's email already exists in data[0].email_data
+          const emailExists = data[0].email_data.some(
+            (item) => item.email === emailIDObj.email
+          );
+
+          let update_package = [...data[0].email_data];
+
+          // Include emailIDObj in update_package only if its email doesn't exist already
+          if (!emailExists) {
+            update_package.push(emailIDObj);
+          }
+          console.log("update: ", update_package)
+
           await props.db
           .from("users")
           .update({
-              email_grant_id: urlParams.get("id"),
+              email_data: update_package,
               emailLinked: true
           })
           .eq("id", uid);

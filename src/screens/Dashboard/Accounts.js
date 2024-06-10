@@ -108,7 +108,7 @@ function Accounts(props) {
      */
     async function checkEmailConnected() {
       const { data, error } = await props.db.from("users").select().eq("id", localStorage.getItem("uid"));
-      if(data[0]) {
+      if(data && data[0]) {
         let dbEmailConnected = data[0].emailLinked
         setEmailConnected(dbEmailConnected)
       }
