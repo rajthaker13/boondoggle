@@ -223,15 +223,26 @@ export async function createPineconeIndexes(connection_id) {
       return null; // Discard inactive items
     }
 
+    // Calculate final weighted priority score
+    
     // Calculate raw priority score
-    const rawPriorityScore =
-      itemScore + recencyScore + creationScore - missingFieldsPenalty;
+    // const rawPriorityScore =
+    //   itemScore + recencyScore + creationScore - missingFieldsPenalty;
 
     // Normalize priority score to a scale of 1-100
-    const maxPossibleScore = totalWeight + 200; // Maximum possible score, considering recency, creation, and no missing fields
+    // const maxPossibleScore = totalWeight + 200; // Maximum possible score, considering recency, creation, and no missing fields
+    // const normalizedPriorityScore = Math.min(
+    //   100,
+    //   Math.max(1, (rawPriorityScore / maxPossibleScore) * 100)
+    // );
+
+    const maxPossibleScore = 100; // Maximum possible score, considering recency, creation, and no missing fields
+    // Normalize item score to 0-100 scale
+    const completenessScore = Math.max(0, (missingFieldsPenalty / totalWeight) * 100); // Missing fields normalized score
+    const scaledPriority = Math.round((completenessScore * 0.3) + (recencyScore * 0.4) + (creationScore * 0.3));
     const normalizedPriorityScore = Math.min(
       100,
-      Math.max(1, (rawPriorityScore / maxPossibleScore) * 100)
+      Math.max(1, Math.round((itemScore/totalWeight) * (50 + 0.5 * scaledPriority)))
     );
 
     if (
@@ -245,20 +256,22 @@ export async function createPineconeIndexes(connection_id) {
         itemData: item,
         type: type,
         missingFields: missingFields,
-        priority: normalizedPriorityScore,
+        priority: scaledPriority,
       });
     }
     console.log(
       type,
       item,
-      "SCORE",
-      rawPriorityScore,
-      "Weight",
+      "PriorityScore",
+      scaledPriority,
+      "OjectScore",
+      normalizedPriorityScore,
+      "ObjectMaxScore",
       maxPossibleScore
     );
 
     return {
-      itemScore: rawPriorityScore, // Adjusted score calculation
+      itemScore: normalizedPriorityScore, // Adjusted score calculation
       totalWeight: maxPossibleScore, // Account for recency weight in the total weight
     };
   };
