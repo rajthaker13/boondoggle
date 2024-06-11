@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import axios from "axios";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { CRITERIA_WEIGHTS } from "./schemas/criteria_weights";
 
 // Initialize OpenAI and Pinecone clients with API keys from environment variables
 const openai = new OpenAI({
@@ -12,6 +13,7 @@ const openai = new OpenAI({
 const pinecone = new Pinecone({
   apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
 });
+
 // Create Pinecone indexes and manage data embedding and upsertion
 export async function createPineconeIndexes(connection_id) {
   const index = pinecone.index("boondoggle-data-3");
@@ -32,65 +34,11 @@ export async function createPineconeIndexes(connection_id) {
     // Define scoring criteria based on data type (Contact, Deal, etc.)
     let criteria;
     if (type === "Contact") {
-      criteria = {
-        fields: {
-          name: 30,
-          title: 5,
-          company: 25,
-          emails: {
-            email: 20,
-          },
-          telephones: {
-            telephone: 20,
-          },
-          address: {
-            address1: 10,
-            city: 10,
-            region: 10,
-            region_code: 1,
-            postal_code: 10,
-            country: 10,
-          },
-        },
-      };
+      criteria = CRITERIA_WEIGHTS.contact;
     } else if (type === "Deal") {
-      criteria = {
-        fields: {
-          name: 20,
-          amount: 30,
-          stage: 25,
-          source: 10,
-          pipeline: 15,
-          probability: 10,
-          tags: 5,
-        },
-      };
+      criteria = CRITERIA_WEIGHTS.deal;
     } else if (type === "Company") {
-      criteria = {
-        fields: {
-          name: 30,
-          emails: {
-            email: 20,
-          },
-          telephones: {
-            telephone: 20,
-          },
-          websites: 10,
-          address: {
-            address1: 10,
-            city: 10,
-            region: 10,
-            region_code: 1,
-            postal_code: 10,
-            country: 10,
-          },
-          tags: 5,
-          description: 10,
-          industry: 10,
-          link_urls: 5,
-          employees: 5,
-        },
-      };
+      criteria = CRITERIA_WEIGHTS.company;
     } else if (type === "Event") {
       criteria = {
         fields: {
@@ -135,29 +83,7 @@ export async function createPineconeIndexes(connection_id) {
         },
       };
     } else if (type === "Lead") {
-      criteria = {
-        fields: {
-          name: 30,
-          company_name: 20,
-          address: {
-            address1: 10,
-            city: 10,
-            region: 10,
-            region_code: 1,
-            postal_code: 10,
-            country: 10,
-            country_code: 1,
-          },
-          emails: {
-            email: 20,
-          },
-          telephones: {
-            telephone: 20,
-          },
-          source: 10,
-          status: 10,
-        },
-      };
+      criteria = CRITERIA_WEIGHTS.lead;
     }
 
     let missingFields = [];
@@ -223,27 +149,15 @@ export async function createPineconeIndexes(connection_id) {
       return null; // Discard inactive items
     }
 
-    // Calculate final weighted priority score
-    
-    // Calculate raw priority score
-    // const rawPriorityScore =
-    //   itemScore + recencyScore + creationScore - missingFieldsPenalty;
-
-    // Normalize priority score to a scale of 1-100
-    // const maxPossibleScore = totalWeight + 200; // Maximum possible score, considering recency, creation, and no missing fields
-    // const normalizedPriorityScore = Math.min(
-    //   100,
-    //   Math.max(1, (rawPriorityScore / maxPossibleScore) * 100)
-    // );
-
     const maxPossibleScore = 100; // Maximum possible score, considering recency, creation, and no missing fields
-    // Normalize item score to 0-100 scale
-    const completenessScore = Math.max(0, (missingFieldsPenalty / totalWeight) * 100); // Missing fields normalized score
-    const scaledPriority = Math.round((completenessScore * 0.3) + (recencyScore * 0.4) + (creationScore * 0.3));
-    const normalizedPriorityScore = Math.min(
-      100,
-      Math.max(1, Math.round((itemScore/totalWeight) * (50 + 0.5 * scaledPriority)))
-    );
+
+    // Normalize scores to 0-100 scale
+    const missingFieldNormalized = (missingFieldsPenalty / totalWeight) * 100; // Missing fields normalized score
+
+    const objectPriority = recencyScore * 0.7 + creationScore * 0.3;
+
+    const enrichmentPriority =
+      missingFieldNormalized * 0.7 + objectPriority * 0.3;
 
     if (
       missingFields.length > 0 &&
@@ -256,23 +170,13 @@ export async function createPineconeIndexes(connection_id) {
         itemData: item,
         type: type,
         missingFields: missingFields,
-        priority: scaledPriority,
+        priority: enrichmentPriority,
       });
     }
-    console.log(
-      type,
-      item,
-      "PriorityScore",
-      scaledPriority,
-      "OjectScore",
-      normalizedPriorityScore,
-      "ObjectMaxScore",
-      maxPossibleScore
-    );
 
     return {
-      itemScore: normalizedPriorityScore, // Adjusted score calculation
-      totalWeight: maxPossibleScore, // Account for recency weight in the total weight
+      itemScore: (100 - missingFieldNormalized) * objectPriority, // Adjusted score calculation
+      totalWeight: maxPossibleScore * objectPriority, // Account for recency weight in the total weight
     };
   };
 
@@ -438,7 +342,6 @@ export async function createPineconeIndexes(connection_id) {
         embeddings.map(async (chunk) => {
           await ns1.upsert(chunk);
         });
-        console.log(`${type} embeddings upserted successfully.`);
       } catch (error) {
         console.error(`Error upserting ${type} embeddings:`, error);
       }
@@ -453,14 +356,8 @@ export async function createPineconeIndexes(connection_id) {
   // Calc final score
   const finalScore = Math.round((score / maxScore) * 100);
 
-  console.log("Points", score);
-  console.log("Max", maxScore);
-
-  console.log("FINAL SCORE", finalScore);
   // Sort issuesArray based on priority, descending
   issuesArray.sort((a, b) => b.priority - a.priority);
-  console.log("TYPECNT", typeCounter);
-  console.log("ISSUEs", issuesArray);
 
   return {
     score: finalScore,
