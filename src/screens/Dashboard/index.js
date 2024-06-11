@@ -8,6 +8,7 @@ import { Dialog, DialogPanel, Button } from "@tremor/react";
 import ContactsDemo from "./DemoData/ContactsDemo";
 import DealsDemo from "./DemoData/DealsDemo";
 import { createPineconeIndexes } from "../../functions/crm_entries";
+import axios from "axios";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -21,7 +22,6 @@ function Dashboard(props) {
   const [linkedInLinked, setLinkedInLinked] = useState(false);
 
   useEffect(() => {
-
     /**
      * Retrieves dashboard data including CRM score based on resolved issues and LinkedIn connectedness.
      * If a connection ID is stored in the local storage, it fetches data accordingly and updates the dashboard state.
@@ -51,47 +51,112 @@ function Dashboard(props) {
      * user details, and updates dashboard state with the retrieved data.
      */
     async function storeData() {
-      setIsLoading(true);
-      const urlParams = new URLSearchParams(window.location.search);
-      const connection_id = urlParams.get("id");
+      const integrationCategory = localStorage.getItem(
+        "selectedIntegrationCat"
+      );
+      console.log("Integration Category: ", integrationCategory);
+      if (integrationCategory == "crm") {
+        setIsLoading(true);
+        const urlParams = new URLSearchParams(window.location.search);
+        const connection_id = urlParams.get("id");
 
-      //retrieve the CRM scan score and the array of issues
-      const scanResult = await createPineconeIndexes(connection_id);
-      const newScore = scanResult.score;
-      const issuesArray = scanResult.issuesArray;
+        //retrieve the CRM scan score and the array of issues
+        const scanResult = await createPineconeIndexes(connection_id);
+        const newScore = scanResult.score;
+        const issuesArray = scanResult.issuesArray;
 
-      await props.db.from("data").insert({
-        connection_id: connection_id,
-        crm_data: [],
-        twitter_messages: [],
-        twitterLinked: false,
-        type: "crm",
-      });
+        await props.db.from("data").insert({
+          connection_id: connection_id,
+          crm_data: [],
+          twitter_messages: [],
+          twitterLinked: false,
+          type: "crm",
+        });
 
-      const uid = localStorage.getItem("uid");
+        const uid = localStorage.getItem("uid");
 
-      await props.db.from("users").insert({
-        id: uid,
-        crm_id: connection_id,
-        teamMembers: [
-          {
-            email: localStorage.getItem("email"),
-            uid: localStorage.getItem("uid"),
-            isAdmin: true,
-          },
-        ],
-      });
+        await props.db.from("users").insert({
+          id: uid,
+          crm_id: connection_id,
+          teamMembers: [
+            {
+              email: localStorage.getItem("email"),
+              uid: localStorage.getItem("uid"),
+              isAdmin: true,
+            },
+          ],
+        });
 
-      //Scoring here
-      setIsLoading(false);
-      localStorage.setItem("connection_id", connection_id);
-      localStorage.setItem("score", newScore);
-      localStorage.setItem("numIssues", issuesArray.length);
-      setNumIssues(issuesArray.length);
-      setCRMScore(newScore);
-      var cleanUrl = window.location.href.split("?")[0];
-      window.history.replaceState({}, document.title, cleanUrl);
-      setCRMConnected(true);
+        //Scoring here
+        setIsLoading(false);
+        localStorage.setItem("connection_id", connection_id);
+        localStorage.setItem("score", newScore);
+        localStorage.setItem("numIssues", issuesArray.length);
+        setNumIssues(issuesArray.length);
+        setCRMScore(newScore);
+        var cleanUrl = window.location.href.split("?")[0];
+        window.history.replaceState({}, document.title, cleanUrl);
+        setCRMConnected(true);
+      } else if (integrationCategory == "messaging") {
+        /**
+         * Extracts the id from URL parameters and saves it to db
+         */
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has("id")) {
+          const uid = localStorage.getItem("uid");
+          const emailConnectionID = urlParams.get("id");
+          var cleanUrl = window.location.href.split("?")[0];
+          window.history.replaceState({}, document.title, cleanUrl);
+
+          const connectionOptions = {
+            method: "GET",
+            url: `https://api.unified.to/unified/connection/${emailConnectionID}`,
+            headers: {
+              authorization:
+                "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+            },
+          };
+
+          const connectionResponse = await axios.request(connectionOptions);
+
+          console.log("connect resp: ", connectionResponse);
+          let emailIDObj = {
+            email: connectionResponse.data.auth.emails[0],
+            connection_id: emailConnectionID,
+            name: connectionResponse.data.auth.name,
+          };
+          console.log(emailIDObj);
+
+          const { data, error } = await props.db
+            .from("users")
+            .select()
+            .eq("id", uid);
+          console.log("error: ", error);
+          console.log("data: ", data);
+          console.log(data[0].email_data);
+
+          // Check if emailIDObj's email already exists in data[0].email_data
+          const emailExists = data[0].email_data.some(
+            (item) => item.email === emailIDObj.email
+          );
+
+          let update_package = [...data[0].email_data];
+
+          // Include emailIDObj in update_package only if its email doesn't exist already
+          if (!emailExists) {
+            update_package.push(emailIDObj);
+          }
+          console.log("update: ", update_package);
+
+          await props.db
+            .from("users")
+            .update({
+              email_data: update_package,
+              emailLinked: true,
+            })
+            .eq("id", uid);
+        }
+      }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -158,7 +223,11 @@ function Dashboard(props) {
           issuesResolved={issuesResolved}
         />
 
-        <Accounts crmConnected={crmConnected} linkedInLinked={linkedInLinked} />
+        <Accounts
+          crmConnected={crmConnected}
+          linkedInLinked={linkedInLinked}
+          db={props.db}
+        />
         {crmConnected && (
           <Issues
             crmConnected={crmConnected}

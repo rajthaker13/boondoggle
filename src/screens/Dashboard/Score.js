@@ -156,6 +156,7 @@ function Score(props) {
                 return (
                   <SelectItem
                     onClick={() => {
+                      localStorage.setItem("selectedIntegrationCat", integration.data.categories[0])
                       window.open(integration.url, "_self");
                     }}
                   >
