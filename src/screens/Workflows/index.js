@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OpenAI from "openai";
 import axios from "axios";
 import Header from "../../components/Header";
 import WorkflowSidebar from "../../components/WorkflowSidebar";
-import { Button, Dialog, DialogPanel } from "@tremor/react";
+import { Button, Dialog, DialogPanel, Select, SelectItem } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 
@@ -13,11 +13,31 @@ function Workflows(props) {
   const [source, setSource] = useState("Email");
   const [selectedWorkflow, setSelectedWorkflow] = useState("");
   const [cookieError, setCookieError] = useState("");
+  const [connectedEmailsList, setConnectedEmailsList] = useState([]);
+  const [selectedEmail, setSelectedEmail] = useState({});
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
   });
+
+  useEffect(() => {
+    /**
+     * Gets connected emails of user
+     */
+    async function getConnectedEmails() {
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", localStorage.getItem("uid"));
+      if (data && data[0]) {
+        let connectedEmails = data[0].email_data;
+        setConnectedEmailsList(connectedEmails);
+        setSelectedEmail(connectedEmails[0]);
+      }
+    }
+    getConnectedEmails();
+  }, []);
 
   /**
    * Generates a unique id based on time+random num.
@@ -66,7 +86,7 @@ function Workflows(props) {
   }
 
   /**
-   * For each new data object, the CRM is queried using Unified for its particular contact. 
+   * For each new data object, the CRM is queried using Unified for its particular contact.
    * A Supabase function is called to update the CRM if the contact exists, if not, a Supabase function creates a new contact in the CRM.
    * @param new_crm_data - an array of data objects
    * @param {string} source - what 3rd party the data came from
@@ -78,7 +98,8 @@ function Workflows(props) {
     await Promise.all(
       new_crm_data.map(async (update) => {
         if (
-          (source == "Email" && update.status == "Completed") || source == "LinkedIn"
+          (source == "Email" && update.status == "Completed") ||
+          source == "LinkedIn"
         ) {
           if (update.customer != "") {
             let regexCustomer;
@@ -103,14 +124,14 @@ function Workflows(props) {
             //queries for CRM data of a particular contact
             const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
-            const uid = localStorage.getItem("uid")
+            const uid = localStorage.getItem("uid");
             let user_crm_id;
             const { data, error } = await props.db
               .from("users")
               .select("")
               .eq("id", uid);
             //if employee_id isn't stored, find it using user email and save
-            if(!data[0].employee_id) {
+            if (!data[0].employee_id) {
               let idResults;
               const idOptions = {
                 method: "GET",
@@ -128,23 +149,24 @@ function Workflows(props) {
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 idResults = await axios.request(idOptions);
               }
-              let foundEmail = false
-              const userEmail = localStorage.getItem("user_email")
-              for(const employee of idResults.data) {
+              let foundEmail = false;
+              const userEmail = localStorage.getItem("user_email");
+              for (const employee of idResults.data) {
                 //find id based on useremail in local store and save to db,
-                if(foundEmail) { break; }
-                let employeeEmails = employee.emails
-                for(const email of employeeEmails) {
-                  if(email.email == userEmail) {
-                    user_crm_id = employee.id
-                    foundEmail = true
+                if (foundEmail) {
+                  break;
+                }
+                let employeeEmails = employee.emails;
+                for (const email of employeeEmails) {
+                  if (email.email == userEmail) {
+                    user_crm_id = employee.id;
+                    foundEmail = true;
                     break;
                   }
                 }
               }
-            }
-            else {
-              user_crm_id = data[0].employee_id
+            } else {
+              user_crm_id = data[0].employee_id;
             }
 
             //if contanct exists, updates the contact in the CRM
@@ -153,21 +175,17 @@ function Workflows(props) {
                 id: current_crm.id,
                 type: "NOTE",
                 note: {
-                  description:
-                  `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
-                  title: update.title //Unified docs say to put title in like this, doesn't show up on HubSpot
+                  description: `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
                 },
                 company_ids: current_crm.company_ids,
                 contact_ids: [current_crm.id],
                 user_id: user_crm_id,
               };
-              const { data, error } = await props.db.functions.invoke(
-                "update-crm-unified",
-                {
-                  body: { connection_id: connection_id, event: event },
-                }
-              );
-            } else { //if contact does not exist, creates contact in the CRM
+              await props.db.functions.invoke("update-crm-unified", {
+                body: { connection_id: connection_id, event: event },
+              });
+            } else {
+              //if contact does not exist, creates contact in the CRM
               let contact;
               if (source == "Email") {
                 contact = {
@@ -184,18 +202,15 @@ function Workflows(props) {
                   name: update.customer,
                 };
               }
-              const { data, error } = await props.db.functions.invoke(
-                "new-contact-unified",
-                {
-                  body: {
-                    connection_id: connection_id,
-                    contact: contact,
-                    title: update.title,
-                    description: `${update.summary}<br/><br/>Summarized by Boondoggle AI`,
-                    user_id: user_crm_id,
-                  },
-                }
-              );
+              await props.db.functions.invoke("new-contact-unified", {
+                body: {
+                  connection_id: connection_id,
+                  contact: contact,
+                  title: update.title,
+                  description: `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
+                  user_id: user_crm_id,
+                },
+              });
             }
           }
         }
@@ -247,12 +262,12 @@ function Workflows(props) {
 
   /**
    * Updates CRM and database based on Linkedin messages.
-   * 
-   * Fetches Linkedin session cookie and if successful, calls Supabase function to scrape Linkedin messages. 
-   * 
-   * Iterates through chat histories and for each chat history, a title, summary, to-do item, and response is 
+   *
+   * Fetches Linkedin session cookie and if successful, calls Supabase function to scrape Linkedin messages.
+   *
+   * Iterates through chat histories and for each chat history, a title, summary, to-do item, and response is
    * generated and saved as data objects. An array of these objects is sent to the CRM and saved.
-   * 
+   *
    * These objects are then saved in the Supabase db.
    */
   async function uploadLinkedin() {
@@ -290,15 +305,11 @@ function Workflows(props) {
             let user_to_dos = fetch_crm.user_to_dos;
             let new_crm_data = [];
 
-            let type = fetch_crm.type;
-            let baseID = fetch_crm.baseID;
-            let fieldOptions = fetch_crm.fieldOptions;
-
             //Generates title, summary, to-do item, response for each chat history
             await Promise.all(
               messageArray.map(async (messageData) => {
                 const customer = messageData.name;
-                const response = await generateLinkedinCRMData(messageData)
+                const response = await generateLinkedinCRMData(messageData);
 
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
@@ -382,10 +393,7 @@ function Workflows(props) {
   async function generateLinkedinCRMData(messageData) {
     const customer = messageData.name;
     const messagesString = messageData.messages
-      .map(
-        (messageObject) =>
-          `${messageObject.sender}: ${messageObject.text}`
-      )
+      .map((messageObject) => `${messageObject.sender}: ${messageObject.text}`)
       .join("\n");
     const titleCompletion = await openai.chat.completions.create({
       messages: [
@@ -399,7 +407,7 @@ function Workflows(props) {
           content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
         },
       ],
-      model: "gpt-4",
+      model: "gpt-4o",
     });
     const title = titleCompletion.choices[0].message.content;
     const summaryCompletion = await openai.chat.completions.create({
@@ -414,195 +422,120 @@ function Workflows(props) {
           content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
         },
       ],
-      model: "gpt-4",
+      model: "gpt-4o",
     });
     const summary = summaryCompletion.choices[0].message.content;
-    const toDoTitleCompletion =
-      await openai.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title for a to-do action item that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-          },
-          {
-            role: "user",
-            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-          },
-        ],
-        model: "gpt-4",
-      });
-    const toDoTitle =
-      toDoTitleCompletion.choices[0].message.content;
-
-    const responseCompletion = await openai.chat.completions.create(
-      {
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a response/follow-up to the last message of this conversation that I can copy and paste over that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
-          },
-          {
-            role: "user",
-            content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-          },
-        ],
-        model: "gpt-4",
-      }
-    );
-    const toDoResponse =
-      responseCompletion.choices[0].message.content;
 
     return {
       title: title,
       summary: summary,
-      toDoTitle: toDoTitle,
-      toDoResponse: toDoResponse
-    };
-  }
-
-  /**
-   * Gets email credentials based on the uid
-   * @returns An object containing the email and its id
-   */
-  async function getEmailCredentials() {
-    const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db
-      .from("users")
-      .select("")
-      .eq("id", uid);
-
-    return {
-      id: data[0].email_data[0].connection_id,
-      email: data[0].email_data[0].email
     };
   }
 
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
-   * 
+   *
    * Fetches email credentials and retrieves emails from the server using Unified. Iterates through all emails, filtering out undesirable emails.
    * If an email exists in the CRM, it is updated, if not, it is created and added to new_emails.
-   * 
+   *
    * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
    */
   async function uploadEmails() {
     setIsLoading(true);
-    const emailCreds = await getEmailCredentials();
-    const id = emailCreds.id;
-    const userEmail = emailCreds.email;
+    const id = selectedEmail.connection_id;
+    const userEmail = selectedEmail.email;
 
-    const connection_id = localStorage.getItem("connection_id")
+    const connection_id = localStorage.getItem("connection_id");
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { user_id: id }
+      body: { user_id: id },
     });
 
-    let channels = data.channelData
-    let emails = data.emailData
+    let channels = data.channelData;
+    let emails = data.emailData;
 
     //let userEmail = channels[0].members[0].email //only works for gmail
-    localStorage.setItem("user_email", userEmail) 
+    localStorage.setItem("user_email", userEmail);
 
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
 
     let admin_crm_update = fetch_crm.admin_crm_data;
-    let admin_to_dos = fetch_crm.admin_to_dos;
     let user_crm_update = fetch_crm.user_crm_data;
-    let user_to_dos = fetch_crm.user_to_dos;
     let new_crm_data = [];
-
-    let type = fetch_crm.type;
-    let baseID = fetch_crm.baseID;
-    let tableID = fetch_crm.tableID;
-    let fieldOptions = fetch_crm.fieldOptions;
 
     let new_emails = [];
 
     //Filters and processes each email
-    for(const email of emails) {
+    for (const email of emails) {
       if (shouldProcessEmail(email)) {
         const fromIndex = new_emails.findIndex(
-            (item) => item.customer === email.author_member.name
+          (item) => item.customer === email.author_member.name
         );
         const toIndex = new_emails.findIndex(
-            (item) => item.customer === email.destination_members[0].name
+          (item) => item.customer === email.destination_members[0].name
         );
 
         if (fromIndex !== -1 || toIndex !== -1) {
-            updateExistingEmail(new_emails, fromIndex, toIndex, email);
+          updateExistingEmail(new_emails, fromIndex, toIndex, email);
         } else {
-            createNewEmail(new_emails, email, userEmail);
+          createNewEmail(new_emails, email, userEmail);
         }
       }
     }
 
     // Generate CRM entries for new emails
     await Promise.all(
-        new_emails.map(async (email) => {
-            if (email.customer) {
-                const { title, summary, toDoTitle, toDoResponse } = await generateEmailCRMData(email, userEmail);
-                const date = Date.now();
+      new_emails.map(async (email) => {
+        if (email.customer) {
+          const { title, summary } = await generateEmailCRMData(
+            email,
+            userEmail
+          );
+          const date = Date.now();
 
-                const obj = {
-                    id: email.id,
-                    customer: email.customer,
-                    email: email.email,
-                    title: title,
-                    summary: summary,
-                    date: date,
-                    source: "Email",
-                    status: email.status,
-                };
+          const obj = {
+            id: email.id,
+            customer: email.customer,
+            email: email.email,
+            title: title,
+            summary: summary,
+            date: date,
+            source: "Email",
+            status: email.status,
+          };
 
-                const toDoObject = {
-                    id: email.id,
-                    customer: email.customer,
-                    title: toDoTitle,
-                    response: toDoResponse,
-                    date: date,
-                    type: email.type == "OUTBOUND" ? "Follow-Up" : "Respond",
-                    source: "Email",
-                    status: "Incomplete",
-                    emailStatus: email.status,
-                };
-
-                admin_crm_update.push(obj);
-                user_crm_update.push(obj);
-                new_crm_data.push(obj);
-                admin_to_dos.push(toDoObject);
-                user_to_dos.push(toDoObject);
-            }
-        })
+          admin_crm_update.push(obj);
+          user_crm_update.push(obj);
+          new_crm_data.push(obj);
+        }
+      })
     );
 
     // Update CRM with new data
     await props.db
-        .from("data")
-        .update({
-            crm_data: admin_crm_update,
-            tasks: admin_to_dos,
-        })
-        .eq("connection_id", connection_id);
+      .from("data")
+      .update({
+        crm_data: admin_crm_update,
+      })
+      .eq("connection_id", connection_id);
 
     const uid = localStorage.getItem("uid");
 
     await props.db
-        .from("users")
-        .update({
-            crm_data: user_crm_update,
-            tasks: user_to_dos,
-            emailLinked: true,
-        })
-        .eq("id", uid);
+      .from("users")
+      .update({
+        crm_data: user_crm_update,
+        emailLinked: true,
+      })
+      .eq("id", uid);
 
     await sendToCRM(new_crm_data, "Email");
 
     // End loading indicator
     setIsLoading(false);
+    setOpenCookieModal(false);
 
     // Clean up URL by removing query parameters
     var cleanUrl = window.location.href.split("?")[0];
@@ -618,29 +551,29 @@ function Workflows(props) {
     const body = email.message.toLowerCase();
     const author = email.author_member.name;
     return (
-        author !== "" &&
-        !body.includes("verify") &&
-        !body.includes("verification") &&
-        !body.includes("alert") &&
-        !body.includes("confirmation") &&
-        !body.includes("invitation") &&
-        !body.includes("webinar") &&
-        !body.includes("activation") &&
-        !body.includes("unsubscribe") &&
-        !body.includes("considering") &&
-        !body.includes("tax") &&
-        !body.includes("taxes") &&
-        !body.includes("notification") &&
-        !body.includes("demo") &&
-        !body.includes("hesitate") &&
-        !body.includes("registration") &&
-        !body.includes("contact us") &&
-        !body.includes("faq") &&
-        !body.includes("luma") &&
-        !body.includes("receipt") &&
-        !body.includes("automation") &&
-        !body.includes("automated") &&
-        email.channel_id !== "DRAFT"
+      author !== "" &&
+      !body.includes("verify") &&
+      !body.includes("verification") &&
+      !body.includes("alert") &&
+      !body.includes("confirmation") &&
+      !body.includes("invitation") &&
+      !body.includes("webinar") &&
+      !body.includes("activation") &&
+      !body.includes("unsubscribe") &&
+      !body.includes("considering") &&
+      !body.includes("tax") &&
+      !body.includes("taxes") &&
+      !body.includes("notification") &&
+      !body.includes("demo") &&
+      !body.includes("hesitate") &&
+      !body.includes("registration") &&
+      !body.includes("contact us") &&
+      !body.includes("faq") &&
+      !body.includes("luma") &&
+      !body.includes("receipt") &&
+      !body.includes("automation") &&
+      !body.includes("automated") &&
+      email.channel_id !== "DRAFT"
     );
   }
 
@@ -653,27 +586,27 @@ function Workflows(props) {
    */
   function updateExistingEmail(new_emails, fromIndex, toIndex, email) {
     const sender = email.author_member.name
-        ? email.author_member.name
-        : email.author_member.email;
+      ? email.author_member.name
+      : email.author_member.email;
 
     if (fromIndex !== -1) {
-        new_emails[fromIndex].snippet.push({ message: email.message, sender });
+      new_emails[fromIndex].snippet.push({ message: email.message, sender });
     } else if (toIndex !== -1) {
-        new_emails[toIndex].snippet.push({ message: email.message, sender });
+      new_emails[toIndex].snippet.push({ message: email.message, sender });
     }
   }
 
   /**
-  * Creates a new email entry in the new_emails array.
-  * @param new_emails - The array of new emails.
-  * @param email - The email data to add.
-  * @param userEmail - The user's email address.
-  */
+   * Creates a new email entry in the new_emails array.
+   * @param new_emails - The array of new emails.
+   * @param email - The email data to add.
+   * @param userEmail - The user's email address.
+   */
   function createNewEmail(new_emails, email, userEmail) {
     const sender = email.author_member.name
-    ? email.author_member.name
-    : email.author_member.email;
-   
+      ? email.author_member.name
+      : email.author_member.email;
+
     if (email.author_member.email == userEmail) {
       var obj = {
         id: email.id,
@@ -685,14 +618,14 @@ function Workflows(props) {
         snippet: [
           {
             message: email.message,
-            sender: sender
+            sender: sender,
           },
         ],
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
-          email.author_member
+          email.author_member,
         ],
         type: "OUTBOUND",
         status: "Completed",
@@ -710,14 +643,14 @@ function Workflows(props) {
         snippet: [
           {
             message: email.message,
-            sender: sender
+            sender: sender,
           },
         ],
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
-          email.author_member
+          email.author_member,
         ],
         type: "INBOUND",
         status: "Completed",
@@ -728,61 +661,64 @@ function Workflows(props) {
   }
 
   /**
- * Generates title, summary, to-do item, and response for an email.
- * @param {Object} email - The email data.
- * @param {string} userEmail - The user's email address.
- * @returns An object containing title, summary, toDoTitle, and toDoResponse.
- */
-async function generateEmailCRMData(email, userEmail) {
-  const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
-  const subject = email.data.subject;
+   * Generates title, summary, to-do item, and response for an email.
+   * @param {Object} email - The email data.
+   * @param {string} userEmail - The user's email address.
+   * @returns An object containing title, summary, toDoTitle, and toDoResponse.
+   */
+  async function generateEmailCRMData(email, userEmail) {
+    const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
+    const subject = email.data.subject;
 
-  const snippetString = email.snippet
+    const snippetString = email.snippet
       .map((message) => `${message.sender}: ${message.message}`)
       .join("\n");
 
-  const participantsString = email.participants
-      .map((user) => user.name ? `${user.name}: ${user.email}` : user.email)
+    const participantsString = email.participants
+      .map((user) => (user.name ? `${user.name}: ${user.email}` : user.email))
       .join("\n");
 
-  const emailContext = `You are an automated CRM entry assistant. I have a conversation sent from ${from} with these participants: ${participantsString}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context, you are the user associated with ${userEmail}.`;
+    const emailContext = `You are an automated CRM entry assistant. I have a conversation sent from ${from} with these participants: ${participantsString}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context, you are the user associated with ${userEmail}.`;
 
-  const titleCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: `${emailContext} Give a short title that captures what this email thread was about.` }],
+    const titleCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: `${emailContext} Give a short title that captures what this email thread was about. Make it one sentence`,
+        },
+      ],
       model: "gpt-4",
-  });
+    });
 
-  const summaryCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: `${emailContext} Generate me a summary of this email thread in a few short sentences.` }],
-      model: "gpt-4",
-  });
+    const summaryCompletion = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
+        },
+      ],
+      model: "gpt-4o",
+    });
 
-  const toDoTitleCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: `${emailContext} Generate me a title for a to-do action item based on the context of this conversation.` }],
-      model: "gpt-4",
-  });
-
-  const responseType = email.type === "OUTBOUND" ? "Follow-Up" : "Response";
-
-  const responseCompletion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: `${emailContext} Generate me a ${responseType} to the last message of this conversation that I can copy and paste over based on the context of this conversation.` }],
-      model: "gpt-4",
-  });
-
-  return {
-      title: titleCompletion.choices[0].message.content.replace(/^"(.*)"$/, '$1'),
+    return {
+      title: titleCompletion.choices[0].message.content.replace(
+        /^"(.*)"$/,
+        "$1"
+      ),
       summary: summaryCompletion.choices[0].message.content,
-      toDoTitle: toDoTitleCompletion.choices[0].message.content,
-      toDoResponse: responseCompletion.choices[0].message.content,
-  };
-}
+    };
+  }
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <div>
         <Dialog
           open={openCookieModal}
-          onClose={(val) => setOpenCookieModal(val)}
+          onClose={(val) => {
+            if (!isLoading) {
+              setOpenCookieModal(val);
+            }
+          }}
           static={true}
         >
           <DialogPanel>
@@ -825,25 +761,38 @@ async function generateEmailCRMData(email, userEmail) {
               </div>
 
               <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                Select Email
+              </div>
+              <Select className="mb-[2vh]" defaultValue="1">
+                {connectedEmailsList.map((email, index) => {
+                  return (
+                    <SelectItem
+                      value={(index + 1).toString()}
+                      onClick={() => {
+                        setSelectedEmail(email);
+                      }}
+                    >
+                      {email.email}
+                    </SelectItem>
+                  );
+                })}
+              </Select>
+
+              {/* <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
                 What type of messages do you want scraped?
               </div>
               <input
                 class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
                 placeholder="Type anything you want..."
-              ></input>
+              ></input> */}
               <Button
                 variant="primary"
                 onClick={async () => {
-                  setIsLoading(true);
-                  await new Promise((resolve) => setTimeout(resolve, 5000));
-                  localStorage.setItem("linkedinLinked", true);
-                  setOpenCookieModal(false);
-                  setIsLoading(false);
-                   if (source == "Email") { //just uncommedted all these if statements
-                     await uploadEmails();
-                   } else if (source == "LinkedIn") {
-                     await uploadLinkedin();
-                   }
+                  if (source == "Email") {
+                    await uploadEmails();
+                  } else if (source == "LinkedIn") {
+                    await uploadLinkedin();
+                  }
                 }}
               >
                 Confirm

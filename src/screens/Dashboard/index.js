@@ -51,9 +51,11 @@ function Dashboard(props) {
      * user details, and updates dashboard state with the retrieved data.
      */
     async function storeData() {
-      const integrationCategory = localStorage.getItem("selectedIntegrationCat");
+      const integrationCategory = localStorage.getItem(
+        "selectedIntegrationCat"
+      );
       console.log("Integration Category: ", integrationCategory);
-      if(integrationCategory == "crm") {
+      if (integrationCategory == "crm") {
         setIsLoading(true);
         const urlParams = new URLSearchParams(window.location.search);
         const connection_id = urlParams.get("id");
@@ -95,18 +97,17 @@ function Dashboard(props) {
         var cleanUrl = window.location.href.split("?")[0];
         window.history.replaceState({}, document.title, cleanUrl);
         setCRMConnected(true);
-      }
-      else if(integrationCategory == "messaging") {
+      } else if (integrationCategory == "messaging") {
         /**
-        * Extracts the id from URL parameters and saves it to db
-        */ 
+         * Extracts the id from URL parameters and saves it to db
+         */
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has("id")) {
           const uid = localStorage.getItem("uid");
-          const emailConnectionID = urlParams.get("id")
+          const emailConnectionID = urlParams.get("id");
           var cleanUrl = window.location.href.split("?")[0];
           window.history.replaceState({}, document.title, cleanUrl);
-          
+
           const connectionOptions = {
             method: "GET",
             url: `https://api.unified.to/unified/connection/${emailConnectionID}`,
@@ -115,18 +116,23 @@ function Dashboard(props) {
                 "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
             },
           };
-  
+
           const connectionResponse = await axios.request(connectionOptions);
-          let emailIDObj = { email : connectionResponse.data.auth.emails[0],
-                             connection_id : emailConnectionID
-                           }
-          console.log("connect resp: ", connectionResponse)
-          console.log(emailIDObj)
-          
-          const { data, error } = await props.db.from("users").select().eq("id", uid)
-          console.log("error: ", error)
-          console.log("data: ", data)
-          console.log(data[0].email_data)
+
+          console.log("connect resp: ", connectionResponse);
+          let emailIDObj = {
+            email: connectionResponse.data.auth.emails[0],
+            connection_id: emailConnectionID,
+          };
+          console.log(emailIDObj);
+
+          const { data, error } = await props.db
+            .from("users")
+            .select()
+            .eq("id", uid);
+          console.log("error: ", error);
+          console.log("data: ", data);
+          console.log(data[0].email_data);
 
           // Check if emailIDObj's email already exists in data[0].email_data
           const emailExists = data[0].email_data.some(
@@ -139,15 +145,15 @@ function Dashboard(props) {
           if (!emailExists) {
             update_package.push(emailIDObj);
           }
-          console.log("update: ", update_package)
+          console.log("update: ", update_package);
 
           await props.db
-          .from("users")
-          .update({
+            .from("users")
+            .update({
               email_data: update_package,
-              emailLinked: true
-          })
-          .eq("id", uid);
+              emailLinked: true,
+            })
+            .eq("id", uid);
         }
       }
     }
@@ -216,7 +222,11 @@ function Dashboard(props) {
           issuesResolved={issuesResolved}
         />
 
-        <Accounts crmConnected={crmConnected} linkedInLinked={linkedInLinked} db={props.db}/>
+        <Accounts
+          crmConnected={crmConnected}
+          linkedInLinked={linkedInLinked}
+          db={props.db}
+        />
         {crmConnected && (
           <Issues
             crmConnected={crmConnected}

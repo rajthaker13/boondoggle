@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     id: contactResponse.id,
     type: "NOTE",
     note: {
-      description: title + "\n" + description,
+      description: description,
     },
     company_ids: contactResponse.company_ids,
     contact_ids: [contactResponse.id],
