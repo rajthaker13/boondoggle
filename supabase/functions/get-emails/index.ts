@@ -7,9 +7,7 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const { connection_id, user_id } = await req.json()
-
-  console.log("This is the connection_id", connection_id)
+  const { user_id } = await req.json()
 
   const channelUrl = `https://api.unified.to/messaging/${user_id}/channel`;
   const channelOptions = {

@@ -108,10 +108,13 @@ function Accounts(props) {
      */
     async function checkEmailConnected() {
       const { data, error } = await props.db.from("users").select().eq("id", localStorage.getItem("uid"));
-      let dbEmailConnected = data[0].emailLinked
-      setEmailConnected(dbEmailConnected)
+      if(data && data[0]) {
+        let dbEmailConnected = data[0].emailLinked
+        setEmailConnected(dbEmailConnected)
+      }
     }
 
+    checkEmailConnected();
     getEmailIntegrations();
     getEnrichmentIntegrations();
   }, []);
@@ -158,8 +161,8 @@ function Accounts(props) {
                 <SelectItem 
                   onClick={() => {
                     setSelectedEmail(integration)
+                    localStorage.setItem("selectedIntegrationCat", integration.data.categories[0])
                     window.open(integration.url, "_self");
-                    localStorage.setItem("selectedIntegrationCat", integration.categories[0])
                   }}
                 >
                   {imageElement}
@@ -272,8 +275,8 @@ function Accounts(props) {
                 <SelectItem 
                   onClick={() => {
                     setSelectedEnrichment(integration)
+                    localStorage.setItem("selectedIntegrationCat", integration.data.categories[0])
                     window.open(integration.url, "_self");
-                    localStorage.setItem("selectedIntegrationCat", integration.categories[0])
                   }}
                 >
                   {imageElement}

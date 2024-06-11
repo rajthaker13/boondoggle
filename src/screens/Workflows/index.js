@@ -20,258 +20,6 @@ function Workflows(props) {
   });
 
   /**
-   * Uses an id variable in local storage to get twitter account credentials from Supabase
-   * @returns Information about a user's twitter account
-   */
-  async function twitterCredentials() {
-    const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db.from("users").select().eq("id", uid);
-    return data[0].twitter_info;
-  }
-
-  /**
-   * Gets the twitter dms of a user using their credentials and calls uploadTwitter with the data
-   */
-  async function twitterContacts() {
-    const twitterInfo = await twitterCredentials();
-    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
-      body: {
-        token: twitterInfo.token,
-        secret: twitterInfo.secret,
-        oauthVerifier: twitterInfo.oauthVerifier,
-      },
-    });
-    if (data) {
-      await uploadTwitter(data);
-    }
-  }
-
-  /**
-   * Updates CRM and database based on Twitter DMs.
-   * 
-   * Gets current CRM data then iterates through each message within the new data that it is passed.
-   * If the chat history exists, it is updated. If it doesn't exist, a message object is created and pushed to twitter_messages. 
-   * 
-   * twitter_messages (now updated) is iterated through, and for each chat history, a title, summary, to-do item, and response is 
-   * generated and saved as data objects. An array of these objects is sent to the CRM and saved.
-   * 
-   * These objects are then saved in the Supabase db.
-   * 
-   * @param userData - Twitter DM data with which the CRM is to be updated
-   */
-  async function uploadTwitter(userData) {
-    const fetch_crm = await getCRMData();
-
-    let admin_crm_update = fetch_crm.admin_crm_data;
-    let admin_to_dos = fetch_crm.admin_to_dos;
-    let user_crm_update = fetch_crm.user_crm_data;
-    let user_to_dos = fetch_crm.user_to_dos;
-    let new_crm_data = [];
-
-    let twitter_messages = [];
-
-    const meUser = userData.meUser.data.username;
-    const meName = userData.meUser.data.name;
-
-    //Updates twitter_messages with new data
-    await Promise.all(
-      userData.messages.map(async (lead) => {
-        const itemIndex = twitter_messages.findIndex(
-          (item) => item.id === lead.messageData.dm_conversation_id
-        );
-        if (itemIndex !== -1) {
-          if (lead.userData[0].username !== meUser) {
-            twitter_messages[itemIndex].customer = lead.userData[0].name;
-            twitter_messages[itemIndex].messages = [
-              ...twitter_messages[itemIndex].messages,
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ];
-          } else {
-            twitter_messages[itemIndex].messages = [
-              ...twitter_messages[itemIndex].messages,
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ];
-          }
-        } else {
-          twitter_messages.push({
-            id: lead.messageData.dm_conversation_id,
-            customer: lead.userData[0].name,
-            messages: [
-              {
-                name: lead.userData[0].name,
-                username: lead.userData[0].username,
-                text: lead.messageData.text,
-              },
-            ],
-          });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      })
-    );
-
-    await Promise.all(
-      twitter_messages.map(async (dm) => {
-        // if (dm.customer != meName) {
-        
-        const response = await generateTwitterCRMData(dm)
-
-        const date = Date.now();
-
-        //saves title, summary, todos, and response in data objects
-        var obj = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: response.title,
-          summary: response.summary,
-          date: date,
-          source: "Twitter",
-          status: "Completed",
-        };
-        var toDoObject = {
-          id: dm.id,
-          customer: dm.customer != meName ? dm.customer : "No Response",
-          title: response.toDoTitle,
-          response: response.toDoResponse,
-          date: date,
-          source: "Twitter",
-          status: "Incomplete",
-        };
-        admin_crm_update.push(obj);
-        user_crm_update.push(obj);
-        new_crm_data.push(obj);
-        admin_to_dos.push(toDoObject);
-        user_to_dos.push(toDoObject);
-        // }
-      })
-    );
-
-    /**
-     * Generates title, summary, to-do item, response for each twitter chat history
-     * @param dm An instance of a Twitter chat
-     * @returns An object containing title, summary, toDoTitle, and toDoResponse.
-     */
-    async function generateTwitterCRMData(dm) {
-      const messagesString = dm.messages
-          .map(
-            (message) =>
-              `${message.name} (${message.username}): ${message.text}`
-          )
-          .join("\n");
-        const titleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a short title that captures what this conversation was about.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const title = titleCompletion.choices[0].message.content;
-        const summaryCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Give a brief summary of this conversation that captures what it was about.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-        const summary = summaryCompletion.choices[0].message.content;
-
-        const toDoTitleCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a title for a to-do action item based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-
-        const toDoTitle = toDoTitleCompletion.choices[0].message.content;
-
-        const responseCompletion = await openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `I have an array of Twitter direct messages between you and ${dm.customer} as follows: ${messagesString}. Generate me a response to the last message of this conversation that I can copy and paste over based on the context of this conversation.`,
-            },
-          ],
-          model: "gpt-4",
-        });
-
-        const toDoResponse = responseCompletion.choices[0].message.content;
-
-        return {
-          title: titleCompletion,
-          summary: summary,
-          toDoTitle: toDoTitle,
-          toDoResponse: toDoResponse
-        };
-    }
-
-
-    const type_crm = localStorage.getItem("crmType");
-    //Updates the CRM
-    await sendToCRM(new_crm_data, "Twitter");
-
-    const new_connection_id = localStorage.getItem("connection_id");
-    const uid = localStorage.getItem("uid");
-
-    //Updates Supabase
-    await props.db
-      .from("data")
-      .update({
-        crm_data: admin_crm_update,
-        twitter_messages: userData.messages,
-        twitterLinked: true,
-        tasks: admin_to_dos,
-      })
-      .eq("connection_id", new_connection_id);
-    await props.db
-      .from("users")
-      .update({
-        crm_data: user_crm_update,
-        twitterLinked: true,
-        tasks: user_to_dos,
-      })
-      .eq("id", uid);
-    setIsLoading(false);
-    localStorage.setItem("twitterLinked", true);
-    localStorage.setItem("to_dos", user_to_dos);
-    var cleanUrl = window.location.href.split("?")[0];
-    window.history.replaceState({}, document.title, cleanUrl);
-  }
-
-  /**
-   * captures the OAuth verifier from the URL, and retrieves stored OAuth tokens from localStorage. Calls Supabase function to fetch Twitter DMs,
-   * if successful, calls uploadTwitter() to update the CRM with the fetched data.
-   */
-  async function captureOauthVerifier() {
-    setIsLoading(true);
-    const urlParams = new URLSearchParams(window.location.search);
-    const oauthVerifier = urlParams.get("oauth_verifier");
-
-    // Now oauthVerifier contains the value of oauth_verifier parameter
-    const token = localStorage.getItem("oauth_token");
-    const secret = localStorage.getItem("oauth_secret");
-    const { data, error } = await props.db.functions.invoke("get-twitter-dms", {
-      body: { token: token, secret: secret, oauthVerifier: oauthVerifier },
-    });
-    if (data) {
-      await uploadTwitter(data);
-    }
-  }
-
-  /**
    * Generates a unique id based on time+random num.
    * @returns 10 digit unique ID string
    */
@@ -330,25 +78,14 @@ function Workflows(props) {
     await Promise.all(
       new_crm_data.map(async (update) => {
         if (
-          (source == "Email" && update.status == "Completed") ||
-          source == "Twitter" ||
-          source == "LinkedIn"
+          (source == "Email" && update.status == "Completed") || source == "LinkedIn"
         ) {
           if (update.customer != "") {
             let regexCustomer;
-            if (source == "Twitter") {
-              regexCustomer = update.customer.replace(
-                /\s(?=[\uD800-\uDFFF])/g,
-                ""
-              );
-            } else if (source == "Email") {
+            if (source == "Email") {
               regexCustomer = update.email;
             } else if (source == "LinkedIn") {
               regexCustomer = update.customer;
-            }
-
-            if (update.customer == "Blake Faulkner 🌉") {
-              regexCustomer = "Blake Faulkner";
             }
             const options = {
               method: "GET",
@@ -362,36 +99,53 @@ function Workflows(props) {
                 query: regexCustomer,
               },
             };
-            // let results;
-            // try {
-            //   results = await axios.request(options);
-            // } catch {
-            //   await new Promise((resolve) => setTimeout(resolve, 2000));
-            //   results = await axios.request(options);
-            // }
 
             //queries for CRM data of a particular contact
             const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
+            const uid = localStorage.getItem("uid")
+            let user_crm_id;
+            const { data, error } = await props.db
+              .from("users")
+              .select("")
+              .eq("id", uid);
+            //if employee_id isn't stored, find it using user email and save
+            if(!data[0].employee_id) {
+              let idResults;
+              const idOptions = {
+                method: "GET",
+                url: `https://api.unified.to/hris/${connection_id}/employee`,
+                headers: {
+                  authorization:
+                    "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+                },
+              };
 
-            const idOptions = {
-              method: "GET",
-              url: `https://api.unified.to/hris/${connection_id}/employee`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-
-            let idResults;
-            //queries for ID  of a particular contact
-            try {
-              idResults = await axios.request(idOptions);
-            } catch {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              idResults = await axios.request(idOptions);
+              //queries for ID  of a particular contact
+              try {
+                idResults = await axios.request(idOptions);
+              } catch {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                idResults = await axios.request(idOptions);
+              }
+              let foundEmail = false
+              const userEmail = localStorage.getItem("user_email")
+              for(const employee of idResults.data) {
+                //find id based on useremail in local store and save to db,
+                if(foundEmail) { break; }
+                let employeeEmails = employee.emails
+                for(const email of employeeEmails) {
+                  if(email.email == userEmail) {
+                    user_crm_id = employee.id
+                    foundEmail = true
+                    break;
+                  }
+                }
+              }
             }
-            const user_crm_id = idResults.data[0].id;
+            else {
+              user_crm_id = data[0].employee_id
+            }
 
             //if contanct exists, updates the contact in the CRM
             if (current_crm != undefined) {
@@ -400,10 +154,8 @@ function Workflows(props) {
                 type: "NOTE",
                 note: {
                   description:
-                    update.title +
-                    "\n" +
-                    update.summary +
-                    "\n Summarized by Boondoggle AI",
+                  `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
+                  title: update.title //Unified docs say to put title in like this, doesn't show up on HubSpot
                 },
                 company_ids: current_crm.company_ids,
                 contact_ids: [current_crm.id],
@@ -417,11 +169,7 @@ function Workflows(props) {
               );
             } else { //if contact does not exist, creates contact in the CRM
               let contact;
-              if (source == "Twitter") {
-                contact = {
-                  name: regexCustomer,
-                };
-              } else if (source == "Email") {
+              if (source == "Email") {
                 contact = {
                   name: update.customer,
                   emails: [
@@ -443,8 +191,7 @@ function Workflows(props) {
                     connection_id: connection_id,
                     contact: contact,
                     title: update.title,
-                    description:
-                      update.summary + "\n Summarized by Boondoggle AI",
+                    description: `${update.summary}<br/><br/>Summarized by Boondoggle AI`,
                     user_id: user_crm_id,
                   },
                 }
@@ -670,7 +417,6 @@ function Workflows(props) {
       model: "gpt-4",
     });
     const summary = summaryCompletion.choices[0].message.content;
-
     const toDoTitleCompletion =
       await openai.chat.completions.create({
         messages: [
@@ -727,53 +473,38 @@ function Workflows(props) {
       .select("")
       .eq("id", uid);
 
-    console.log("uid")
-    console.log(uid)
-
-    console.log("email creds")
-    console.log(data)
-
-    console.log("crm id: ", data[0].crm_id)
-
     return {
-      id: data[0].email_grant_id,
+      id: data[0].email_data[0].connection_id,
+      email: data[0].email_data[0].email
     };
   }
 
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
    * 
-   * Fetches email credentials and retrieves emails from the server using Nylas. Iterates through all emails, filtering out undesirable emails.
+   * Fetches email credentials and retrieves emails from the server using Unified. Iterates through all emails, filtering out undesirable emails.
    * If an email exists in the CRM, it is updated, if not, it is created and added to new_emails.
    * 
    * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
    */
   async function uploadEmails() {
     setIsLoading(true);
-    const currentUrl = window.location.href;
-    const urlWithoutParams = currentUrl.split("?")[0];
-
     const emailCreds = await getEmailCredentials();
     const id = emailCreds.id;
+    const userEmail = emailCreds.email;
 
     const connection_id = localStorage.getItem("connection_id")
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { connection_id: connection_id, user_id: id }
+      body: { user_id: id }
     });
-
-    console.log("This is the email data")
-    console.log(data) 
-    console.log("This is the error")
-    console.log(error)
 
     let channels = data.channelData
     let emails = data.emailData
-    console.log("emails: ", typeof(emails))
-    console.log(emails)
 
-    let userEmail = channels[0].members[0].email
+    //let userEmail = channels[0].members[0].email //only works for gmail
+    localStorage.setItem("user_email", userEmail) 
 
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
@@ -943,7 +674,6 @@ function Workflows(props) {
     ? email.author_member.name
     : email.author_member.email;
    
-
     if (email.author_member.email == userEmail) {
       var obj = {
         id: email.id,
@@ -1040,22 +770,12 @@ async function generateEmailCRMData(email, userEmail) {
   });
 
   return {
-      title: titleCompletion.choices[0].message.content,
+      title: titleCompletion.choices[0].message.content.replace(/^"(.*)"$/, '$1'),
       summary: summaryCompletion.choices[0].message.content,
       toDoTitle: toDoTitleCompletion.choices[0].message.content,
       toDoResponse: responseCompletion.choices[0].message.content,
   };
 }
-
-  async function linkWithTwitter() {
-    const url = window.location.href;
-    const { data, error } = await props.db.functions.invoke("twitter-login-3", {
-      body: { url },
-    });
-    localStorage.setItem("oauth_token", data.url.oauth_token);
-    localStorage.setItem("oauth_secret", data.url.oauth_token_secret);
-    window.open(data.url.url, "_self");
-  }
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
@@ -1123,8 +843,6 @@ async function generateEmailCRMData(email, userEmail) {
                      await uploadEmails();
                    } else if (source == "LinkedIn") {
                      await uploadLinkedin();
-                   } else if (source == "Twitter") {
-                     await uploadTwitter();
                    }
                 }}
               >
