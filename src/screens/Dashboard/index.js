@@ -123,6 +123,7 @@ function Dashboard(props) {
           let emailIDObj = {
             email: connectionResponse.data.auth.emails[0],
             connection_id: emailConnectionID,
+            name: connectionResponse.data.auth.name,
           };
           console.log(emailIDObj);
 

@@ -674,27 +674,32 @@ function Workflows(props) {
       .map((message) => `${message.sender}: ${message.message}`)
       .join("\n");
 
-    const participantsString = email.participants
-      .map((user) => (user.name ? `${user.name}: ${user.email}` : user.email))
-      .join("\n");
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${selectedEmail.name}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation. In this context, you are ${selectedEmail.name} logging the note into the CRM and you should not respond as if you are an AI.`;
 
-    const emailContext = `You are an automated CRM entry assistant. I have a conversation sent from ${from} with these participants: ${participantsString}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation and in this context, you are the user associated with ${userEmail}.`;
+    let completionMessages = [
+      { role: "system", content: emailContext },
+      {
+        role: "user",
+        content: `Generate one sentence title that captures what this email conversation is about. Do not return a response longer than one sentence.`,
+      },
+    ];
 
     const titleCompletion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: `${emailContext} Give a short title that captures what this email thread was about. Make it one sentence`,
-        },
-      ],
+      messages: completionMessages,
       model: "gpt-4",
     });
 
     const summaryCompletion = await openai.chat.completions.create({
       messages: [
+        ...completionMessages,
+        {
+          role: "assistant",
+          content: titleCompletion.choices[0].message.content,
+        },
+
         {
           role: "user",
-          content: `${emailContext} Generate me a summary of this email thread in a few short sentences.`,
+          content: `Generate me a summary of this email conversation. Do not talk as if you are AI, and enter the data as if you are ${selectedEmail.name} in third-person (Do not use any terms like I, we, etc.)`,
         },
       ],
       model: "gpt-4o",
