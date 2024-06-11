@@ -39,51 +39,6 @@ export async function createPineconeIndexes(connection_id) {
       criteria = CRITERIA_WEIGHTS.deal;
     } else if (type === "Company") {
       criteria = CRITERIA_WEIGHTS.company;
-    } else if (type === "Event") {
-      criteria = {
-        fields: {
-          ...(item.type === "NOTE" && {
-            note: {
-              description: 5,
-              title: 5,
-            },
-          }),
-          ...(item.type === "MEETING" && {
-            meeting: {
-              start_at: 10,
-              end_at: 10,
-              title: 10,
-              description: 10,
-            },
-          }),
-          ...(item.type === "EMAIL" && {
-            email: {
-              from: 5,
-              to: 5,
-              cc: 3,
-              subject: 5,
-              body: 5,
-            },
-          }),
-          ...(item.type === "CALL" && {
-            call: {
-              duration: 5,
-              description: 5,
-              start_at: 5,
-            },
-          }),
-          ...(item.type === "TASK" && {
-            task: {
-              name: 5,
-              status: 5,
-              description: 5,
-              due_at: 5,
-            },
-          }),
-        },
-      };
-    } else if (type === "Lead") {
-      criteria = CRITERIA_WEIGHTS.lead;
     }
 
     let missingFields = [];
@@ -159,12 +114,7 @@ export async function createPineconeIndexes(connection_id) {
     const enrichmentPriority =
       missingFieldNormalized * 0.7 + objectPriority * 0.3;
 
-    if (
-      missingFields.length > 0 &&
-      type !== "Deal" &&
-      type !== "Event" &&
-      type !== "Lead"
-    ) {
+    if (missingFields.length > 0 && type !== "Deal") {
       issuesArray.push({
         UnifiedID: item.id,
         itemData: item,
@@ -231,6 +181,7 @@ export async function createPineconeIndexes(connection_id) {
   const dealData = await fetchData("deal");
   const companyData = await fetchData("company");
   const eventData = await fetchData("event");
+
   // Handle embedding generation and upsert operations for each type
   const generateEmbeddings = async (data, type) => {
     // Chunk large array into small chunks
@@ -253,9 +204,11 @@ export async function createPineconeIndexes(connection_id) {
               JSON.stringify(item),
             ]);
 
-            const completenessScore = scoreCompleteness(item, type);
-            score += completenessScore.itemScore;
-            maxScore += completenessScore.totalWeight;
+            if (type != "Event") {
+              const completenessScore = scoreCompleteness(item, type);
+              score += completenessScore.itemScore;
+              maxScore += completenessScore.totalWeight;
+            }
 
             let result = [];
             await Promise.all(
