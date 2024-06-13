@@ -129,7 +129,7 @@ function BoondogggleAI(props) {
       const ns1 = index.namespace(id);
 
       const dealsResponse = await ns1.query({
-        topK: 20,
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -140,8 +140,22 @@ function BoondogggleAI(props) {
       const dealsMatchesArray = dealsResponse.matches;
       const dealsMatches = dealsMatchesArray.map((deal) => deal.metadata);
 
+      const companiesResponse = await ns1.query({
+        topK: 10,
+        vector: embedding.data[0].embedding,
+        includeMetadata: true,
+        filter: {
+          type: { $eq: "Company" },
+        },
+      });
+
+      const companiesMatchesArray = companiesResponse.matches;
+      const companiesMatches = companiesMatchesArray.map(
+        (company) => company.metadata
+      );
+
       const contactResponse = await ns1.query({
-        topK: 20,
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -155,7 +169,7 @@ function BoondogggleAI(props) {
       );
 
       const notesResponse = await ns1.query({
-        topK: 20,
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -167,7 +181,12 @@ function BoondogggleAI(props) {
       const notesMatches = notesMatchesArray.map((note) => note.metadata);
 
       // Combine all results
-      const matches = [...dealsMatches, ...contactMatches, ...notesMatches];
+      const matches = [
+        ...dealsMatches,
+        ...contactMatches,
+        ...notesMatches,
+        ...companiesMatches,
+      ];
       // Fetch all results from unified based on matches
       let queryArray = [];
       // REST API calls
