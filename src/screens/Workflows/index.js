@@ -315,38 +315,43 @@ function Workflows(props) {
               messageArray.map(async (messageData) => {
                 const customer = messageData.name;
                 const response = await generateLinkedinCRMData(messageData);
+                const isSpamMessage = await checkLinkedInMessage(
+                  response.title,
+                  response.summary
+                );
+                if (!isSpamMessage) {
+                  const date = Date.now();
+                  const uniqueId = generateUniqueId();
 
-                const date = Date.now();
-                const uniqueId = generateUniqueId();
+                  console.log("MessageData", messageData);
 
-                console.log("MessageData", messageData);
+                  //saves title, summary, todos, and response in data objects
+                  var obj = {
+                    id: uniqueId,
+                    customer: customer,
+                    title: response.title,
+                    summary: response.summary,
+                    date: date,
+                    url: messageData.url,
+                    source: "LinkedIn",
+                    status: "Completed",
+                  };
 
-                //saves title, summary, todos, and response in data objects
-                var obj = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.title,
-                  summary: response.summary,
-                  date: date,
-                  url: messageData.url,
-                  source: "LinkedIn",
-                  status: "Completed",
-                };
-
-                var toDoObject = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.toDoTitle,
-                  response: response.toDoResponse,
-                  date: date,
-                  source: "LinkedIn",
-                  status: "Incomplete",
-                };
-                admin_crm_update.push(obj);
-                user_crm_update.push(obj);
-                new_crm_data.push(obj);
-                admin_to_dos.push(toDoObject);
-                user_to_dos.push(toDoObject);
+                  var toDoObject = {
+                    id: uniqueId,
+                    customer: customer,
+                    title: response.toDoTitle,
+                    response: response.toDoResponse,
+                    date: date,
+                    source: "LinkedIn",
+                    status: "Incomplete",
+                  };
+                  admin_crm_update.push(obj);
+                  user_crm_update.push(obj);
+                  new_crm_data.push(obj);
+                  admin_to_dos.push(toDoObject);
+                  user_to_dos.push(toDoObject);
+                }
               })
             );
             //updates the CRM
@@ -476,7 +481,7 @@ function Workflows(props) {
 
     //Filters and processes each email
     for (const email of emails) {
-      const isSpamEmail = await shouldProcessEmail(email);
+      const isSpamEmail = await checkEmail(email);
       if (!isSpamEmail) {
         const fromIndex = new_emails.findIndex(
           (item) => item.customer === email.author_member.name
@@ -555,7 +560,7 @@ function Workflows(props) {
    * @param {Object} email - The email to check.
    * @returns {boolean} - Whether the email should be processed.
    */
-  async function shouldProcessEmail(email) {
+  async function checkEmail(email) {
     const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
     const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
     const SPAM_EMAIL_COMPARISIONS = 50;
@@ -597,6 +602,56 @@ function Workflows(props) {
       subject === "" ||
       email.channel_id === "DRAFT" ||
       spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold //Check if queried data has higher ratio than threshold
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Checks if an email should be processed based on certain criteria.
+   * @param {Object} email - The email to check.
+   * @returns {boolean} - Whether the email should be processed.
+   */
+  async function checkLinkedInMessage(title, summary) {
+    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
+    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
+    const SPAM_EMAIL_COMPARISIONS = 50;
+
+    const index = pinecone.index("spam-data");
+    const ns1 = index.namespace("version-3");
+
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: `Subject: ${title} \n ${summary}`,
+    });
+
+    const spamEmailResponse = await ns1.query({
+      topK: SPAM_EMAIL_COMPARISIONS,
+      vector: embedding.data[0].embedding,
+      includeMetadata: true,
+    });
+
+    const spamMatchesArray = spamEmailResponse.matches;
+    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+
+    let spamMatchCount = 0;
+
+    spamMatches.map((spamEmail) => {
+      if (spamEmail.label_num == 1) {
+        spamMatchCount += 1;
+      }
+    });
+
+    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
+    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
+    const nonSpamRatio = 1 - spamRatio;
+    const threshold = spamRatio / (spamRatio + nonSpamRatio);
+
+    if (
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS >
+      threshold //Check if queried data has higher ratio than threshold
     ) {
       return true;
     } else {
