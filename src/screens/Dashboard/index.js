@@ -54,11 +54,20 @@ function Dashboard(props) {
       const integrationCategory = localStorage.getItem(
         "selectedIntegrationCat"
       );
-      console.log("Integration Category: ", integrationCategory);
       if (integrationCategory == "crm") {
-        setIsLoading(true);
         const urlParams = new URLSearchParams(window.location.search);
         const connection_id = urlParams.get("id");
+
+        if (!connection_id) {
+          return;
+        }
+
+        // Ensure the function runs only once
+        if (localStorage.getItem("connection_id") === connection_id) {
+          return;
+        }
+
+        setIsLoading(true);
 
         //retrieve the CRM scan score and the array of issues
         const scanResult = await createPineconeIndexes(connection_id);
@@ -119,21 +128,16 @@ function Dashboard(props) {
 
           const connectionResponse = await axios.request(connectionOptions);
 
-          console.log("connect resp: ", connectionResponse);
           let emailIDObj = {
             email: connectionResponse.data.auth.emails[0],
             connection_id: emailConnectionID,
             name: connectionResponse.data.auth.name,
           };
-          console.log(emailIDObj);
 
           const { data, error } = await props.db
             .from("users")
             .select()
             .eq("id", uid);
-          console.log("error: ", error);
-          console.log("data: ", data);
-          console.log(data[0].email_data);
 
           // Check if emailIDObj's email already exists in data[0].email_data
           const emailExists = data[0].email_data.some(
@@ -146,7 +150,6 @@ function Dashboard(props) {
           if (!emailExists) {
             update_package.push(emailIDObj);
           }
-          console.log("update: ", update_package);
 
           await props.db
             .from("users")
