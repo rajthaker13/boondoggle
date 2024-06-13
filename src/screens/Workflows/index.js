@@ -6,6 +6,7 @@ import WorkflowSidebar from "../../components/WorkflowSidebar";
 import { Button, Dialog, DialogPanel, Select, SelectItem } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
+import { Pinecone } from "@pinecone-database/pinecone";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,10 @@ function Workflows(props) {
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
+  });
+
+  const pinecone = new Pinecone({
+    apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
 
   useEffect(() => {
@@ -310,41 +315,45 @@ function Workflows(props) {
               messageArray.map(async (messageData) => {
                 const customer = messageData.name;
                 const response = await generateLinkedinCRMData(messageData);
+                const isSpamMessage = await checkLinkedInMessage(
+                  response.title,
+                  response.summary
+                );
+                if (!isSpamMessage) {
+                  const date = Date.now();
+                  const uniqueId = generateUniqueId();
 
-                const date = Date.now();
-                const uniqueId = generateUniqueId();
+                  console.log("MessageData", messageData);
 
-                console.log("MessageData", messageData);
+                  //saves title, summary, todos, and response in data objects
+                  var obj = {
+                    id: uniqueId,
+                    customer: customer,
+                    title: response.title,
+                    summary: response.summary,
+                    date: date,
+                    url: messageData.url,
+                    source: "LinkedIn",
+                    status: "Completed",
+                  };
 
-                //saves title, summary, todos, and response in data objects
-                var obj = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.title,
-                  summary: response.summary,
-                  date: date,
-                  url: messageData.url,
-                  source: "LinkedIn",
-                  status: "Completed",
-                };
-
-                var toDoObject = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.toDoTitle,
-                  response: response.toDoResponse,
-                  date: date,
-                  source: "LinkedIn",
-                  status: "Incomplete",
-                };
-                admin_crm_update.push(obj);
-                user_crm_update.push(obj);
-                new_crm_data.push(obj);
-                admin_to_dos.push(toDoObject);
-                user_to_dos.push(toDoObject);
+                  var toDoObject = {
+                    id: uniqueId,
+                    customer: customer,
+                    title: response.toDoTitle,
+                    response: response.toDoResponse,
+                    date: date,
+                    source: "LinkedIn",
+                    status: "Incomplete",
+                  };
+                  admin_crm_update.push(obj);
+                  user_crm_update.push(obj);
+                  new_crm_data.push(obj);
+                  admin_to_dos.push(toDoObject);
+                  user_to_dos.push(toDoObject);
+                }
               })
             );
-            const type_crm = localStorage.getItem("crmType");
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
@@ -371,7 +380,9 @@ function Workflows(props) {
             localStorage.setItem("linkedInLinked", true);
             localStorage.setItem("to_dos", user_to_dos);
             setOpenCookieModal(false);
-            window.location.reload();
+            // Clean up URL by removing query parameters
+            var cleanUrl = window.location.href.split("?")[0];
+            window.history.replaceState({}, document.title, cleanUrl);
           } else {
             console.log(cookieError);
             setCookieError("LoggedIn");
@@ -395,40 +406,42 @@ function Workflows(props) {
     const messagesString = messageData.messages
       .map((messageObject) => `${messageObject.sender}: ${messageObject.text}`)
       .join("\n");
+    const linkedInContext = `You are an automated CRM entry assistant for businesses and have data about a LinkedIn conversation between you (${messageData.profile}) and the person you are talking to who is ${customer}}. This is an string containing the content of the conversation: ${messagesString}. In this context, you are ${messageData.profile} logging the note into the CRM and you should not respond as if you are an AI.`;
+    let completionMessages = [
+      { role: "system", content: linkedInContext },
+      {
+        role: "user",
+        content: `Generate one sentence title that captures what this LinkedIn conversation is about. Do not return a response longer than one sentence.`,
+      },
+    ];
+
     const titleCompletion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
-        },
-        {
-          role: "user",
-          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-        },
-      ],
-      model: "gpt-4o",
+      messages: completionMessages,
+      model: "gpt-4",
     });
-    const title = titleCompletion.choices[0].message.content;
+
     const summaryCompletion = await openai.chat.completions.create({
       messages: [
+        ...completionMessages,
         {
-          role: "system",
-          content:
-            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          role: "assistant",
+          content: titleCompletion.choices[0].message.content,
         },
+
         {
           role: "user",
-          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          content: `Generate me a summary of this LinkedIn conversation. Do not talk as if you are AI, and enter the data as if you are ${messageData.profile} in third-person (Do not use any terms like I, we, etc.)`,
         },
       ],
       model: "gpt-4o",
     });
-    const summary = summaryCompletion.choices[0].message.content;
 
     return {
-      title: title,
-      summary: summary,
+      title: titleCompletion.choices[0].message.content.replace(
+        /^"(.*)"$/,
+        "$1"
+      ),
+      summary: summaryCompletion.choices[0].message.content,
     };
   }
 
@@ -452,7 +465,6 @@ function Workflows(props) {
       body: { user_id: id },
     });
 
-    let channels = data.channelData;
     let emails = data.emailData;
 
     //let userEmail = channels[0].members[0].email //only works for gmail
@@ -469,7 +481,8 @@ function Workflows(props) {
 
     //Filters and processes each email
     for (const email of emails) {
-      if (shouldProcessEmail(email)) {
+      const isSpamEmail = await checkEmail(email);
+      if (!isSpamEmail) {
         const fromIndex = new_emails.findIndex(
           (item) => item.customer === email.author_member.name
         );
@@ -547,34 +560,103 @@ function Workflows(props) {
    * @param {Object} email - The email to check.
    * @returns {boolean} - Whether the email should be processed.
    */
-  function shouldProcessEmail(email) {
-    const body = email.message.toLowerCase();
-    const author = email.author_member.name;
-    return (
-      author !== "" &&
-      !body.includes("verify") &&
-      !body.includes("verification") &&
-      !body.includes("alert") &&
-      !body.includes("confirmation") &&
-      !body.includes("invitation") &&
-      !body.includes("webinar") &&
-      !body.includes("activation") &&
-      !body.includes("unsubscribe") &&
-      !body.includes("considering") &&
-      !body.includes("tax") &&
-      !body.includes("taxes") &&
-      !body.includes("notification") &&
-      !body.includes("demo") &&
-      !body.includes("hesitate") &&
-      !body.includes("registration") &&
-      !body.includes("contact us") &&
-      !body.includes("faq") &&
-      !body.includes("luma") &&
-      !body.includes("receipt") &&
-      !body.includes("automation") &&
-      !body.includes("automated") &&
-      email.channel_id !== "DRAFT"
-    );
+  async function checkEmail(email) {
+    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
+    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
+    const SPAM_EMAIL_COMPARISIONS = 50;
+
+    const subject = email.subject.toLowerCase();
+    const body = email.message.replace(/<[^>]+>/g, ""); //Remove HTML content
+
+    const index = pinecone.index("spam-data");
+    const ns1 = index.namespace("version-3");
+
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: `Subject: ${subject} \n ${body}`,
+    });
+
+    const spamEmailResponse = await ns1.query({
+      topK: SPAM_EMAIL_COMPARISIONS,
+      vector: embedding.data[0].embedding,
+      includeMetadata: true,
+    });
+
+    const spamMatchesArray = spamEmailResponse.matches;
+    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+
+    let spamMatchCount = 0;
+
+    spamMatches.map((spamEmail) => {
+      if (spamEmail.label_num == 1) {
+        spamMatchCount += 1;
+      }
+    });
+
+    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
+    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
+    const nonSpamRatio = 1 - spamRatio;
+    const threshold = spamRatio / (spamRatio + nonSpamRatio);
+
+    if (
+      subject === "" ||
+      email.channel_id === "DRAFT" ||
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold //Check if queried data has higher ratio than threshold
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Checks if an email should be processed based on certain criteria.
+   * @param {Object} email - The email to check.
+   * @returns {boolean} - Whether the email should be processed.
+   */
+  async function checkLinkedInMessage(title, summary) {
+    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
+    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
+    const SPAM_EMAIL_COMPARISIONS = 50;
+
+    const index = pinecone.index("spam-data");
+    const ns1 = index.namespace("version-3");
+
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: `Subject: ${title} \n ${summary}`,
+    });
+
+    const spamEmailResponse = await ns1.query({
+      topK: SPAM_EMAIL_COMPARISIONS,
+      vector: embedding.data[0].embedding,
+      includeMetadata: true,
+    });
+
+    const spamMatchesArray = spamEmailResponse.matches;
+    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+
+    let spamMatchCount = 0;
+
+    spamMatches.map((spamEmail) => {
+      if (spamEmail.label_num == 1) {
+        spamMatchCount += 1;
+      }
+    });
+
+    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
+    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
+    const nonSpamRatio = 1 - spamRatio;
+    const threshold = spamRatio / (spamRatio + nonSpamRatio);
+
+    if (
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS >
+      threshold //Check if queried data has higher ratio than threshold
+    ) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -765,31 +847,28 @@ function Workflows(props) {
                 </div>
               </div>
 
-              <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                Select Email
-              </div>
-              <Select className="mb-[2vh]" defaultValue="1">
-                {connectedEmailsList.map((email, index) => {
-                  return (
-                    <SelectItem
-                      value={(index + 1).toString()}
-                      onClick={() => {
-                        setSelectedEmail(email);
-                      }}
-                    >
-                      {email.email}
-                    </SelectItem>
-                  );
-                })}
-              </Select>
+              {source === "Email" && (
+                <>
+                  <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                    Select Email
+                  </div>
+                  <Select className="mb-[2vh]" defaultValue="1">
+                    {connectedEmailsList.map((email, index) => {
+                      return (
+                        <SelectItem
+                          value={(index + 1).toString()}
+                          onClick={() => {
+                            setSelectedEmail(email);
+                          }}
+                        >
+                          {email.email}
+                        </SelectItem>
+                      );
+                    })}
+                  </Select>
+                </>
+              )}
 
-              {/* <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                What type of messages do you want scraped?
-              </div>
-              <input
-                class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
-                placeholder="Type anything you want..."
-              ></input> */}
               <Button
                 variant="primary"
                 onClick={async () => {
