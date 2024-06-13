@@ -554,12 +554,12 @@ function Workflows(props) {
    * @returns {boolean} - Whether the email should be processed.
    */
   async function shouldProcessEmail(email) {
+    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
+    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
     const SPAM_EMAIL_COMPARISIONS = 50;
-    const SPAM_DB_LENGTH = 5170;
-    const NUM_SPAM_EMAILS = 1499;
+
     const subject = email.subject.toLowerCase();
-    const body = email.message.replace(/<[^>]+>/g, "");
-    const author = email.author_member.email;
+    const body = email.message.replace(/<[^>]+>/g, ""); //Remove HTML content
 
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
@@ -586,25 +586,15 @@ function Workflows(props) {
       }
     });
 
-    // Calculate the threshold based on the spam to non-spam ratio
+    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
     const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
     const nonSpamRatio = 1 - spamRatio;
     const threshold = spamRatio / (spamRatio + nonSpamRatio);
 
-    console.log(
-      "email",
-      email,
-      "Spam Ratio",
-      spamMatchCount / SPAM_EMAIL_COMPARISIONS,
-      "Threshold",
-      threshold
-    );
-
     if (
-      author === "" ||
       subject === "" ||
       email.channel_id === "DRAFT" ||
-      spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold //Check if queried data has higher ratio than threshold
     ) {
       return true;
     } else {
