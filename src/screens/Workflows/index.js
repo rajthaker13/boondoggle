@@ -349,7 +349,6 @@ function Workflows(props) {
                 user_to_dos.push(toDoObject);
               })
             );
-            const type_crm = localStorage.getItem("crmType");
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
@@ -376,7 +375,9 @@ function Workflows(props) {
             localStorage.setItem("linkedInLinked", true);
             localStorage.setItem("to_dos", user_to_dos);
             setOpenCookieModal(false);
-            window.location.reload();
+            // Clean up URL by removing query parameters
+            var cleanUrl = window.location.href.split("?")[0];
+            window.history.replaceState({}, document.title, cleanUrl);
           } else {
             console.log(cookieError);
             setCookieError("LoggedIn");
@@ -400,40 +401,42 @@ function Workflows(props) {
     const messagesString = messageData.messages
       .map((messageObject) => `${messageObject.sender}: ${messageObject.text}`)
       .join("\n");
+    const linkedInContext = `You are an automated CRM entry assistant for businesses and have data about a LinkedIn conversation between you (${messageData.profile}) and the person you are talking to who is ${customer}}. This is an string containing the content of the conversation: ${messagesString}. In this context, you are ${messageData.profile} logging the note into the CRM and you should not respond as if you are an AI.`;
+    let completionMessages = [
+      { role: "system", content: linkedInContext },
+      {
+        role: "user",
+        content: `Generate one sentence title that captures what this LinkedIn conversation is about. Do not return a response longer than one sentence.`,
+      },
+    ];
+
     const titleCompletion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a title that summarizes the conversaton and captures what it is about. Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself but mention who is logging the entry (without using words like I, myself, etc).",
-        },
-        {
-          role: "user",
-          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
-        },
-      ],
-      model: "gpt-4o",
+      messages: completionMessages,
+      model: "gpt-4",
     });
-    const title = titleCompletion.choices[0].message.content;
+
     const summaryCompletion = await openai.chat.completions.create({
       messages: [
+        ...completionMessages,
         {
-          role: "system",
-          content:
-            "You are a system that takes two inputs: A Customer Name and a string of messages between you and the customer on LinkedIn with a goal to automate CRM entries. Using the name of the customer and an array of messages (converted to a string) with each object formatted as a {senderName}: {senderMessage} you are to generate a brief summary that summarizes the conversaton and captures what it is about.  Please wrtie this in first-person and not as a third-party service as if you are logging the information to the CRM yourself (without using words like I, myself, etc).",
+          role: "assistant",
+          content: titleCompletion.choices[0].message.content,
         },
+
         {
           role: "user",
-          content: `The customer name is ${customer} and the string array of conversation is ${messagesString}`,
+          content: `Generate me a summary of this LinkedIn conversation. Do not talk as if you are AI, and enter the data as if you are ${messageData.profile} in third-person (Do not use any terms like I, we, etc.)`,
         },
       ],
       model: "gpt-4o",
     });
-    const summary = summaryCompletion.choices[0].message.content;
 
     return {
-      title: title,
-      summary: summary,
+      title: titleCompletion.choices[0].message.content.replace(
+        /^"(.*)"$/,
+        "$1"
+      ),
+      summary: summaryCompletion.choices[0].message.content,
     };
   }
 
@@ -457,7 +460,6 @@ function Workflows(props) {
       body: { user_id: id },
     });
 
-    let channels = data.channelData;
     let emails = data.emailData;
 
     //let userEmail = channels[0].members[0].email //only works for gmail
@@ -790,31 +792,28 @@ function Workflows(props) {
                 </div>
               </div>
 
-              <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                Select Email
-              </div>
-              <Select className="mb-[2vh]" defaultValue="1">
-                {connectedEmailsList.map((email, index) => {
-                  return (
-                    <SelectItem
-                      value={(index + 1).toString()}
-                      onClick={() => {
-                        setSelectedEmail(email);
-                      }}
-                    >
-                      {email.email}
-                    </SelectItem>
-                  );
-                })}
-              </Select>
+              {source === "Email" && (
+                <>
+                  <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                    Select Email
+                  </div>
+                  <Select className="mb-[2vh]" defaultValue="1">
+                    {connectedEmailsList.map((email, index) => {
+                      return (
+                        <SelectItem
+                          value={(index + 1).toString()}
+                          onClick={() => {
+                            setSelectedEmail(email);
+                          }}
+                        >
+                          {email.email}
+                        </SelectItem>
+                      );
+                    })}
+                  </Select>
+                </>
+              )}
 
-              {/* <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                What type of messages do you want scraped?
-              </div>
-              <input
-                class="px-3 py-2 bg-white rounded-lg shadow border border-gray-200 justify-start items-start gap-2 inline-flex mb-[5vh]"
-                placeholder="Type anything you want..."
-              ></input> */}
               <Button
                 variant="primary"
                 onClick={async () => {
