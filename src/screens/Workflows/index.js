@@ -6,6 +6,7 @@ import WorkflowSidebar from "../../components/WorkflowSidebar";
 import { Button, Dialog, DialogPanel, Select, SelectItem } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
+import { Pinecone } from "@pinecone-database/pinecone";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,10 @@ function Workflows(props) {
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
     dangerouslyAllowBrowser: true,
+  });
+
+  const pinecone = new Pinecone({
+    apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
 
   useEffect(() => {
@@ -469,7 +474,8 @@ function Workflows(props) {
 
     //Filters and processes each email
     for (const email of emails) {
-      if (shouldProcessEmail(email)) {
+      const isSpamEmail = await shouldProcessEmail(email);
+      if (!isSpamEmail) {
         const fromIndex = new_emails.findIndex(
           (item) => item.customer === email.author_member.name
         );
@@ -547,34 +553,50 @@ function Workflows(props) {
    * @param {Object} email - The email to check.
    * @returns {boolean} - Whether the email should be processed.
    */
-  function shouldProcessEmail(email) {
-    const body = email.message.toLowerCase();
+  async function shouldProcessEmail(email) {
+    console.log("Email Object", email);
+    const body = email.message.replace(/<[^>]+>/g, "");
     const author = email.author_member.name;
-    return (
-      author !== "" &&
-      !body.includes("verify") &&
-      !body.includes("verification") &&
-      !body.includes("alert") &&
-      !body.includes("confirmation") &&
-      !body.includes("invitation") &&
-      !body.includes("webinar") &&
-      !body.includes("activation") &&
-      !body.includes("unsubscribe") &&
-      !body.includes("considering") &&
-      !body.includes("tax") &&
-      !body.includes("taxes") &&
-      !body.includes("notification") &&
-      !body.includes("demo") &&
-      !body.includes("hesitate") &&
-      !body.includes("registration") &&
-      !body.includes("contact us") &&
-      !body.includes("faq") &&
-      !body.includes("luma") &&
-      !body.includes("receipt") &&
-      !body.includes("automation") &&
-      !body.includes("automated") &&
-      email.channel_id !== "DRAFT"
+
+    const index = pinecone.index("spam-data");
+    const ns1 = index.namespace("version-2");
+
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: `${body}`,
+    });
+
+    const spamEmailResponse = await ns1.query({
+      topK: 5,
+      vector: embedding.data[0].embedding,
+      includeMetadata: true,
+    });
+
+    const spamMatchesArray = spamEmailResponse.matches;
+    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+
+    let spamMatchCount = 0;
+
+    spamMatches.map((spamEmail) => {
+      if (spamEmail.label_num == 1) {
+        spamMatchCount += 1;
+      }
+    });
+
+    console.log(
+      "Spam Matches",
+      spamMatches,
+      "email",
+      email,
+      "Spam Count",
+      spamMatchCount
     );
+
+    if (author === "" || email.channel_id === "DRAFT" || spamMatchCount > 2) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
