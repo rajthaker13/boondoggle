@@ -554,17 +554,19 @@ function Workflows(props) {
    * @returns {boolean} - Whether the email should be processed.
    */
   async function shouldProcessEmail(email) {
-    const SPAM_EMAIL_COMPARISIONS = 21;
+    const SPAM_EMAIL_COMPARISIONS = 50;
+    const SPAM_DB_LENGTH = 5170;
+    const NUM_SPAM_EMAILS = 1499;
     const subject = email.subject.toLowerCase();
-    // const body = email.message.replace(/<[^>]+>/g, "");
-    const author = email.author_member.name;
+    const body = email.message.replace(/<[^>]+>/g, "");
+    const author = email.author_member.email;
 
     const index = pinecone.index("spam-data");
-    const ns1 = index.namespace("version-2");
+    const ns1 = index.namespace("version-3");
 
     const embedding = await openai.embeddings.create({
       model: "text-embedding-3-small",
-      input: `Subject: ${subject}`,
+      input: `Subject: ${subject} \n ${body}`,
     });
 
     const spamEmailResponse = await ns1.query({
@@ -584,20 +586,25 @@ function Workflows(props) {
       }
     });
 
+    // Calculate the threshold based on the spam to non-spam ratio
+    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
+    const nonSpamRatio = 1 - spamRatio;
+    const threshold = spamRatio / (spamRatio + nonSpamRatio);
+
     console.log(
-      "Spam Matches",
-      spamMatches,
       "email",
       email,
-      "Spam Count",
-      spamMatchCount
+      "Spam Ratio",
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS,
+      "Threshold",
+      threshold
     );
 
     if (
       author === "" ||
       subject === "" ||
       email.channel_id === "DRAFT" ||
-      spamMatchCount > Math.floor(SPAM_EMAIL_COMPARISIONS / 2)
+      spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold
     ) {
       return true;
     } else {
