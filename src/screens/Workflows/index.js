@@ -554,8 +554,9 @@ function Workflows(props) {
    * @returns {boolean} - Whether the email should be processed.
    */
   async function shouldProcessEmail(email) {
-    console.log("Email Object", email);
-    const body = email.message.replace(/<[^>]+>/g, "");
+    const SPAM_EMAIL_COMPARISIONS = 21;
+    const subject = email.subject.toLowerCase();
+    // const body = email.message.replace(/<[^>]+>/g, "");
     const author = email.author_member.name;
 
     const index = pinecone.index("spam-data");
@@ -563,11 +564,11 @@ function Workflows(props) {
 
     const embedding = await openai.embeddings.create({
       model: "text-embedding-3-small",
-      input: `${body}`,
+      input: `Subject: ${subject}`,
     });
 
     const spamEmailResponse = await ns1.query({
-      topK: 5,
+      topK: SPAM_EMAIL_COMPARISIONS,
       vector: embedding.data[0].embedding,
       includeMetadata: true,
     });
@@ -592,7 +593,12 @@ function Workflows(props) {
       spamMatchCount
     );
 
-    if (author === "" || email.channel_id === "DRAFT" || spamMatchCount > 2) {
+    if (
+      author === "" ||
+      subject === "" ||
+      email.channel_id === "DRAFT" ||
+      spamMatchCount > Math.floor(SPAM_EMAIL_COMPARISIONS / 2)
+    ) {
       return true;
     } else {
       return false;
