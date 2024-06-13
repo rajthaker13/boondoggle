@@ -240,9 +240,10 @@ export async function createPineconeIndexes(connection_id) {
                   metadata: {
                     type,
                     ...item,
-                    emails: JSON.stringify(item.emails),
-                    telephones: JSON.stringify(item.telephones),
-                    address: JSON.stringify(item.address),
+                    emails: item.emails && JSON.stringify(item.emails),
+                    telephones:
+                      item.telephones && JSON.stringify(item.telephones),
+                    address: item.address && JSON.stringify(item.address),
                     note: item.note && JSON.stringify(item.note),
                     meeting: item.meeting && JSON.stringify(item.meeting),
                     call: item.call && JSON.stringify(item.call),
@@ -311,6 +312,7 @@ export async function createPineconeIndexes(connection_id) {
 
   // Sort issuesArray based on priority, descending
   issuesArray.sort((a, b) => b.priority - a.priority);
+  console.log("Issues Array", issuesArray);
 
   return {
     score: finalScore,
