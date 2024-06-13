@@ -7,15 +7,6 @@ export const CRITERIA_WEIGHTS = {
       emails: {
         email: 20,
       },
-      telephones: {
-        telephone: 20,
-      },
-      address: {
-        address1: 5,
-        city: 1,
-        postal_code: 1,
-        country: 1,
-      },
     },
   },
   deal: {
@@ -33,16 +24,7 @@ export const CRITERIA_WEIGHTS = {
       emails: {
         email: 20,
       },
-      telephones: {
-        telephone: 15,
-      },
       websites: 15,
-      address: {
-        address1: 5,
-        city: 1,
-        postal_code: 1,
-        country: 1,
-      },
       description: 10,
       industry: 10,
       employees: 5,

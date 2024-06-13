@@ -58,15 +58,17 @@ function BoondogggleAI(props) {
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
       setIsLoading(true);
+      const userQuery = query;
+      setQuery("");
       setAnswer("");
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
       );
       const userQueryContainer = document.createElement("div");
       userQueryContainer.className = "boondoggle-ai-chat";
-      const userQueryText = document.createElement("p");
-      userQueryText.className = "boondoggle-ai-chat-text-query";
-      userQueryText.textContent = query;
+      const userQueryText = document.createElement("strong");
+      // userQueryText.className = "boondoggle-ai-chat-text-query";
+      userQueryText.textContent = userQuery;
       userQueryContainer.appendChild(userQueryText);
       boondoggleAiChatContent.appendChild(userQueryContainer);
 
@@ -110,25 +112,24 @@ function BoondogggleAI(props) {
       const queryTransformationChain = queryTransformPrompt.pipe(llm);
       // Generate query based on previous conversation
       const newQuery = await queryTransformationChain.invoke({
-        messages: [...temp_langchain, new HumanMessage(query)],
+        messages: [...temp_langchain, new HumanMessage(userQuery)],
       });
       // Get the new search quergy
-      const searchQuery = `User query: ${query}, Edited Query: ${newQuery.content}`;
+      const searchQuery = `User query: ${userQuery}, Edited Query: ${newQuery.content}`;
 
-      setQuery("");
       //Generate embeddings for a semantic search
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: `${searchQuery}`,
       });
       // Perform top k semantic search in pinecone based on different type
-      const index = pinecone.index("boondoggle-data-3");
+      const index = pinecone.index("boondoggle-data-4");
       const id = localStorage.getItem("connection_id");
 
       const ns1 = index.namespace(id);
 
       const dealsResponse = await ns1.query({
-        topK: 20,
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -136,21 +137,39 @@ function BoondogggleAI(props) {
         },
       });
 
-      const dealsMatches = dealsResponse.matches;
+      const dealsMatchesArray = dealsResponse.matches;
+      const dealsMatches = dealsMatchesArray.map((deal) => deal.metadata);
 
-      const contactResponse = await ns1.query({
-        topK: 20,
+      const companiesResponse = await ns1.query({
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
-          type: { $eq: "Lead" },
+          type: { $eq: "Company" },
         },
       });
 
-      const contactMatches = contactResponse.matches;
+      const companiesMatchesArray = companiesResponse.matches;
+      const companiesMatches = companiesMatchesArray.map(
+        (company) => company.metadata
+      );
+
+      const contactResponse = await ns1.query({
+        topK: 10,
+        vector: embedding.data[0].embedding,
+        includeMetadata: true,
+        filter: {
+          type: { $eq: "Contact" },
+        },
+      });
+
+      const contactMatchesArray = contactResponse.matches;
+      const contactMatches = contactMatchesArray.map(
+        (contact) => contact.metadata
+      );
 
       const notesResponse = await ns1.query({
-        topK: 20,
+        topK: 10,
         vector: embedding.data[0].embedding,
         includeMetadata: true,
         filter: {
@@ -158,15 +177,22 @@ function BoondogggleAI(props) {
         },
       });
 
-      const notesMatches = notesResponse.matches;
+      const notesMatchesArray = notesResponse.matches;
+      const notesMatches = notesMatchesArray.map((note) => note.metadata);
+
       // Combine all results
-      const matches = [...dealsMatches, ...contactMatches, ...notesMatches];
+      const matches = [
+        ...dealsMatches,
+        ...contactMatches,
+        ...notesMatches,
+        ...companiesMatches,
+      ];
       // Fetch all results from unified based on matches
       let queryArray = [];
       // REST API calls
       await Promise.all(
         matches.map(async (match, index) => {
-          const matchType = match.metadata.type;
+          const matchType = match.type;
 
           if (matchType == "Deal") {
             const options = {

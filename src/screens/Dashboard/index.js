@@ -20,6 +20,7 @@ function Dashboard(props) {
   const [numIssues, setNumIssues] = useState(0);
   const [issuesResolved, setIssuesResolved] = useState(false);
   const [linkedInLinked, setLinkedInLinked] = useState(false);
+  const [storeDataExecuted, setStoreDataExecuted] = useState(false);
 
   useEffect(() => {
     /**
@@ -57,55 +58,52 @@ function Dashboard(props) {
       if (integrationCategory == "crm") {
         const urlParams = new URLSearchParams(window.location.search);
         const connection_id = urlParams.get("id");
-
-        if (!connection_id) {
-          return;
-        }
-
-        // Ensure the function runs only once
-        if (localStorage.getItem("connection_id") === connection_id) {
-          return;
-        }
+        console.log("Get Dashboard data", connection_id);
 
         setIsLoading(true);
 
         //retrieve the CRM scan score and the array of issues
-        const scanResult = await createPineconeIndexes(connection_id);
-        const newScore = scanResult.score;
-        const issuesArray = scanResult.issuesArray;
+        let scanResult;
+        try {
+          scanResult = await createPineconeIndexes(connection_id);
+          const newScore = scanResult.score;
+          const issuesArray = scanResult.issuesArray;
 
-        await props.db.from("data").insert({
-          connection_id: connection_id,
-          crm_data: [],
-          twitter_messages: [],
-          twitterLinked: false,
-          type: "crm",
-        });
+          await props.db.from("data").insert({
+            connection_id: connection_id,
+            crm_data: [],
+            twitter_messages: [],
+            twitterLinked: false,
+            type: "crm",
+          });
 
-        const uid = localStorage.getItem("uid");
+          const uid = localStorage.getItem("uid");
 
-        await props.db.from("users").insert({
-          id: uid,
-          crm_id: connection_id,
-          teamMembers: [
-            {
-              email: localStorage.getItem("email"),
-              uid: localStorage.getItem("uid"),
-              isAdmin: true,
-            },
-          ],
-        });
+          await props.db.from("users").insert({
+            id: uid,
+            crm_id: connection_id,
+            teamMembers: [
+              {
+                email: localStorage.getItem("email"),
+                uid: localStorage.getItem("uid"),
+                isAdmin: true,
+              },
+            ],
+          });
 
-        //Scoring here
-        setIsLoading(false);
-        localStorage.setItem("connection_id", connection_id);
-        localStorage.setItem("score", newScore);
-        localStorage.setItem("numIssues", issuesArray.length);
-        setNumIssues(issuesArray.length);
-        setCRMScore(newScore);
-        var cleanUrl = window.location.href.split("?")[0];
-        window.history.replaceState({}, document.title, cleanUrl);
-        setCRMConnected(true);
+          //Scoring here
+          setIsLoading(false);
+          localStorage.setItem("connection_id", connection_id);
+          localStorage.setItem("score", newScore);
+          localStorage.setItem("numIssues", issuesArray.length);
+          setNumIssues(issuesArray.length);
+          setCRMScore(newScore);
+          var cleanUrl = window.location.href.split("?")[0];
+          window.history.replaceState({}, document.title, cleanUrl);
+          setCRMConnected(true);
+        } catch (error) {
+          console.log(error);
+        }
       } else if (integrationCategory == "messaging") {
         /**
          * Extracts the id from URL parameters and saves it to db
@@ -163,12 +161,14 @@ function Dashboard(props) {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("id")) {
+    const id = urlParams.get("id");
+    if (id && !storeDataExecuted) {
+      setStoreDataExecuted(true);
       storeData();
     }
 
     getDashboardData();
-  }, []);
+  }, [storeDataExecuted]);
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
