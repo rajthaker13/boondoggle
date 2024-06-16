@@ -27,10 +27,21 @@ function ContactsDemo(props) {
         </TableHead>
         <TableBody>
           {props.issues.map((issue, index) => {
-            let issueMissingFields = issue.missingFields.join(" ");
+            let issueMissingFields = "";
+            issue.missingFields.map((field) => {
+              if (field == "emails[0].email") {
+                issueMissingFields += "Email ";
+              } else {
+                issueMissingFields += `${
+                  field.charAt(0).toUpperCase() + field.slice(1)
+                } `;
+              }
+            });
             return (
               <TableRow key={index}>
-                <TableCell>{issue.itemData.name}</TableCell>
+                <TableCell className="w-[10vw] whitespace-normal">
+                  {issue.itemData.name}
+                </TableCell>
                 <TableCell> {issueMissingFields}</TableCell>
                 <TableCell>
                   {Math.round((issue.priority / maxPriority) * 100)}
