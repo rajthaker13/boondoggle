@@ -613,7 +613,7 @@ function Workflows(props) {
       }
     } catch (error) {
       console.error("Error processing email:", error);
-      return false;
+      return true;
     }
   }
 
