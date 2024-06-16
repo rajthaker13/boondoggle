@@ -206,14 +206,14 @@ function NewEntries(props) {
       // const connection_id = "662fcf7451a04d41e55dd0c3";
       const isAdmin = localStorage.getItem("isAdmin");
 
-      if (isAdmin == "true") {
+      if (isAdmin == "true" && connection_id != null) {
         const { data, error } = await props.db
           .from("data")
           .select()
           .eq("connection_id", connection_id);
         setTableData(data[0].crm_data);
         setTasks(data[0].tasks);
-      } else {
+      } else if (isAdmin == "false" && connection_id != null) {
         const { data, error } = await props.db
           .from("users")
           .select()
@@ -303,7 +303,7 @@ function NewEntries(props) {
             </div> */}
           </div>
           <div className="overflow-x-auto">
-            <Table className="w-full">
+            <Table className="w-[90vw]">
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>Date</TableHeaderCell>

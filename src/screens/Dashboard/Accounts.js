@@ -32,7 +32,7 @@ function Accounts(props) {
           `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
         )
       ).json();
-      console.log("Email Integrations", integrations);
+
       let integrationData = [];
       //iterates over all integrations
       await Promise.all(

@@ -23,7 +23,7 @@ function Score(props) {
           `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=crm`
         )
       ).json();
-      console.log("Integrations", integrations);
+
       let integrationData = [];
 
       // Retrieve authentication URLs for each integration

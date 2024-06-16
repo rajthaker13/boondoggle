@@ -21,6 +21,8 @@ function Dashboard(props) {
   const [issuesResolved, setIssuesResolved] = useState(false);
   const [linkedInLinked, setLinkedInLinked] = useState(false);
   const [storeDataExecuted, setStoreDataExecuted] = useState(false);
+  const [contactIssues, setContactIssues] = useState([]);
+  const [companyIssues, setCompanyIssues] = useState([]);
 
   useEffect(() => {
     /**
@@ -30,20 +32,26 @@ function Dashboard(props) {
     async function getDashboardData() {
       const connection_id = localStorage.getItem("connection_id");
       if (connection_id != null) {
-        const resolved = localStorage.getItem("resolvedIssues");
-        const linkedIn = localStorage.getItem("linkedinLinked");
-        if (resolved != null) {
-          setCRMScore(linkedIn != null ? 92 : 90);
-          setCRMConnected(true);
-          setIssuesResolved(true);
-          if (linkedIn != null) {
-            setLinkedInLinked(true);
-          }
-        } else {
-          setCRMScore(localStorage.getItem("score"));
-          setNumIssues(localStorage.getItem("numIssues"));
-          setCRMConnected(true);
-        }
+        setCRMConnected(true);
+        const { data, error } = await props.db
+          .from("data")
+          .select()
+          .eq("connection_id", connection_id);
+
+        const contactIssuesTemp = data[0].issuesArray.filter(
+          (item) => item.type === "Contact"
+        );
+        const companyIssuesTemp = data[0].issuesArray.filter(
+          (item) => item.type === "Company"
+        );
+        setContactIssues(contactIssuesTemp);
+        setCompanyIssues(companyIssuesTemp);
+        // Calc final score
+        const finalScore = Math.round(
+          (data[0].crm_points / data[0].crm_max_points) * 100
+        );
+        setCRMScore(finalScore);
+        setNumIssues(data[0].issuesArray.length);
       }
     }
 
@@ -58,7 +66,6 @@ function Dashboard(props) {
       if (integrationCategory == "crm") {
         const urlParams = new URLSearchParams(window.location.search);
         const connection_id = urlParams.get("id");
-        console.log("Get Dashboard data", connection_id);
 
         setIsLoading(true);
 
@@ -69,12 +76,17 @@ function Dashboard(props) {
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
 
+          console.log("Scan result", scanResult);
+
           await props.db.from("data").insert({
             connection_id: connection_id,
             crm_data: [],
             twitter_messages: [],
             twitterLinked: false,
             type: "crm",
+            issuesArray: issuesArray,
+            crm_points: scanResult.points,
+            crm_max_points: scanResult.maxPoints,
           });
 
           const uid = localStorage.getItem("uid");
@@ -89,6 +101,9 @@ function Dashboard(props) {
                 isAdmin: true,
               },
             ],
+            issuesArray: issuesArray,
+            crm_points: scanResult.points,
+            crm_max_points: scanResult.maxPoints,
           });
 
           //Scoring here
