@@ -20,6 +20,7 @@ function Dashboard(props) {
   const [numIssues, setNumIssues] = useState(0);
   const [issuesResolved, setIssuesResolved] = useState(false);
   const [linkedInLinked, setLinkedInLinked] = useState(false);
+  const [emailLinked, setEmailLinked] = useState(false);
   const [storeDataExecuted, setStoreDataExecuted] = useState(false);
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
@@ -75,8 +76,6 @@ function Dashboard(props) {
           scanResult = await createPineconeIndexes(connection_id);
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
-
-          console.log("Scan result", scanResult);
 
           await props.db.from("data").insert({
             connection_id: connection_id,
@@ -162,15 +161,15 @@ function Dashboard(props) {
           // Include emailIDObj in update_package only if its email doesn't exist already
           if (!emailExists) {
             update_package.push(emailIDObj);
+            await props.db
+              .from("users")
+              .update({
+                email_data: update_package,
+                emailLinked: true,
+              })
+              .eq("id", uid);
+            setEmailLinked(true);
           }
-
-          await props.db
-            .from("users")
-            .update({
-              email_data: update_package,
-              emailLinked: true,
-            })
-            .eq("id", uid);
         }
       }
     }
@@ -246,6 +245,7 @@ function Dashboard(props) {
           crmConnected={crmConnected}
           linkedInLinked={linkedInLinked}
           db={props.db}
+          emailLinked={emailLinked}
         />
         {crmConnected && (
           <Issues

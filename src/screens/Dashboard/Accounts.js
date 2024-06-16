@@ -73,7 +73,7 @@ function Accounts(props) {
 
     checkEmailConnected();
     getEmailIntegrations();
-  }, []);
+  }, [props]);
 
   return (
     <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
