@@ -189,7 +189,7 @@ function Dashboard(props) {
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
-          {modalStep == 0 && <ContactsDemo />}
+          {modalStep == 0 && <ContactsDemo issues={contactIssues} />}
           {modalStep == 1 && <DealsDemo />}
           {modalStep == 2 && (
             <>
@@ -202,7 +202,7 @@ function Dashboard(props) {
             class={
               modalStep == 2
                 ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
-                : "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-blue-400"
+                : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
             onClick={async () => {
               if (modalStep == 2) {
@@ -230,6 +230,7 @@ function Dashboard(props) {
           </Button>
         </DialogPanel>
       </Dialog>
+
       <div className="justify-center items-center w-[100vw] h-[100vh]">
         <Header selectedTab={0} db={props.db} />
         <Score
