@@ -8,7 +8,6 @@ function Score(props) {
   const [crmType, setCRMType] = useState("");
 
   useEffect(() => {
-
     /**
      * Retrieves CRM integrations and connection details from the Unified API.
      * Integrations are fetched based on the workspace ID, and authentication
@@ -93,32 +92,6 @@ function Score(props) {
                 </span>
               </div>
             </div>
-            <div class="justify-start items-start gap-[15.50px] inline-flex">
-              <div class="p-[6.58px] bg-white rounded-md shadow border border-emerald-500 justify-center items-center gap-[7.58px] flex">
-                <div className="flex gap-1.5 items-center">
-                  <RiUserLine />
-                  <div class="text-gray-700 text-xs font-medium font-['Inter'] leading-[18.44px]">
-                    Contacts
-                  </div>
-                </div>
-              </div>
-              <div class="p-[6.41px] bg-white rounded-[5.13px] shadow border border-emerald-500 justify-center items-center gap-2 flex">
-                <div className="flex gap-1.5 items-center">
-                  <RiFireLine />
-                  <div class="text-gray-700 text-xs font-medium font-['Inter'] leading-[18.44px]">
-                    Deal Status
-                  </div>
-                </div>
-              </div>
-              <div class="p-[6.58px] bg-white rounded-md shadow border border-emerald-500 justify-center items-center gap-[7.58px] flex">
-                <div className="flex gap-1.5 items-center">
-                  <RiTableLine />
-                  <div class="text-gray-700 text-xs font-medium font-['Inter'] leading-[18.44px]">
-                    Pipeline
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
           <ProgressCircle size="xl" value={props.crmScore} color="emerald-500">
             <div class="w-[65.44px] text-center text-emerald-500 text-[21.22px] font-bold font-['Inter']">
@@ -156,7 +129,10 @@ function Score(props) {
                 return (
                   <SelectItem
                     onClick={() => {
-                      localStorage.setItem("selectedIntegrationCat", integration.data.categories[0])
+                      localStorage.setItem(
+                        "selectedIntegrationCat",
+                        integration.data.categories[0]
+                      );
                       window.open(integration.url, "_self");
                     }}
                   >

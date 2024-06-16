@@ -9,7 +9,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@tremor/react";
-import { RiLinkedinFill, RiMailLine, RiTwitterLine } from "@remixicon/react";
+import { RiLinkedinFill, RiMailLine } from "@remixicon/react";
 
 function NewEntries(props) {
   const [tableData, setTableData] = useState([]);
