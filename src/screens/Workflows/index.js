@@ -265,6 +265,73 @@ function Workflows(props) {
     };
   }
 
+  // Function to fetch enrichment profile data based on the provided linkedin URL
+  async function fetchLinkedInProfile(targetObj) {
+    // Define API request options
+    // Based on linkedIn profile
+    const apiOptions = (targetObj) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/v2/linkedin?url=${targetObj.url}&fallback_to_cache=on-error&use_cache=if-present&personal_email=include&personal_contact_number=include`,
+      headers: {
+        'Authorization': 'Bearer yfwsEmCNER0b3vzqV4fKLg',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    });
+    try {
+      console.log("APIQUERY", apiOptions(targetObj));
+      const response = await axios.request(apiOptions(targetObj));
+      const profile = response.data;
+      console.log("RESENRICH", JSON.stringify(response.data));  // Log the response data
+      if (profile !== null) {
+        // Extracting the most recent experience
+        const latestExperience = profile.experiences.reduce((latest, current) => {
+          const latestDate = new Date(latest.starts_at.year, latest.starts_at.month - 1, latest.starts_at.day);
+          const currentDate = new Date(current.starts_at.year, current.starts_at.month - 1, current.starts_at.day);
+          return currentDate > latestDate ? current : latest;
+        }, profile.experiences[0]);
+
+        // Construct the new object
+        const conciseProfile = {
+          url: `https://www.linkedin.com/in/${profile.public_identifier}`,
+          title: profile.occupation,
+          name: profile.full_name,
+          address: {
+            city: profile.city,
+            country: profile.country_full_name,
+            country_code: profile.country,
+            region: profile.state
+          },
+          company: latestExperience.company,
+          emails: profile.personal_emails,
+          telephones: profile.personal_numbers
+        };
+
+        console.log("RESCLEAN", conciseProfile);
+        return conciseProfile;
+      } else {
+        console.error('Profile data is not available');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching LinkedIn profile:', error);
+      // Handle errors appropriately based on the error type
+      if (error.response) {
+        // Server responded with a status code with error info
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      } else if (error.request) {
+        // No response was received after sending the request
+        console.error('No response received');
+      } else {
+        // Error setting up the request
+        console.error('Error setting up the request:', error.message);
+      }
+      return null;
+    }
+  };
+
+
   /**
    * Updates CRM and database based on Linkedin messages.
    *
@@ -333,6 +400,15 @@ function Workflows(props) {
                     summary: response.summary,
                     date: date,
                     url: messageData.url,
+                    address: {
+                      city: null,
+                      country: null,
+                      country_code: null,
+                      region: null,
+                    },
+                    company: null,
+                    emails: [],
+                    telephones: [],
                     source: "LinkedIn",
                     status: "Completed",
                   };
@@ -346,6 +422,27 @@ function Workflows(props) {
                     source: "LinkedIn",
                     status: "Incomplete",
                   };
+
+                  if (messageData.url != null) {
+                    const enrichObj = await fetchLinkedInProfile(messageData);
+                    // Updating 'obj' with 'enrichObj'
+                    obj.customer = enrichObj.name;
+                    obj.url = enrichObj.url;
+                    obj.title = enrichObj.title;  
+                    obj.address.city = enrichObj.address.city;
+                    obj.address.country = enrichObj.address.country;
+                    obj.address.country_code = enrichObj.address.country_code;
+                    obj.address.region = enrichObj.address.region;
+                    obj.company = enrichObj.company;
+                    obj.emails = enrichObj.emails || [];  // Ensure we default to an empty array if undefined
+                    obj.telephones = enrichObj.telephones || [];
+                    // Updating 'toDoObject'
+                    toDoObject.customer = enrichObj.name;
+
+                    console.log("UPDATE", obj);
+                  }
+
+
                   admin_crm_update.push(obj);
                   user_crm_update.push(obj);
                   new_crm_data.push(obj);
