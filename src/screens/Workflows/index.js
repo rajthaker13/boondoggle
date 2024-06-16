@@ -554,57 +554,65 @@ function Workflows(props) {
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
   }
-
   /**
    * Checks if an email should be processed based on certain criteria.
    * @param {Object} email - The email to check.
    * @returns {boolean} - Whether the email should be processed.
    */
   async function checkEmail(email) {
-    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
-    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
+    const SPAM_DB_LENGTH = 5170; // Number of emails in training dataset
+    const NUM_SPAM_EMAILS = 1499; // Number of emails that are labeled spam in vector db
     const SPAM_EMAIL_COMPARISIONS = 50;
+    const MAX_TOKEN_SIZE = 8191; // Define your maximum token size here
 
     const subject = email.subject.toLowerCase();
-    const body = email.message.replace(/<[^>]+>/g, ""); //Remove HTML content
+    let body = email.message.replace(/<[^>]+>/g, ""); // Remove HTML content
+    body = body.substring(0, MAX_TOKEN_SIZE); //Adjusting for additional characters
 
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
 
-    const embedding = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: `Subject: ${subject} \n ${body}`,
-    });
+    try {
+      const embedding = await openai.embeddings.create({
+        model: "text-embedding-3-small",
+        input: `Subject: ${subject} \n ${body}`,
+      });
 
-    const spamEmailResponse = await ns1.query({
-      topK: SPAM_EMAIL_COMPARISIONS,
-      vector: embedding.data[0].embedding,
-      includeMetadata: true,
-    });
+      const spamEmailResponse = await ns1.query({
+        topK: SPAM_EMAIL_COMPARISIONS,
+        vector: embedding.data[0].embedding,
+        includeMetadata: true,
+      });
 
-    const spamMatchesArray = spamEmailResponse.matches;
-    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+      const spamMatchesArray = spamEmailResponse.matches;
+      const spamMatches = spamMatchesArray.map(
+        (spamMatch) => spamMatch.metadata
+      );
 
-    let spamMatchCount = 0;
+      let spamMatchCount = 0;
 
-    spamMatches.map((spamEmail) => {
-      if (spamEmail.label_num == 1) {
-        spamMatchCount += 1;
+      spamMatches.map((spamEmail) => {
+        if (spamEmail.label_num == 1) {
+          spamMatchCount += 1;
+        }
+      });
+
+      // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
+      const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
+      const nonSpamRatio = 1 - spamRatio;
+      const threshold = spamRatio / (spamRatio + nonSpamRatio);
+
+      if (
+        subject === "" ||
+        email.channel_id === "DRAFT" ||
+        spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold // Check if queried data has higher ratio than threshold
+      ) {
+        return true;
+      } else {
+        return false;
       }
-    });
-
-    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
-    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
-    const nonSpamRatio = 1 - spamRatio;
-    const threshold = spamRatio / (spamRatio + nonSpamRatio);
-
-    if (
-      subject === "" ||
-      email.channel_id === "DRAFT" ||
-      spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold //Check if queried data has higher ratio than threshold
-    ) {
-      return true;
-    } else {
+    } catch (error) {
+      console.error("Error processing email:", error);
       return false;
     }
   }
