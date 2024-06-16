@@ -7,6 +7,7 @@ import { Button, Dialog, DialogPanel, Select, SelectItem } from "@tremor/react";
 import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 import { Pinecone } from "@pinecone-database/pinecone";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +26,15 @@ function Workflows(props) {
   const pinecone = new Pinecone({
     apiKey: process.env.REACT_APP_LINK_PINECONE_KEY,
   });
+
+  async function getUserData() {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db
+      .from("users")
+      .select("")
+      .eq("id", uid);
+    return data;
+  }
 
   useEffect(() => {
     /**
@@ -98,6 +108,8 @@ function Workflows(props) {
    */
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
+    let newContacts = [];
+    let newEvents = [];
 
     //iterates through all new data objects
     await Promise.all(
@@ -129,14 +141,12 @@ function Workflows(props) {
             //queries for CRM data of a particular contact
             const results = await searchCRMforContact(options);
             const current_crm = results.data[0];
-            const uid = localStorage.getItem("uid");
             let user_crm_id;
-            const { data, error } = await props.db
-              .from("users")
-              .select("")
-              .eq("id", uid);
+
+            const userData = await getUserData();
+
             //if employee_id isn't stored, find it using user email and save
-            if (!data[0].employee_id) {
+            if (!userData[0].employee_id) {
               let idResults;
               const idOptions = {
                 method: "GET",
@@ -171,7 +181,7 @@ function Workflows(props) {
                 }
               }
             } else {
-              user_crm_id = data[0].employee_id;
+              user_crm_id = userData[0].employee_id;
             }
 
             //if contanct exists, updates the contact in the CRM
@@ -186,9 +196,13 @@ function Workflows(props) {
                 contact_ids: [current_crm.id],
                 user_id: user_crm_id,
               };
-              await props.db.functions.invoke("update-crm-unified", {
-                body: { connection_id: connection_id, event: event },
-              });
+              const { data, error } = await props.db.functions.invoke(
+                "update-crm-unified",
+                {
+                  body: { connection_id: connection_id, event: event },
+                }
+              );
+              newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
               let contact;
@@ -207,20 +221,171 @@ function Workflows(props) {
                   name: update.customer,
                 };
               }
-              await props.db.functions.invoke("new-contact-unified", {
-                body: {
-                  connection_id: connection_id,
-                  contact: contact,
-                  title: update.title,
-                  description: `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
-                  user_id: user_crm_id,
-                },
-              });
+              const { data, error } = await props.db.functions.invoke(
+                "new-contact-unified",
+                {
+                  body: {
+                    connection_id: connection_id,
+                    contact: contact,
+                    title: update.title,
+                    description: `<b>${update.title}</b><br/><br/>${update.summary}<br/><br/>Summarized by Boondoggle AI`,
+                    user_id: user_crm_id,
+                  },
+                }
+              );
+              newContacts.push(data.contact);
+              newEvents.push(data.event);
             }
           }
         }
       })
     );
+    const contactEmbeddings = await generateEmbeddingsMessages(
+      newContacts,
+      "Contact"
+    );
+    const eventEmbeddings = await generateEmbeddingsMessages(
+      newEvents,
+      "Event"
+    );
+    const allEmbeddings = {
+      contacts: contactEmbeddings,
+      events: eventEmbeddings,
+    };
+
+    const index = pinecone.index("boondoggle-data-4");
+
+    const ns1 = index.namespace(connection_id);
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Function to upsert embeddings to Pinecone
+    const upsertEmbeddings = async (embeddings, type) => {
+      if (Array.isArray(embeddings)) {
+        for (const chunk of embeddings) {
+          if (Array.isArray(chunk)) {
+            let chunkArray = [];
+            for (const chunkObject of chunk) {
+              chunkArray.push(chunkObject);
+            }
+            let retries = 3;
+            while (retries > 0) {
+              try {
+                await ns1.upsert(chunkArray);
+                break;
+              } catch (error) {
+                retries--;
+                if (retries === 0) {
+                  throw error;
+                }
+                await delay(5000); // Wait for 5 seconds before retrying
+              }
+            }
+          }
+        }
+      }
+    };
+
+    for (const [type, embeddings] of Object.entries(allEmbeddings)) {
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await upsertEmbeddings(embeddings, type);
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) {
+            throw error;
+          }
+          await delay(5000); // Wait for 5 seconds before retrying
+        }
+      }
+    }
+  }
+
+  async function generateEmbeddingsMessages(data, type) {
+    // Chunk large array into small chunks
+    const chunkData = (array, size) =>
+      array.reduce((acc, _, i) => {
+        if (i % size === 0) acc.push(array.slice(i, i + size));
+        return acc;
+      }, []);
+
+    const processChunk = async (chunk) => {
+      return await Promise.all(
+        chunk.map(async (item) => {
+          try {
+            const splitter = new RecursiveCharacterTextSplitter({
+              chunkSize: 500,
+              chunkOverlap: 100,
+            });
+
+            const output = await splitter.createDocuments([
+              JSON.stringify(item),
+            ]);
+
+            let result = [];
+            await Promise.all(
+              output.map(async (chunk) => {
+                let response;
+
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                  try {
+                    response = await openai.embeddings.create({
+                      model: "text-embedding-3-small",
+                      input: chunk.pageContent,
+                    });
+                    break; // Exit the loop if the request is successful
+                  } catch (err) {
+                    if (attempt === 3) {
+                      throw err; // Rethrow the error after the final attempt
+                    }
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, attempt * 2000)
+                    ); // Increase delay with each attempt
+                  }
+                }
+
+                const embedding = response.data[0].embedding;
+
+                const obj = {
+                  id: item.id,
+                  values: embedding,
+                  metadata: {
+                    type,
+                    ...item,
+                    emails: item.emails && JSON.stringify(item.emails),
+                    telephones:
+                      item.telephones && JSON.stringify(item.telephones),
+                    address: item.address && JSON.stringify(item.address),
+                    note: item.note && JSON.stringify(item.note),
+                    meeting: item.meeting && JSON.stringify(item.meeting),
+                    call: item.call && JSON.stringify(item.call),
+                    task: item.task && JSON.stringify(item.task),
+                  },
+                };
+
+                result.push(obj);
+              })
+            );
+
+            return result;
+          } catch (error) {
+            console.error(`Error generating embedding for ${type}:`, error);
+            return null;
+          }
+        })
+      );
+    };
+    const dataChunks = chunkData(data, 100); // Process data in chunks of 100
+
+    let allResults = [];
+    for (let chunk of dataChunks) {
+      const chunkResults = await processChunk(chunk);
+      allResults = allResults.concat(chunkResults);
+    }
+
+    return allResults;
   }
 
   /**
@@ -323,8 +488,6 @@ function Workflows(props) {
                   const date = Date.now();
                   const uniqueId = generateUniqueId();
 
-                  console.log("MessageData", messageData);
-
                   //saves title, summary, todos, and response in data objects
                   var obj = {
                     id: uniqueId,
@@ -384,7 +547,6 @@ function Workflows(props) {
             var cleanUrl = window.location.href.split("?")[0];
             window.history.replaceState({}, document.title, cleanUrl);
           } else {
-            console.log(cookieError);
             setCookieError("LoggedIn");
             setIsLoading(false);
           }
