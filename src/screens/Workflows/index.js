@@ -626,11 +626,6 @@ function Workflows(props) {
     //let userEmail = channels[0].members[0].email //only works for gmail
     localStorage.setItem("user_email", userEmail);
 
-    //fetches and saves current CRM data from Supabase
-    const fetch_crm = await getCRMData();
-
-    let admin_crm_update = fetch_crm.admin_crm_data;
-    let user_crm_update = fetch_crm.user_crm_data;
     let new_crm_data = [];
 
     let new_emails = [];
@@ -675,12 +670,19 @@ function Workflows(props) {
             status: email.status,
           };
 
-          admin_crm_update.push(obj);
-          user_crm_update.push(obj);
           new_crm_data.push(obj);
         }
       })
     );
+
+    //fetches and saves current CRM data from Supabase
+    const fetch_crm = await getCRMData();
+
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let user_crm_update = fetch_crm.user_crm_data;
+
+    admin_crm_update = [...admin_crm_update, ...new_crm_data];
+    user_crm_update = [...user_crm_update, ...new_crm_data];
 
     // Update CRM with new data
     await props.db
@@ -915,12 +917,22 @@ function Workflows(props) {
   async function generateEmailCRMData(email, userEmail) {
     const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
     const subject = email.data.subject;
+    const MAX_SNIPPET_SIZE = 5000;
 
     const snippetString = email.snippet
       .map((message) => `${message.sender}: ${message.message}`)
       .join("\n");
 
-    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${selectedEmail.name}. This is an array containing the content of the conversation: ${snippetString} under the subject: ${subject}. This is a ${email.type} conversation. In this context, you are ${selectedEmail.name} logging the note into the CRM and you should not respond as if you are an AI.`;
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
+      selectedEmail.name
+    }. This is an array containing the content of the conversation: ${snippetString.substring(
+      0,
+      MAX_SNIPPET_SIZE
+    )} under the subject: ${subject}. This is a ${
+      email.type
+    } conversation. In this context, you are ${
+      selectedEmail.name
+    } logging the note into the CRM and you should not respond as if you are an AI.`;
 
     let completionMessages = [
       { role: "system", content: emailContext },
