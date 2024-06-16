@@ -211,14 +211,14 @@ function NewEntries(props) {
           .from("data")
           .select()
           .eq("connection_id", connection_id);
-        setTableData(data[0].crm_data);
+        setTableData(data[0].crm_data.reverse());
         setTasks(data[0].tasks);
       } else if (isAdmin == "false" && connection_id != null) {
         const { data, error } = await props.db
           .from("users")
           .select()
           .eq("id", uid);
-        setTableData(data[0].crm_data);
+        setTableData(data[0].crm_data.reverse());
         setTasks(data[0].tasks);
       }
     }
@@ -323,7 +323,7 @@ function NewEntries(props) {
                     const timeAgoString = timeAgo(timestamp);
                     return (
                       <TableRow key={lead.id}>
-                        <TableCell>Today</TableCell>
+                        <TableCell>{timeAgoString}</TableCell>
                         <TableCell>LinkedIn {`->`} Hubspot</TableCell>
                         <TableCell className="whitespace-normal">
                           {lead.title}
