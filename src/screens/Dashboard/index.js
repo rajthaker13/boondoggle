@@ -54,6 +54,30 @@ function Dashboard(props) {
         setCRMScore(finalScore);
         setNumIssues(data[0].issuesArray.length);
       }
+      //Check if LinkedIn extension is installed
+      try {
+        const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
+        // Message you want to send to the extension
+        const message = {
+          action: "getCookie",
+          url: "https://www.linkedin.com/", // Specify the correct URL
+          cookieName: "li_at", // Specify the correct cookie name
+        };
+        //Fetches Linkedin cookie
+        window.chrome.runtime.sendMessage(
+          extensionId,
+          message,
+          async function (response) {
+            if (response != null) {
+              setLinkedInLinked(true);
+            } else {
+              setLinkedInLinked(false);
+            }
+          }
+        );
+      } catch (erorr) {
+        setLinkedInLinked(false);
+      }
     }
 
     /**
