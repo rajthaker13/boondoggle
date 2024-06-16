@@ -460,7 +460,6 @@ function Workflows(props) {
         message,
         async function (response) {
           if (response && response.cookie != null) {
-            const fetch_crm = await getCRMData();
             const cookie = response.cookie;
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
@@ -469,54 +468,49 @@ function Workflows(props) {
               }
             );
             const messageArray = data.text;
+
+            let new_crm_data = [];
+
+            //Generates title, summary, to-do item, response for each chat history
+            for (let i = 0; i < messageArray.length; i++) {
+              const messageData = messageArray[i];
+              const customer = messageData.name;
+              const response = await generateLinkedinCRMData(messageData);
+              const isSpamMessage = await checkLinkedInMessage(
+                response.title,
+                response.summary
+              );
+
+              if (!isSpamMessage) {
+                const date = Date.now();
+                const uniqueId = generateUniqueId();
+
+                // Create CRM Data Object
+                const obj = {
+                  id: uniqueId,
+                  customer: customer,
+                  title: response.title,
+                  summary: response.summary,
+                  date: date,
+                  url: messageData.url,
+                  source: "LinkedIn",
+                  status: "Completed",
+                };
+
+                // Update CRM and ToDo Lists
+                new_crm_data.push(obj);
+              }
+            }
+
+            const fetch_crm = await getCRMData();
             let admin_crm_update = fetch_crm.admin_crm_data;
             let admin_to_dos = fetch_crm.admin_to_dos;
             let user_crm_update = fetch_crm.user_crm_data;
             let user_to_dos = fetch_crm.user_to_dos;
-            let new_crm_data = [];
 
-            //Generates title, summary, to-do item, response for each chat history
-            await Promise.all(
-              messageArray.map(async (messageData) => {
-                const customer = messageData.name;
-                const response = await generateLinkedinCRMData(messageData);
-                const isSpamMessage = await checkLinkedInMessage(
-                  response.title,
-                  response.summary
-                );
-                if (!isSpamMessage) {
-                  const date = Date.now();
-                  const uniqueId = generateUniqueId();
+            admin_crm_update = [...admin_crm_update, ...new_crm_data];
+            user_crm_update = [...user_crm_update, ...new_crm_data];
 
-                  //saves title, summary, todos, and response in data objects
-                  var obj = {
-                    id: uniqueId,
-                    customer: customer,
-                    title: response.title,
-                    summary: response.summary,
-                    date: date,
-                    url: messageData.url,
-                    source: "LinkedIn",
-                    status: "Completed",
-                  };
-
-                  var toDoObject = {
-                    id: uniqueId,
-                    customer: customer,
-                    title: response.toDoTitle,
-                    response: response.toDoResponse,
-                    date: date,
-                    source: "LinkedIn",
-                    status: "Incomplete",
-                  };
-                  admin_crm_update.push(obj);
-                  user_crm_update.push(obj);
-                  new_crm_data.push(obj);
-                  admin_to_dos.push(toDoObject);
-                  user_to_dos.push(toDoObject);
-                }
-              })
-            );
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
