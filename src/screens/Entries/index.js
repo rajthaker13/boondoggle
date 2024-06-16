@@ -46,18 +46,10 @@ function NewEntries(props) {
         console.log("SOURCE", source);
         if (update.customer != "") {
           let regexCustomer;
-          if (source == "Twitter") {
-            regexCustomer = update.customer.replace(
-              /\s(?=[\uD800-\uDFFF])/g,
-              ""
-            );
-          } else if (source == "Email") {
+          if (source == "Email") {
             regexCustomer = update.email;
           }
 
-          if (update.customer == "Blake Faulkner 🌉") {
-            regexCustomer = "Blake Faulkner";
-          }
           const options = {
             method: "GET",
             url: `https://api.unified.to/crm/${connection_id}/contact`,
@@ -210,9 +202,8 @@ function NewEntries(props) {
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
-      // const connection_id = localStorage.getItem("connection_id")
-      const connection_id = "662fcf7451a04d41e55dd0c3";
-      // const connection_id = "65f85a82aad1a3b83ecf1efd";
+      const connection_id = localStorage.getItem("connection_id");
+      // const connection_id = "662fcf7451a04d41e55dd0c3";
       const isAdmin = localStorage.getItem("isAdmin");
 
       if (isAdmin == "true") {
@@ -311,55 +302,57 @@ function NewEntries(props) {
               </div>
             </div> */}
           </div>
-          <Table className="w-[100%]">
-            <TableHead>
-              <TableRow>
-                <TableHeaderCell>Date</TableHeaderCell>
-                <TableHeaderCell>Workflow</TableHeaderCell>
-                <TableHeaderCell>Entry Title</TableHeaderCell>
-                <TableHeaderCell>Summary</TableHeaderCell>
-                <TableHeaderCell>Customer</TableHeaderCell>
-                <TableHeaderCell>Email</TableHeaderCell>
-                <TableHeaderCell>LinkedIn</TableHeaderCell>
-                <TableHeaderCell>Twitter</TableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <>
-                {tableData.map((lead, index) => {
-                  console.log(tableData);
-                  const timestamp = lead.date;
-                  const timeAgoString = timeAgo(timestamp);
-                  return (
-                    <TableRow key={lead.id}>
-                      <TableCell>Today</TableCell>
-                      <TableCell>LinkedIn {`->`} Hubspot</TableCell>
-                      <TableCell>{lead.title}</TableCell>
-                      <TableCell>{lead.summary}</TableCell>
-                      <TableCell>
-                        {lead.customer == "No Response"
-                          ? "Bank of America"
-                          : lead.customer}
-                      </TableCell>
-                      <TableCell>
-                        <RiMailLine />
-                      </TableCell>
-                      <TableCell
-                        onClick={() => {
-                          window.open(lead.url, "_blank");
-                        }}
-                      >
-                        <RiLinkedinFill />
-                      </TableCell>
-                      <TableCell>
-                        <RiTwitterLine />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </>
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table className="w-full">
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Date</TableHeaderCell>
+                  <TableHeaderCell>Workflow</TableHeaderCell>
+                  <TableHeaderCell>Entry Title</TableHeaderCell>
+                  <TableHeaderCell>Summary</TableHeaderCell>
+                  <TableHeaderCell>Customer</TableHeaderCell>
+                  <TableHeaderCell>Email</TableHeaderCell>
+                  <TableHeaderCell>LinkedIn</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <>
+                  {tableData.map((lead, index) => {
+                    console.log(tableData);
+                    const timestamp = lead.date;
+                    const timeAgoString = timeAgo(timestamp);
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell>Today</TableCell>
+                        <TableCell>LinkedIn {`->`} Hubspot</TableCell>
+                        <TableCell className="whitespace-normal">
+                          {lead.title}
+                        </TableCell>
+                        <TableCell className="whitespace-normal w-[20vw]">
+                          {lead.summary}
+                        </TableCell>
+                        <TableCell>
+                          {lead.customer === "No Response"
+                            ? "Bank of America"
+                            : lead.customer}
+                        </TableCell>
+                        <TableCell>
+                          <RiMailLine />
+                        </TableCell>
+                        <TableCell
+                          onClick={() => {
+                            window.open(lead.url, "_blank");
+                          }}
+                        >
+                          <RiLinkedinFill />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </>
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </div>
