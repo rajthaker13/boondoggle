@@ -205,6 +205,12 @@ function Workflows(props) {
               } else if (source == "LinkedIn") {
                 contact = {
                   name: update.customer,
+                  title: update.title,
+                  url: update.url,
+                  address: update.address,
+                  company: update.company,
+                  emails: update.emails,
+                  telephones: update.telephones,
                 };
               }
               await props.db.functions.invoke("new-contact-unified", {
