@@ -1,4 +1,4 @@
-import { RiLinkedinBoxFill, RiGridLine, RiUserAddLine } from "@remixicon/react";
+import { RiLinkedinBoxFill, RiUserAddLine } from "@remixicon/react";
 
 import React, { useEffect, useState } from "react";
 
@@ -32,7 +32,7 @@ function Accounts(props) {
           `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
         )
       ).json();
-      console.log("Email Integrations", integrations);
+
       let integrationData = [];
       //iterates over all integrations
       await Promise.all(
@@ -73,7 +73,7 @@ function Accounts(props) {
 
     checkEmailConnected();
     getEmailIntegrations();
-  }, []);
+  }, [props]);
 
   return (
     <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
@@ -171,9 +171,30 @@ function Accounts(props) {
           </div>
         </AccordionHeader>
         <AccordionBody className="leading-6">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus
-          tempor lorem non est congue blandit. Praesent non lorem sodales,
-          suscipit est sed, hendrerit dolor.
+          {props.linkedInLinked && (
+            <div class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-[2vh]">
+              Boondoggle AI chrome extension installed & connected to LinkedIn
+            </div>
+          )}
+          {!props.linkedInLinked && (
+            <>
+              <div class="text-gray-500 text-sm font-normal font-['Inter'] leading-tight mb-[2vh]">
+                Please download the Boondoggle AI chrome extension to connect
+                your LinkedIn by pressing the button below
+              </div>
+              <Button
+                className="w-[100%] py-[2%]"
+                onClick={() => {
+                  window.open(
+                    "https://chromewebstore.google.com/detail/boondoggle/lgeokfaihmdoipgmajekijkfppdmcnib?pli=1",
+                    "_blank"
+                  );
+                }}
+              >
+                Download Extension
+              </Button>
+            </>
+          )}
         </AccordionBody>
       </Accordion>
     </div>

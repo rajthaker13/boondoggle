@@ -99,41 +99,6 @@ function WorkflowSidebar(props) {
             )}
           </div>
         </div>
-        <div
-          class="w-[100%] h-[25px] justify-start items-center gap-[5px] inline-flex"
-          onClick={() => {
-            if (props.selectedWorkflow === "Twitter") {
-              props.setSelectedWorkflow("");
-            } else {
-              props.setSelectedWorkflow("Twitter");
-            }
-          }}
-        >
-          <div
-            class={
-              props.selectedWorkflow === "Twitter"
-                ? selectedClass
-                : unselectedClass
-            }
-          >
-            <RiTwitterFill
-              color={props.selectedWorkflow === "Twitter" ? "white" : "#349DF0"}
-              size={16}
-            />
-            <div
-              class={
-                props.selectedWorkflow === "Twitter"
-                  ? selectedText
-                  : unselectedText
-              }
-            >
-              Twitter
-            </div>
-            {props.selectedWorkflow === "Twitter" && (
-              <RiCloseCircleFill color="white" size={16} />
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
