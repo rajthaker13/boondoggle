@@ -292,40 +292,54 @@ export async function createPineconeIndexes(connection_id) {
 
     const ns1 = index.namespace(connection_id);
 
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     // Function to upsert embeddings to Pinecone
     const upsertEmbeddings = async (embeddings, type) => {
       if (Array.isArray(embeddings)) {
-        await Promise.all(
-          embeddings.map(async (chunk) => {
-            if (Array.isArray(chunk)) {
-              let chunkArray = [];
-              await Promise.all(
-                chunk.map(async (chunkObject) => {
-                  chunkArray.push(chunkObject);
-                })
-              );
+        for (const chunk of embeddings) {
+          if (Array.isArray(chunk)) {
+            let chunkArray = [];
+            for (const chunkObject of chunk) {
+              chunkArray.push(chunkObject);
+            }
+            let retries = 3;
+            while (retries > 0) {
               try {
                 await ns1.upsert(chunkArray);
+                break;
               } catch (error) {
-                console.log(`Error upserting ${type}`, error);
+                retries--;
+                if (retries === 0) {
+                  throw error;
+                }
+                await delay(5000); // Wait for 5 seconds before retrying
               }
             }
-          })
-        );
+          }
+        }
       }
     };
 
-    await Promise.all(
-      Object.entries(allEmbeddings).map(async ([type, embeddings]) => {
+    for (const [type, embeddings] of Object.entries(allEmbeddings)) {
+      let retries = 3;
+      while (retries > 0) {
         try {
           await upsertEmbeddings(embeddings, type);
+          break;
         } catch (error) {
-          console.error(error);
+          retries--;
+          if (retries === 0) {
+            throw error;
+          }
+          await delay(5000); // Wait for 5 seconds before retrying
         }
-      })
-    );
+      }
+    }
     // Calc final score
-    const finalScore = Math.round((score / maxScore) * 100);
+    const finalScore = Math.round(
+      (Math.round(score) / Math.round(maxScore)) * 100
+    );
 
     // Sort issuesArray based on priority, descending
     issuesArray.sort((a, b) => b.priority - a.priority);
@@ -334,8 +348,8 @@ export async function createPineconeIndexes(connection_id) {
       score: finalScore,
       issuesArray: issuesArray,
       typeCounter: typeCounter,
-      points: score,
-      maxPoints: maxScore,
+      points: Math.round(score),
+      maxPoints: Math.round(maxScore),
     };
   } catch (error) {}
 }
