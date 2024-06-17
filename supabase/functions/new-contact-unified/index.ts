@@ -9,6 +9,23 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
   const {connection_id, contact, title, description, user_id} = await req.json()
+  
+  function cleanContact(contact) {
+
+      if (Array.isArray(contact.emails) && contact.emails.length === 0) {
+          delete contact.emails;
+      }
+
+      // Check if telephones is an empty array
+      if (Array.isArray(contact.telephones) && contact.telephones.length === 0) {
+          delete contact.telephones;
+      }
+
+      return contact;
+  }
+  cleanContact(contact);
+  console.log("contact", contact);
+
 
   const url = `https://api.unified.to/crm/${connection_id}/contact`;
   const options = {
@@ -32,8 +49,8 @@ Deno.serve(async (req) => {
 
   }
   const contactResponse = await contactResults.json()
-  console.log(contactResponse)
-
+  console.log("contactRES", contactResponse);
+  
   const event = {
     id: contactResponse.id,
     type: "NOTE",

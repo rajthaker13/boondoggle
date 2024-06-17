@@ -199,74 +199,7 @@ function Dashboard(props) {
       }
     }
 
-    // Function to fetch enrichment profile data based on the provided email
-    async function fetchEnrichmentProfile(issueObj) {
-      // Define API request options
-      // Based on enrich_profile, lookup_depth, and email
-      const apiOptions = (issueObj) => ({
-        method: "GET",
-        maxBodyLength: Infinity,
-        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/profile/resolve/email?enrich_profile=enrich&lookup_depth=deep&email=${issueObj.email}`,
-        headers: {
-          'Authorization': 'Bearer yfwsEmCNER0b3vzqV4fKLg',
-          'X-Requested-With': 'XMLHttpRequest',
-        }
-      });
-      try {
-        console.log("APIQUERY", apiOptions(issueObj));
-        const response = await axios.request(apiOptions(issueObj));
-        const res = response.data;
-        console.log("RESENRICH", JSON.stringify(response.data));  // Log the response data
-        if (res !== null && res.linkedin_profile_url !== null) {
-          const profile = res.profile;
-          console.log("RESPROFILE", profile);
-          // Extracting the most recent experience
-          const latestExperience = profile.experiences.reduce((latest, current) => {
-            const latestDate = new Date(latest.starts_at.year, latest.starts_at.month - 1, latest.starts_at.day);
-            const currentDate = new Date(current.starts_at.year, current.starts_at.month - 1, current.starts_at.day);
-            return currentDate > latestDate ? current : latest;
-          }, profile.experiences[0]);
-
-          if (!profile.personal_emails.includes(issueObj.email)) {
-            profile.personal_emails.push(issueObj.email);
-          }
-
-          const conciseProfile = {
-            url: res.linkedin_profile_url,
-            title: profile.occupation,
-            name: profile.full_name,
-            address: {
-              city: profile.city,
-              country: profile.country_full_name,
-              country_code: profile.country,
-              region: profile.state
-            },
-            company: latestExperience.company,
-            emails: profile.personal_emails,
-            telephones: profile.personal_numbers
-          };
-
-          console.log("RESCLEAN", conciseProfile);
-        } else {
-          console.error('Profile data is not available');
-        }
-      } catch (error) {
-        console.error('Error fetching LinkedIn profile:', error);
-        // Handle errors appropriately based on the error type
-        if (error.response) {
-          // Server responded with a status code outside the 2xx range
-          console.error('Response status:', error.response.status);
-          console.error('Response data:', error.response.data);
-        } else if (error.request) {
-          // No response was received after sending the request
-          console.error('No response received');
-        } else {
-          // Error setting up the request
-          console.error('Error setting up the request:', error.message);
-        }
-      }
-    };
-
+    
 
 
     const urlParams = new URLSearchParams(window.location.search);

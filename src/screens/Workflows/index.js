@@ -209,12 +209,17 @@ function Workflows(props) {
               if (source == "Email") {
                 contact = {
                   name: update.customer,
+                  title: update.title,
+                  url: update.url,
+                  address: update.address,
+                  company: update.company,
                   emails: [
                     {
                       email: regexCustomer,
                       type: "WORK",
                     },
                   ],
+                  telephones: update.telephones,
                 };
               } else if (source == "LinkedIn") {
                 contact = {
@@ -558,29 +563,44 @@ function Workflows(props) {
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
 
-                  console.log("MessageData", messageData);
+                console.log("MessageData", messageData);
 
-                  //saves title, summary, todos, and response in data objects
-                  var obj = {
-                    id: uniqueId,
-                    customer: customer,
-                    title: response.title,
-                    summary: response.summary,
-                    date: date,
-                    url: messageData.url,
-                    address: {
-                      city: null,
-                      country: null,
-                      country_code: null,
-                      region: null,
-                    },
-                    company: null,
-                    emails: [],
-                    telephones: [],
-                    source: "LinkedIn",
-                    status: "Completed",
-                  };
+                //saves title, summary, todos, and response in data objects
+                var obj = {
+                  id: uniqueId,
+                  customer: customer,
+                  title: response.title,
+                  summary: response.summary,
+                  date: date,
+                  url: messageData.url,
+                  address: {
+                    city: null,
+                    country: null,
+                    country_code: null,
+                    region: null,
+                  },
+                  company: null,
+                  emails: [],
+                  telephones: [],
+                  source: "LinkedIn",
+                  status: "Completed",
+                };
 
+                if (messageData.url != null) {
+                  const enrichObj = await fetchLinkedInProfile(messageData);
+                  // Updating 'obj' with 'enrichObj'
+                  obj.customer = enrichObj.name;
+                  obj.url = enrichObj.url;
+                  obj.title = enrichObj.title;
+                  obj.address.city = enrichObj.address.city;
+                  obj.address.country = enrichObj.address.country;
+                  obj.address.country_code = enrichObj.address.country_code;
+                  obj.address.region = enrichObj.address.region;
+                  obj.company = enrichObj.company;
+                  obj.emails = enrichObj.emails;
+                  obj.telephones = enrichObj.telephones;
+                  console.log("UPDATE", obj);
+                };
                 // Update CRM and ToDo Lists
                 new_crm_data.push(obj);
               }
@@ -685,6 +705,73 @@ function Workflows(props) {
     };
   }
 
+  // Function to fetch enrichment profile data based on the provided email
+  async function fetchEnrichmentProfile(issueObj) {
+    // Define API request options
+    // Based on enrich_profile, lookup_depth, and email
+    const apiOptions = (issueObj) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/profile/resolve/email?enrich_profile=enrich&lookup_depth=deep&email=${issueObj.email}`,
+      headers: {
+        'Authorization': 'Bearer yfwsEmCNER0b3vzqV4fKLg',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    });
+    try {
+      console.log("APIQUERY", apiOptions(issueObj));
+      const response = await axios.request(apiOptions(issueObj));
+      const res = response.data;
+      console.log("RESENRICH", JSON.stringify(response.data));  // Log the response data
+      if (res !== null && res.linkedin_profile_url !== null) {
+        const profile = res.profile;
+        console.log("RESPROFILE", profile);
+        // Extracting the most recent experience
+        const latestExperience = profile.experiences.reduce((latest, current) => {
+          const latestDate = new Date(latest.starts_at.year, latest.starts_at.month - 1, latest.starts_at.day);
+          const currentDate = new Date(current.starts_at.year, current.starts_at.month - 1, current.starts_at.day);
+          return currentDate > latestDate ? current : latest;
+        }, profile.experiences[0]);
+
+        const conciseProfile = {
+          url: res.linkedin_profile_url,
+          title: profile.occupation,
+          name: profile.full_name,
+          address: {
+            city: profile.city,
+            country: profile.country_full_name,
+            country_code: profile.country,
+            region: profile.state
+          },
+          company: latestExperience.company,
+          emails: profile.personal_emails,
+          telephones: profile.personal_numbers
+        };
+
+        console.log("RESCLEAN", conciseProfile);
+        return conciseProfile;
+      } else {
+        console.error('Profile data is not available');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching LinkedIn profile:', error);
+      // Handle errors appropriately based on the error type
+      if (error.response) {
+        // Server responded with a status code outside the 2xx range
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      } else if (error.request) {
+        // No response was received after sending the request
+        console.error('No response received');
+      } else {
+        // Error setting up the request
+        console.error('Error setting up the request:', error.message);
+      }
+        return null;  
+    }
+  };
+
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
    *
@@ -742,7 +829,7 @@ function Workflows(props) {
             userEmail
           );
           const date = Date.now();
-
+          
           const obj = {
             id: email.id,
             customer: email.customer,
@@ -752,6 +839,22 @@ function Workflows(props) {
             date: date,
             source: "Email",
             status: email.status,
+          };
+          if (email.email != null) {
+            const enrichObj = await fetchEnrichmentProfile(email);
+            // Updating 'obj' with 'enrichObj'
+            if(enrichObj != null) {
+              obj.customer = enrichObj.name;
+              obj.url = enrichObj.url;
+              obj.title = enrichObj.title;
+              obj.address.city = enrichObj.address.city;
+              obj.address.country = enrichObj.address.country;
+              obj.address.country_code = enrichObj.address.country_code;
+              obj.address.region = enrichObj.address.region;
+              obj.company = enrichObj.company;
+              obj.telephones = enrichObj.telephones;
+              console.log("UPDATE", obj);
+            }
           };
 
           new_crm_data.push(obj);
@@ -1007,16 +1110,13 @@ function Workflows(props) {
       .map((message) => `${message.sender}: ${message.message}`)
       .join("\n");
 
-    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
-      selectedEmail.name
-    }. This is an array containing the content of the conversation: ${snippetString.substring(
-      0,
-      MAX_SNIPPET_SIZE
-    )} under the subject: ${subject}. This is a ${
-      email.type
-    } conversation. In this context, you are ${
-      selectedEmail.name
-    } logging the note into the CRM and you should not respond as if you are an AI.`;
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${selectedEmail.name
+      }. This is an array containing the content of the conversation: ${snippetString.substring(
+        0,
+        MAX_SNIPPET_SIZE
+      )} under the subject: ${subject}. This is a ${email.type
+      } conversation. In this context, you are ${selectedEmail.name
+      } logging the note into the CRM and you should not respond as if you are an AI.`;
 
     let completionMessages = [
       { role: "system", content: emailContext },
