@@ -580,9 +580,12 @@ function Workflows(props) {
               const messageData = messageArray[i];
               const customer = messageData.name;
               const response = await generateLinkedinCRMData(messageData);
+              const messagesString = messageData.messages
+                .map((messageObject) => `${messageObject.sender}: ${messageObject.text}`)
+                .join("\n");
               const isSpamMessage = await checkLinkedInMessage(
                 response.title,
-                response.summary
+                messagesString
               );
 
               if (!isSpamMessage) {
