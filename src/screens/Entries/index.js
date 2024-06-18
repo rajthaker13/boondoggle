@@ -206,21 +206,29 @@ function NewEntries(props) {
       // const connection_id = "662fcf7451a04d41e55dd0c3";
       const isAdmin = localStorage.getItem("isAdmin");
 
-      if (isAdmin == "true" && connection_id != null) {
-        const { data, error } = await props.db
-          .from("data")
-          .select()
-          .eq("connection_id", connection_id);
-        setTableData(data[0].crm_data.reverse());
-        setTasks(data[0].tasks);
-      } else if (isAdmin == "false" && connection_id != null) {
-        const { data, error } = await props.db
-          .from("users")
-          .select()
-          .eq("id", uid);
-        setTableData(data[0].crm_data.reverse());
-        setTasks(data[0].tasks);
-      }
+      const { data, error } = await props.db
+        .from("data")
+        .select()
+        .eq("connection_id", connection_id);
+      setTableData(data[0].crm_data.reverse());
+      setTasks(data[0].tasks);
+
+      //Will uncomment this out when we bring in team manager
+      // if (isAdmin == "true" && connection_id != null) {
+      //   const { data, error } = await props.db
+      //     .from("data")
+      //     .select()
+      //     .eq("connection_id", connection_id);
+      //   setTableData(data[0].crm_data.reverse());
+      //   setTasks(data[0].tasks);
+      // } else if (isAdmin == "false" && connection_id != null) {
+      //   const { data, error } = await props.db
+      //     .from("users")
+      //     .select()
+      //     .eq("id", uid);
+      //   setTableData(data[0].crm_data.reverse());
+      //   setTasks(data[0].tasks);
+      // }
     }
 
     async function checkOnBoarding() {

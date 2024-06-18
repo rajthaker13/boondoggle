@@ -100,6 +100,7 @@ function Dashboard(props) {
           scanResult = await createPineconeIndexes(connection_id);
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
+          console.log(issuesArray);
 
           await props.db.from("data").insert({
             connection_id: connection_id,
@@ -198,11 +199,17 @@ function Dashboard(props) {
       }
     }
 
+    
+
+
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
     if (id && !storeDataExecuted) {
       setStoreDataExecuted(true);
       storeData();
+      // const tmpObj = { email: "josh@meetapollo.io" };
+      // const res = fetchEnrichmentProfile(tmpObj);
+      // console.log("RES", res);
     }
 
     getDashboardData();
@@ -247,8 +254,8 @@ function Dashboard(props) {
               {modalStep == 0
                 ? "Continue"
                 : modalStep == 1
-                ? "Review"
-                : "Resolve"}
+                  ? "Review"
+                  : "Resolve"}
             </div>
           </Button>
         </DialogPanel>
