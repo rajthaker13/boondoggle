@@ -10,20 +10,20 @@ Deno.serve(async (req) => {
   }
   const {connection_id, contact, title, description, user_id} = await req.json()
   
-  function cleanContact(contact) {
+  // function cleanContact(contact) {
 
-      if (Array.isArray(contact.emails) && contact.emails.length === 0) {
-          delete contact.emails;
-      }
+  //     if (Array.isArray(contact.emails) && contact.emails.length === 0) {
+  //         delete contact.emails;
+  //     }
 
-      // Check if telephones is an empty array
-      if (Array.isArray(contact.telephones) && contact.telephones.length === 0) {
-          delete contact.telephones;
-      }
+  //     // Check if telephones is an empty array
+  //     if (Array.isArray(contact.telephones) && contact.telephones.length === 0) {
+  //         delete contact.telephones;
+  //     }
 
-      return contact;
-  }
-  cleanContact(contact);
+  //     return contact;
+  // }
+  // cleanContact(contact);
   console.log("contact", contact);
 
 
