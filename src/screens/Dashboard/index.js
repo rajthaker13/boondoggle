@@ -195,6 +195,18 @@ function Dashboard(props) {
               .eq("id", uid);
             setEmailLinked(true);
           }
+          else {
+            const updatedEmailData = data[0].email_data.map((item) =>
+              item.email === emailIDObj.email ? { ...item, connection_id: emailIDObj.connection_id } : item
+            );
+            await props.db
+              .from("users")
+              .update({
+                email_data: updatedEmailData,
+                emailLinked: true,
+              })
+              .eq("id", uid);
+          }
         }
       }
     }

@@ -119,7 +119,7 @@ function Workflows(props) {
           (source == "Email" && update.status == "Completed") ||
           source == "LinkedIn"
         ) {
-          if (update.customer != "") {
+              if (update.customer != "") {
             let regexCustomer;
             if (source == "Email") {
               regexCustomer = update.email;
@@ -1003,6 +1003,7 @@ function Workflows(props) {
               obj.customer = enrichObj.name;
               obj.url = enrichObj.url;
               obj.title = enrichObj.title;
+              obj.address = {};
               obj.address.city = enrichObj.address.city;
               obj.address.country = enrichObj.address.country;
               obj.address.country_code = enrichObj.address.country_code;
