@@ -12,7 +12,6 @@ function ContactsDemo(props) {
   const [maxPriority, setMaxPriority] = useState(0);
   useEffect(() => {
     setMaxPriority(props.issues[0].priority);
-    console.log("Data", props.issues);
   }, [props.issues]);
 
   return (

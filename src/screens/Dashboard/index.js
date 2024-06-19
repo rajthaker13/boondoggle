@@ -165,6 +165,8 @@ function Dashboard(props) {
 
           const connectionResponse = await axios.request(connectionOptions);
 
+          console.log("Email connection response", connectionResponse);
+
           let emailIDObj = {
             email: connectionResponse.data.auth.emails[0],
             connection_id: emailConnectionID,
@@ -199,17 +201,11 @@ function Dashboard(props) {
       }
     }
 
-    
-
-
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
     if (id && !storeDataExecuted) {
       setStoreDataExecuted(true);
       storeData();
-      // const tmpObj = { email: "josh@meetapollo.io" };
-      // const res = fetchEnrichmentProfile(tmpObj);
-      // console.log("RES", res);
     }
 
     getDashboardData();
@@ -220,11 +216,11 @@ function Dashboard(props) {
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && <ContactsDemo issues={contactIssues} />}
-          {modalStep == 1 && <DealsDemo />}
+          {modalStep == 1 && <DealsDemo issues={companyIssues} />}
           {modalStep == 2 && (
             <>
-              <ContactsDemo />
-              <DealsDemo />
+              <ContactsDemo issues={contactIssues} />
+              <DealsDemo issues={companyIssues} />
             </>
           )}
 
@@ -254,8 +250,8 @@ function Dashboard(props) {
               {modalStep == 0
                 ? "Continue"
                 : modalStep == 1
-                  ? "Review"
-                  : "Resolve"}
+                ? "Review"
+                : "Resolve"}
             </div>
           </Button>
         </DialogPanel>
