@@ -89,6 +89,7 @@ function Workflows(props) {
       const results = await axios.request(options);
       return results;
     } catch (error) {
+
       if (error.response && error.response.status === 429) {
         // If rate limited, wait for 2 seconds and retry the request
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -206,28 +207,84 @@ function Workflows(props) {
               newEvents.push(data.result);
             } else {
               console.log("Update", update);
-              //if contact does not exist, creates contact in the CRM
-              const companyID = await fetchCompanyEnrichmentDataLinnkedIn(
-                update.company,
-                update.companyUrl
-              );
-              console.log("Company ID", companyID);
+
               let contact;
               if (source == "Email") {
+                if (update.email != null) {
+                  const enrichObj = await fetchEnrichmentProfile(update);
+                  // Updating with 'enrichObj'
+                  if (enrichObj != null) {
+                    console.log("Enrich object", enrichObj);
+                    console.log("Initial Object", update);
+                    update.customer = enrichObj.name;
+                    update.url = enrichObj.url;
+                    update.title = enrichObj.title;
+                    update.address.city = enrichObj.address.city;
+                    update.address.country = enrichObj.address.country;
+                    update.address.country_code = enrichObj.address.country_code;
+                    update.address.region = enrichObj.address.region;
+                    update.company = enrichObj.company;
+                    update.companyUrl = enrichObj.companyUrl;
+                    update.emails = enrichObj.emails;
+                    update.telephones = enrichObj.telephones;
+                    console.log("Object Update", update);
+                  }
+                }
+                let companyID = null;
+                if (update.company !== null){
+                  companyID = await fetchCompanyEnrichmentDataLinkedIn(
+                    update.company,
+                    update.companyUrl
+                  );
+                  console.log("Company ID", companyID);
+                }
                 contact = {
                   name: update.customer,
                   title: update.title,
                   address: update.address,
                   company: update.company,
+                  ...(companyID !== null ? { company_ids: [companyID] } : {}),
                   emails: [
                     {
-                      email: regexCustomer,
-                      type: "WORK",
+                        email: regexCustomer,
+                        type: "WORK",
                     },
+                    ...(update.emails && update.emails.length > 0 ? update.emails : [])
                   ],
-                  telephones: update.telephones,
+                  ...(update.telephones && update.telephones.length > 0
+                    ? { telephones: update.telephones }
+                    : {}),
                 };
               } else if (source == "LinkedIn") {
+                if (update.url != null) {
+                  const enrichObj = await fetchLinkedInProfile(update);
+                  // Updating with 'enrichObj'
+                  if (enrichObj != null) {
+                    console.log("Enrich object", enrichObj);
+                    console.log("Initial Object", update);
+                    update.customer = enrichObj.name;
+                    update.url = enrichObj.url;
+                    update.title = enrichObj.title;
+                    update.address.city = enrichObj.address.city;
+                    update.address.country = enrichObj.address.country;
+                    update.address.country_code = enrichObj.address.country_code;
+                    update.address.region = enrichObj.address.region;
+                    update.company = enrichObj.company;
+                    update.companyUrl = enrichObj.companyUrl;
+                    update.emails = enrichObj.emails;
+                    update.telephones = enrichObj.telephones;
+                    console.log("Object Update", update);
+                  }
+                }
+                let companyID = null;
+                if (update.company !== null){
+                  companyID = await fetchCompanyEnrichmentDataLinkedIn(
+                    update.company,
+                    update.companyUrl
+                  );
+                  console.log("Company ID", companyID);
+                }
+                //if contact does not exist, creates contact in the CRM
                 contact = {
                   name: update.customer,
                   title: update.title,
@@ -611,25 +668,6 @@ function Workflows(props) {
                   source: "LinkedIn",
                   status: "Completed",
                 };
-
-                if (messageData.url != null) {
-                  const enrichObj = await fetchLinkedInProfile(messageData);
-                  // Updating 'obj' with 'enrichObj'
-                  if (enrichObj != null) {
-                    console.log("Enrich object", enrichObj);
-                    console.log("Initial Object", obj);
-                    obj.customer = enrichObj.name;
-                    obj.url = enrichObj.url;
-                    obj.title = enrichObj.title;
-                    obj.address.city = enrichObj.address.city;
-                    obj.address.country = enrichObj.address.country;
-                    obj.address.country_code = enrichObj.address.country_code;
-                    obj.address.region = enrichObj.address.region;
-                    obj.company = enrichObj.company;
-                    obj.companyUrl = enrichObj.companyUrl;
-                    console.log("Object Update", obj);
-                  }
-                }
                 // Update CRM and ToDo Lists
                 new_crm_data.push(obj);
               }
@@ -735,7 +773,7 @@ function Workflows(props) {
   }
 
   // Function to fetch compant enrichment data based on the linkedIn url
-  async function fetchCompanyEnrichmentDataLinnkedIn(
+  async function fetchCompanyEnrichmentDataLinkedIn(
     companyName,
     companyLinkedInUrl
   ) {
@@ -890,8 +928,11 @@ function Workflows(props) {
         );
 
         const conciseProfile = {
-          url: res.linkedin_profile_url,
-          title: profile.occupation,
+          websites: [
+            `https://www.linkedin.com/in/${profile.public_identifier}`,
+          ],
+          url: `https://www.linkedin.com/in/${profile.public_identifier}`,
+          title: latestExperience.title,
           name: profile.full_name,
           address: {
             city: profile.city,
@@ -900,6 +941,7 @@ function Workflows(props) {
             region: profile.state,
           },
           company: latestExperience.company,
+          companyUrl: latestExperience.company_linkedin_profile_url,
           emails: profile.personal_emails,
           telephones: profile.personal_numbers,
         };
@@ -993,25 +1035,19 @@ function Workflows(props) {
             title: title,
             summary: summary,
             date: date,
+            url: null,
+            address: {
+              city: null,
+              country: null,
+              country_code: null,
+              region: null,
+            },
+            company: null,
+            emails: [],
+            telephones: [],
             source: "Email",
             status: email.status,
           };
-          if (email.email != null) {
-            const enrichObj = await fetchEnrichmentProfile(email);
-            // Updating 'obj' with 'enrichObj'
-            if (enrichObj != null) {
-              obj.customer = enrichObj.name;
-              obj.url = enrichObj.url;
-              obj.title = enrichObj.title;
-              obj.address.city = enrichObj.address.city;
-              obj.address.country = enrichObj.address.country;
-              obj.address.country_code = enrichObj.address.country_code;
-              obj.address.region = enrichObj.address.region;
-              obj.company = enrichObj.company;
-              obj.telephones = enrichObj.telephones;
-              console.log("UPDATE", obj);
-            }
-          }
 
           new_crm_data.push(obj);
         }
@@ -1266,16 +1302,13 @@ function Workflows(props) {
       .map((message) => `${message.sender}: ${message.message}`)
       .join("\n");
 
-    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
-      selectedEmail.name
-    }. This is an array containing the content of the conversation: ${snippetString.substring(
-      0,
-      MAX_SNIPPET_SIZE
-    )} under the subject: ${subject}. This is a ${
-      email.type
-    } conversation. In this context, you are ${
-      selectedEmail.name
-    } logging the note into the CRM and you should not respond as if you are an AI.`;
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${selectedEmail.name
+      }. This is an array containing the content of the conversation: ${snippetString.substring(
+        0,
+        MAX_SNIPPET_SIZE
+      )} under the subject: ${subject}. This is a ${email.type
+      } conversation. In this context, you are ${selectedEmail.name
+      } logging the note into the CRM and you should not respond as if you are an AI.`;
 
     let completionMessages = [
       { role: "system", content: emailContext },

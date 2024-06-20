@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   const {connection_id, contact, title, description, user_id} = await req.json()
   
   // function cleanContact(contact) {
-
   //     if (Array.isArray(contact.emails) && contact.emails.length === 0) {
   //         delete contact.emails;
   //     }
