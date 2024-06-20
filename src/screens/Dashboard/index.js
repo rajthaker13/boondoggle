@@ -3,6 +3,7 @@ import Header from "../../components/Header";
 import Accounts from "./Accounts";
 import Issues from "./Issues";
 import Score from "./Score";
+import LoadingBar from "./LoadingBar";
 import LoadingOverlay from "react-loading-overlay";
 import { Dialog, DialogPanel, Button } from "@tremor/react";
 import ContactsDemo from "./DemoData/ContactsDemo";
@@ -13,6 +14,7 @@ import axios from "axios";
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [modalStep, setModalStep] = useState(0);
@@ -77,6 +79,7 @@ function Dashboard(props) {
         );
       } catch (erorr) {
         setLinkedInLinked(false);
+        setIsLoading(false); //loading state is reset on error
       }
     }
 
@@ -97,7 +100,9 @@ function Dashboard(props) {
         //retrieve the CRM scan score and the array of issues
         let scanResult;
         try {
+          setScanComplete(false);
           scanResult = await createPineconeIndexes(connection_id);
+          setScanComplete(true);
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
           console.log(issuesArray);
@@ -142,6 +147,7 @@ function Dashboard(props) {
           setCRMConnected(true);
         } catch (error) {
           console.log(error);
+          setIsLoading(false); //loading state is reset on error
         }
       } else if (integrationCategory == "messaging") {
         /**
@@ -216,31 +222,32 @@ function Dashboard(props) {
   }, [storeDataExecuted]);
 
   return (
-    <LoadingOverlay active={isLoading} spinner text="Please wait...">
+    <div>
+      {isLoading && <LoadingBar isLoading={isLoading} scanComplete={scanComplete} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
-          {modalStep == 0 && <ContactsDemo issues={contactIssues} />}
-          {modalStep == 1 && <DealsDemo />}
-          {modalStep == 2 && (
+          {modalStep === 0 && <ContactsDemo issues={contactIssues} />}
+          {modalStep === 1 && <DealsDemo />}
+          {modalStep === 2 && (
             <>
               <ContactsDemo />
               <DealsDemo />
             </>
           )}
-
+  
           <Button
-            class={
-              modalStep == 2
+            className={
+              modalStep === 2
                 ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
                 : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
             onClick={async () => {
-              if (modalStep == 2) {
+              if (modalStep === 2) {
                 setIsLoading(true);
                 await new Promise((resolve) => setTimeout(resolve, 5000));
-
+  
                 setIsLoading(false);
-
+  
                 setCRMScore(90);
                 setIssuesResolved(true);
                 setIsOpen(false);
@@ -250,45 +257,46 @@ function Dashboard(props) {
               }
             }}
           >
-            <div class="text-white text-sm font-medium font-['Inter'] leading-tight">
-              {modalStep == 0
+            <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
+              {modalStep === 0
                 ? "Continue"
-                : modalStep == 1
-                  ? "Review"
-                  : "Resolve"}
+                : modalStep === 1
+                ? "Review"
+                : "Resolve"}
             </div>
           </Button>
         </DialogPanel>
       </Dialog>
-
-      <div className="justify-center items-center w-[100vw] h-[100vh]">
-        <Header selectedTab={0} db={props.db} />
-        <Score
-          crmConnected={crmConnected}
-          setCRMConnected={setCRMConnected}
-          setIsLoading={true}
-          crmScore={crmScore}
-          numIssues={numIssues}
-          issuesResolved={issuesResolved}
-        />
-
-        <Accounts
-          crmConnected={crmConnected}
-          linkedInLinked={linkedInLinked}
-          db={props.db}
-          emailLinked={emailLinked}
-        />
-        {crmConnected && (
-          <Issues
+  
+      {!isLoading && (
+        <div className="justify-center items-center w-full h-full">
+          <Header selectedTab={0} db={props.db} />
+          <Score
             crmConnected={crmConnected}
-            setIsOpen={setIsOpen}
-            setOpenCookieModal={setOpenCookieModal}
+            setCRMConnected={setCRMConnected}
+            crmScore={crmScore}
+            numIssues={numIssues}
             issuesResolved={issuesResolved}
-            linkedInLinked={linkedInLinked}
           />
-        )}
-      </div>
-    </LoadingOverlay>
+  
+          <Accounts
+            crmConnected={crmConnected}
+            linkedInLinked={linkedInLinked}
+            db={props.db}
+            emailLinked={emailLinked}
+          />
+          {crmConnected && (
+            <Issues
+              crmConnected={crmConnected}
+              setIsOpen={setIsOpen}
+              setOpenCookieModal={setOpenCookieModal}
+              issuesResolved={issuesResolved}
+              linkedInLinked={linkedInLinked}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
