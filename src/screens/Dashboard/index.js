@@ -39,6 +39,10 @@ function Dashboard(props) {
           .select()
           .eq("connection_id", connection_id);
 
+        if(!data || !data[0]) {
+          return;
+        }
+        
         const contactIssuesTemp = data[0].issuesArray.filter(
           (item) => item.type === "Contact"
         );
@@ -164,43 +168,198 @@ function Dashboard(props) {
           };
 
           const connectionResponse = await axios.request(connectionOptions);
+          const expiryDate = new Date(connectionResponse.data.auth.expiry_date);
+          const currentDate = new Date(connectionResponse.data.updated_at);
 
           let emailIDObj = {
             email: connectionResponse.data.auth.emails[0],
             connection_id: emailConnectionID,
             name: connectionResponse.data.auth.name,
+            updated_at: currentDate,
+            expiry_date: expiryDate,
           };
 
-          const { data, error } = await props.db
+          try {
+            const { data, error } = await props.db
             .from("users")
             .select()
             .eq("id", uid);
 
-          // Check if emailIDObj's email already exists in data[0].email_data
-          const emailExists = data[0].email_data.some(
-            (item) => item.email === emailIDObj.email
-          );
+            // Check if emailIDObj's email already exists in data[0].email_data
+            const emailExists = data[0].email_data.some(
+              (item) => item.email === emailIDObj.email
+            );
 
-          let update_package = [...data[0].email_data];
+            let update_package = [...data[0].email_data];
 
-          // Include emailIDObj in update_package only if its email doesn't exist already
-          if (!emailExists) {
-            update_package.push(emailIDObj);
-            await props.db
-              .from("users")
-              .update({
-                email_data: update_package,
-                emailLinked: true,
-              })
-              .eq("id", uid);
-            setEmailLinked(true);
+            // Include emailIDObj in update_package only if its email doesn't exist already
+            if (!emailExists) {
+              update_package.push(emailIDObj);
+              await props.db
+                .from("users")
+                .update({
+                  email_data: update_package,
+                  emailLinked: true,
+                })
+                .eq("id", uid);
+              setEmailLinked(true);
+            }
+            else {
+              const updatedEmailData = data[0].email_data.map((item) =>
+                item.email === emailIDObj.email ? { 
+                  ...item, 
+                  connection_id: emailIDObj.connection_id, 
+                  updated_at: currentDate,
+                  expiry_date: expiryDate,
+                } : item
+              );
+              await props.db
+                .from("users")
+                .update({
+                  email_data: updatedEmailData,
+                  emailLinked: true,
+                })
+                .eq("id", uid);
+            }
+          } catch (error) {
+            console.log(error)
           }
         }
       }
     }
 
-    
+    /**
+     * Checks if gmail token is expired, if so, uses refresh token to get new 
+     * access token and updates unified connection
+     */
+    async function checkGmailToken() {
+      const uid = localStorage.getItem("uid");
+      
+      const { data, error } = await props.db
+            .from("users")
+            .select("email_data")
+            .eq("id", uid);
 
+      if(data && data[0]) {
+        let emailData = data[0].email_data
+        for(let i = 0; i < emailData.length; i++) {
+          let email = emailData[i];
+          if(true) {
+            let connectionResponse = await retrieveUnifiedConnection(email.connection_id);
+            
+            const refresh_token = connectionResponse.data.auth.refresh_token;
+            const token_url = connectionResponse.data.auth.token_url;
+            const integration = connectionResponse.data.integration_type;
+            const new_access_token = await generateNewAccessToken(refresh_token, token_url, integration);
+
+            console.log("old token: ", connectionResponse.data.auth.access_token);
+            console.log("new token: ", new_access_token);
+
+            connectionResponse.data.auth.access_token = new_access_token;
+            console.log("new new token: ", connectionResponse.data.auth.access_token);
+
+            const updateResponse = await updateUnifiedConnection(email.connection_id, connectionResponse.data.auth, integration);
+            console.log("update token: ", updateResponse);
+
+            const expiryDate = new Date(updateResponse.data.auth.expiry_date);
+            const currentDate = new Date(updateResponse.data.updated_at);
+
+            try {
+              const { data, error } = await props.db
+                .from("users")
+                .select()
+                .eq("id", uid);
+
+              const updatedEmailData = data[0].email_data.map((item) =>
+                item.connection_id == connectionResponse.data.id ? { 
+                  ...item, 
+                  updated_at: currentDate,
+                  expiry_date: expiryDate,
+                } : item
+              );
+              
+              await props.db
+                .from("users")
+                .update({
+                  email_data: updatedEmailData,
+                })
+                .eq("id", uid);
+
+            } catch(error) {
+              console.log(error);
+            }
+          }
+        }
+      }
+    }
+
+    /**
+    * Retrieves unified connection so that the auth field can be updated with new access token
+    */
+    async function retrieveUnifiedConnection(connection_id) {
+      const connectionOptions = {
+        method: "GET",
+        url: `https://api.unified.to/unified/connection/${connection_id}`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+      };
+
+      return await axios.request(connectionOptions);
+    }
+
+    /**
+     * Updates the unified connection with the new access token we just got
+     */
+    async function updateUnifiedConnection(connection_id, update_package, integration) {
+      const connectionOptions = {
+        method: "PUT",
+        url: `https://api.unified.to/unified/connection/${connection_id}`,
+        headers: {
+          authorization:
+            "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+        },
+        data: {
+          permissions: ["messaging_message_read"],
+          integration_type: integration,
+          categories: ["messaging"],
+          auth: update_package
+        }
+      };
+
+      return await axios.request(connectionOptions);
+    }
+    
+    /**
+     * Calls api to generate new access token from the refresh token and returns
+     */
+    async function generateNewAccessToken(refresh_token, token_url, integration) {
+      
+      const payload = new URLSearchParams({
+        client_id: integration == "googlemail" ? process.env.REACT_APP_GMAIL_CLIENT_ID : process.env.REACT_APP_OUTLOOK_CLIENT_ID,
+        client_secret: integration == "googlemail" ? process.env.REACT_APP_GMAIL_CLIENT_SECRET : process.env.REACT_APP_OUTLOOK_CLIENT_SECRET,
+        refresh_token: refresh_token,
+        grant_type: "refresh_token",
+      });
+
+      const options = {
+        method: 'POST',
+        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/${token_url}`,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data: payload
+      };
+      
+      try {
+        const response = await axios(options);
+        console.log("google response: ", response);
+        return response.data.access_token; 
+      } catch (error) {
+        console.log(error);
+      }
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
@@ -213,6 +372,7 @@ function Dashboard(props) {
     }
 
     getDashboardData();
+    checkGmailToken();
   }, [storeDataExecuted]);
 
   return (

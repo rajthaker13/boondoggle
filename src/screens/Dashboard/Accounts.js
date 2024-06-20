@@ -59,15 +59,24 @@ function Accounts(props) {
      * Check if email is connected from database and pulls connected emails
      */
     async function checkEmailConnected() {
-      const { data, error } = await props.db
+      try {
+        const { data, error } = await props.db
         .from("users")
         .select()
         .eq("id", localStorage.getItem("uid"));
-      if (data && data[0]) {
-        let dbEmailConnected = data[0].emailLinked;
-        let connectedEmails = data[0].email_data;
-        setEmailConnected(dbEmailConnected);
-        setConnectedEmailsList(connectedEmails);
+
+        if (error) {
+          console.error("Error fetching data:", error);
+        }
+
+        if (data && data[0]) {
+          let dbEmailConnected = data[0].emailLinked;
+          let connectedEmails = data[0].email_data;
+          setEmailConnected(dbEmailConnected);
+          setConnectedEmailsList(connectedEmails);
+        }
+      } catch (err) {
+        console.error("Error in database operation:", err);
       }
     }
 
