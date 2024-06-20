@@ -8,6 +8,9 @@ import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { loadQAMapReduceChain } from "langchain/chains";
+import { Document } from "@langchain/core/documents";
+import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +20,7 @@ function Workflows(props) {
   const [cookieError, setCookieError] = useState("");
   const [connectedEmailsList, setConnectedEmailsList] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState({});
+  const [availableDealStages, setAvailableDealStages] = useState([]);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -51,7 +55,46 @@ function Workflows(props) {
         setSelectedEmail(connectedEmails[0]);
       }
     }
+
+    async function testing() {
+      const connection_id = localStorage.getItem("connection_id");
+      const fetchPipelineOptions = {
+        method: "GET",
+        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/pipeline`,
+        headers: {
+          authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
+        },
+      };
+
+      const fetchPipelineResults = await axios.request(fetchPipelineOptions);
+      console.log(
+        "Fetch pipeline results",
+        fetchPipelineResults.data[0].stages
+      );
+      setAvailableDealStages(fetchPipelineResults.data[0].stages);
+      let dealNames = [];
+      fetchPipelineResults.data[0].stages.map((dealStage) => {
+        console.log("Name", dealStage.name);
+        dealNames.push(new Document({ pageContent: dealStage.name }));
+      });
+      const model = new ChatOpenAI({
+        model: "gpt-4o",
+        temperature: 0.2,
+        openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
+      });
+
+      const testConvo =
+        "Hey just scheduled a demo for this Thursday. See you then!";
+      const chain = loadQAMapReduceChain(model);
+      const res = await chain.invoke({
+        input_documents: dealNames,
+        question: `Based on the following conversation, correspond it to a provided choice reflecting what it's deal status should be in a company's CRM. Here is the conversation: ${testConvo}`,
+      });
+
+      console.log("RESULT", res);
+    }
     getConnectedEmails();
+    // testing();
   }, []);
 
   /**
