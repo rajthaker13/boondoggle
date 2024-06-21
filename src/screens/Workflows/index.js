@@ -10,7 +10,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
-import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI } from "@langchain/openai";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -199,7 +199,7 @@ function Workflows(props) {
             if (source == "Email") {
               regexCustomer = update.email;
             } else if (source == "LinkedIn") {
-              regexCustomer = update.customer;
+              regexCustomer = update.customer.replace(/\s*\([^)]*\)/g, "");
             }
             const options = {
               method: "GET",
@@ -292,13 +292,11 @@ function Workflows(props) {
               );
               newEvents.push(data.result);
             } else {
-              console.log("Update", update);
               //if contact does not exist, creates contact in the CRM
               const companyID = await fetchCompanyEnrichmentDataLinnkedIn(
                 update.company,
                 update.companyUrl
               );
-              console.log("Company ID", companyID);
               let contact;
               if (source == "Email") {
                 contact = {
@@ -330,7 +328,6 @@ function Workflows(props) {
                 };
               }
 
-              console.log("Contact Passed", contact);
               const { data, error } = await props.db.functions.invoke(
                 "new-contact-unified",
                 {
@@ -569,7 +566,6 @@ function Workflows(props) {
     try {
       const response = await axios.request(apiOptions(targetObj));
       const profile = response.data;
-      console.log("Profile", profile); // Log the response data
       if (profile !== null) {
         // Extracting the most recent experience
         const latestExperience = profile.experiences.reduce(
@@ -609,7 +605,6 @@ function Workflows(props) {
           telephones: profile.personal_numbers,
         };
 
-        console.log("Concise Profile", conciseProfile);
         return conciseProfile;
       } else {
         console.error("Profile data is not available");
@@ -680,15 +675,13 @@ function Workflows(props) {
               const customer = messageData.name;
               const response = await generateLinkedinCRMData(messageData);
               const isSpamMessage = await checkLinkedInMessage(
-                response.title,
-                response.summary
+                response.summary,
+                messageData
               );
 
               if (!isSpamMessage) {
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
-
-                console.log("MessageData", messageData);
 
                 //saves title, summary, todos, and response in data objects
                 var obj = {
@@ -715,8 +708,6 @@ function Workflows(props) {
                   const enrichObj = await fetchLinkedInProfile(messageData);
                   // Updating 'obj' with 'enrichObj'
                   if (enrichObj != null) {
-                    console.log("Enrich object", enrichObj);
-                    console.log("Initial Object", obj);
                     obj.customer = enrichObj.name;
                     obj.url = enrichObj.url;
                     obj.title = enrichObj.title;
@@ -726,7 +717,6 @@ function Workflows(props) {
                     obj.address.region = enrichObj.address.region;
                     obj.company = enrichObj.company;
                     obj.companyUrl = enrichObj.companyUrl;
-                    console.log("Object Update", obj);
                   }
                 }
                 // Update CRM and ToDo Lists
@@ -867,17 +857,13 @@ function Workflows(props) {
       }
     }
 
-    console.log("List Company Results", listCompanyResults);
-
     const currentCompanyCRM = listCompanyResults.data[0];
 
     if (currentCompanyCRM != undefined) {
-      console.log("Current Company CRM", currentCompanyCRM);
       return currentCompanyCRM.id;
     } else {
       const encodedCompanyLinkedInUrl = encodeURIComponent(companyLinkedInUrl);
 
-      console.log("Encoded URL", encodedCompanyLinkedInUrl);
       const companyEnrichmentOptions = {
         method: "GET",
         maxBodyLength: Infinity,
@@ -894,7 +880,6 @@ function Workflows(props) {
         );
         const companyProfile = companyEnrichmentResponse.data;
         if (companyProfile !== null) {
-          console.log("Company Profile", companyProfile);
           const companyCRMObject = {
             name: companyName,
             websites: [companyProfile.website, companyLinkedInUrl],
@@ -918,7 +903,6 @@ function Workflows(props) {
             // industry: companyProfile.industry,
             employees: companyProfile.company_size_on_linkedin,
           };
-          console.log("Company CRM OBject", companyCRMObject);
           const createCompanyOptions = {
             method: "POST",
             url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/company`,
@@ -937,13 +921,12 @@ function Workflows(props) {
             createCompanyResults = await axios.request(createCompanyOptions);
           }
 
-          console.log("Create Company results", createCompanyResults);
           return createCompanyResults.data.id;
         } else {
           return null;
         }
       } catch (companyEnrichmentError) {
-        console.log(companyEnrichmentError);
+        console.error(companyEnrichmentError);
         return null;
       }
     }
@@ -963,13 +946,10 @@ function Workflows(props) {
       },
     });
     try {
-      console.log("APIQUERY", apiOptions(issueObj));
       const response = await axios.request(apiOptions(issueObj));
       const res = response.data;
-      console.log("RESENRICH", JSON.stringify(response.data)); // Log the response data
       if (res !== null && res.linkedin_profile_url !== null) {
         const profile = res.profile;
-        console.log("RESPROFILE", profile);
         // Extracting the most recent experience
         const latestExperience = profile.experiences.reduce(
           (latest, current) => {
@@ -1002,8 +982,6 @@ function Workflows(props) {
           emails: profile.personal_emails,
           telephones: profile.personal_numbers,
         };
-
-        console.log("RESCLEAN", conciseProfile);
         return conciseProfile;
       } else {
         console.error("Profile data is not available");
@@ -1108,7 +1086,6 @@ function Workflows(props) {
               obj.address.region = enrichObj.address.region;
               obj.company = enrichObj.company;
               obj.telephones = enrichObj.telephones;
-              console.log("UPDATE", obj);
             }
           }
 
@@ -1155,9 +1132,9 @@ function Workflows(props) {
     window.history.replaceState({}, document.title, cleanUrl);
   }
   /**
-   * Checks if an email should be processed based on certain criteria.
+   * Checks if an email is spam based on certain criteria.
    * @param {Object} email - The email to check.
-   * @returns {boolean} - Whether the email should be processed.
+   * @returns {boolean} - Returns whether the email is a spam message or not.
    */
   async function checkEmail(email) {
     const SPAM_DB_LENGTH = 5170; // Number of emails in training dataset
@@ -1218,52 +1195,48 @@ function Workflows(props) {
   }
 
   /**
-   * Checks if an email should be processed based on certain criteria.
-   * @param {Object} email - The email to check.
-   * @returns {boolean} - Whether the email should be processed.
+   * Checks if an LinkedIn conversaton is spam
+   * @param {String} summary - The summary of the LinkedIn conversation.
+   * @param {Object} messageData = Message object with details of the LinkedIn conversation
+   * @returns {boolean} - Returns whether the LinkedIn conversation is spam or not.
    */
-  async function checkLinkedInMessage(title, summary) {
-    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
-    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
-    const SPAM_EMAIL_COMPARISIONS = 50;
+  async function checkLinkedInMessage(summary, messageData) {
+    const customer = messageData.name;
+    const linkedInMessageTypes = [
+      new Document({ pageContent: "Marketing" }),
+      new Document({ pageContent: "Sales" }),
+      new Document({ pageContent: "Recruiting" }),
+      new Document({ pageContent: "Networking" }),
+      new Document({ pageContent: "Spam" }),
+      new Document({ pageContent: "Customer" }),
+    ];
 
-    const index = pinecone.index("spam-data");
-    const ns1 = index.namespace("version-3");
-
-    const embedding = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: `Subject: ${title} \n ${summary}`,
+    const linkedInMessageTypesText = [
+      "Marketing",
+      "Sales",
+      "Recruiting",
+      "Networking",
+      "Spam",
+      "Customer",
+    ];
+    const model = new ChatOpenAI({
+      model: "gpt-4o",
+      temperature: 0.2,
+      openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
     });
-
-    const spamEmailResponse = await ns1.query({
-      topK: SPAM_EMAIL_COMPARISIONS,
-      vector: embedding.data[0].embedding,
-      includeMetadata: true,
+    const chain = loadQAMapReduceChain(model);
+    const res = await chain.invoke({
+      input_documents: linkedInMessageTypes,
+      question: `Based on the following summary of a LinkedIn conversation between ${customer} and ${messageData.profile}, determine what type of message this is. Only return 'Customer' if the conversation is related to sales for offerings that ${messageData.profile} is providing and should be logged in their company's CRM. You are placing these messages from the point of view of ${messageData.profile}. Here is the summary: ${summary}.`,
     });
+    const filteredMessageType = linkedInMessageTypesText.find((messageType) =>
+      res.text.includes(messageType)
+    );
 
-    const spamMatchesArray = spamEmailResponse.matches;
-    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
-
-    let spamMatchCount = 0;
-
-    spamMatches.map((spamEmail) => {
-      if (spamEmail.label_num == 1) {
-        spamMatchCount += 1;
-      }
-    });
-
-    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
-    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
-    const nonSpamRatio = 1 - spamRatio;
-    const threshold = spamRatio / (spamRatio + nonSpamRatio);
-
-    if (
-      spamMatchCount / SPAM_EMAIL_COMPARISIONS >
-      threshold //Check if queried data has higher ratio than threshold
-    ) {
-      return true;
-    } else {
+    if (filteredMessageType === "Customer") {
       return false;
+    } else {
+      return true;
     }
   }
 
