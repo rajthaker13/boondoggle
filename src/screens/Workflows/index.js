@@ -55,46 +55,7 @@ function Workflows(props) {
         setSelectedEmail(connectedEmails[0]);
       }
     }
-
-    async function testing() {
-      const connection_id = localStorage.getItem("connection_id");
-      const fetchPipelineOptions = {
-        method: "GET",
-        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/pipeline`,
-        headers: {
-          authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
-        },
-      };
-
-      const fetchPipelineResults = await axios.request(fetchPipelineOptions);
-      console.log(
-        "Fetch pipeline results",
-        fetchPipelineResults.data[0].stages
-      );
-      setAvailableDealStages(fetchPipelineResults.data[0].stages);
-      let dealNames = [];
-      fetchPipelineResults.data[0].stages.map((dealStage) => {
-        console.log("Name", dealStage.name);
-        dealNames.push(new Document({ pageContent: dealStage.name }));
-      });
-      const model = new ChatOpenAI({
-        model: "gpt-4o",
-        temperature: 0.2,
-        openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
-      });
-
-      const testConvo =
-        "Hey just scheduled a demo for this Thursday. See you then!";
-      const chain = loadQAMapReduceChain(model);
-      const res = await chain.invoke({
-        input_documents: dealNames,
-        question: `Based on the following conversation, correspond it to a provided choice reflecting what it's deal status should be in a company's CRM. Here is the conversation: ${testConvo}`,
-      });
-
-      console.log("RESULT", res);
-    }
     getConnectedEmails();
-    // testing();
   }, []);
 
   /**
@@ -106,19 +67,6 @@ function Workflows(props) {
     const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
     const uniqueId = timestamp + randomString; // Concatenate timestamp and random string
     return uniqueId; // Extract first 10 characters to ensure 10-digit length
-  }
-
-  /**
-   * Gets saved CRM data from Supabase based on the uid and returns it as an object
-   * @returns An object containing the CRM data as well as to-do tasks for the user
-   */
-  async function getUserCRMData() {
-    const uid = localStorage.getItem("uid");
-    const { data, error } = await props.db.from("users").select().eq("id", uid);
-    return {
-      crm_data: data[0].crm_data,
-      tasks: data[0].tasks,
-    };
   }
 
   /**
@@ -143,6 +91,88 @@ function Workflows(props) {
     }
   }
 
+  async function getCRMPipelineInformation() {
+    const connection_id = localStorage.getItem("connection_id");
+    const fetchPipelineOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${connection_id}/pipeline`,
+      headers: {
+        authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
+      },
+    };
+    const fetchPipelineResults = await axios.request(fetchPipelineOptions);
+    let dealNames = [new Document({ pageContent: "Pre-Deal" })];
+    let dealNamesTextList = [{ id: 0, name: "Pre-Deal" }];
+    fetchPipelineResults.data[0].stages.map((dealStage) => {
+      dealNames.push(new Document({ pageContent: dealStage.name }));
+      dealNamesTextList.push({ id: dealStage.id, name: dealStage.name });
+    });
+    return {
+      id: fetchPipelineResults.data[0].id,
+      name: fetchPipelineResults.data[0].name,
+      dealNames: dealNames,
+      dealNamesTextList: dealNamesTextList,
+    };
+  }
+
+  async function updateDealStatus(
+    contactID,
+    dealIDs,
+    summary,
+    isNewContact,
+    pipelineID,
+    pipelineName,
+    dealNames,
+    dealNamesTextList,
+    userID
+  ) {
+    const connection_id = localStorage.getItem("connection_id");
+    const model = new ChatOpenAI({
+      model: "gpt-4o",
+      temperature: 0.2,
+      openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
+    });
+    const chain = loadQAMapReduceChain(model);
+    const res = await chain.invoke({
+      input_documents: dealNames,
+      question: `Based on the following summary of a conversation, determine the appropriate deal stage in the CRM from the provided options. If the conversation is unrelated to business, involves no clear deal, or is a cold outreach, attribute it to 'Pre-Deal'. Here is the summary: ${summary}.`,
+    });
+    const filteredResult = dealNamesTextList.find((dealName) =>
+      res.text.includes(dealName.name)
+    );
+    if (isNewContact) {
+      if (filteredResult.name !== "Pre-Deal") {
+        console.log("Non Pre-Deal Result", filteredResult, "Summary", summary);
+        console.log("PipelineID", pipelineID);
+        console.log("stage", filteredResult.id);
+        const newDeal = {
+          name: "New Update Deal Staus",
+          stage: "presentationscheduled",
+          pipeline: "default",
+          user_id: userID,
+        };
+        const createDealOptions = {
+          method: "POST",
+          url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/deal`,
+          headers: {
+            authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
+          },
+          data: newDeal,
+        };
+        let createDealResult;
+        try {
+          createDealResult = await axios.request(createDealOptions);
+        } catch (createDealError) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          createDealResult = await axios.request(createDealOptions);
+        }
+        console.log("New Deal", createDealResult);
+      }
+    } else {
+      console.log("Contact Exists");
+    }
+  }
+
   /**
    * For each new data object, the CRM is queried using Unified for its particular contact.
    * A Supabase function is called to update the CRM if the contact exists, if not, a Supabase function creates a new contact in the CRM.
@@ -154,6 +184,8 @@ function Workflows(props) {
     let newContacts = [];
     let newEvents = [];
     console.log("New CRm Data", new_crm_data);
+    const pipelineInformation = await getCRMPipelineInformation();
+    console.log("Pipeline information", pipelineInformation);
 
     //iterates through all new data objects
     await Promise.all(
@@ -246,6 +278,18 @@ function Workflows(props) {
                   body: { connection_id: connection_id, event: event },
                 }
               );
+              console.log("Update contact", data);
+              await updateDealStatus(
+                data.result.id,
+                data.result.deal_ids,
+                update.summary,
+                false,
+                pipelineInformation.id,
+                pipelineInformation.name,
+                pipelineInformation.dealNames,
+                pipelineInformation.dealNamesTextList,
+                user_crm_id
+              );
               newEvents.push(data.result);
             } else {
               console.log("Update", update);
@@ -298,6 +342,18 @@ function Workflows(props) {
                     user_id: user_crm_id,
                   },
                 }
+              );
+              console.log("New contact", data);
+              await updateDealStatus(
+                data.contact.id,
+                data.contact.deal_ids,
+                update.summary,
+                true,
+                pipelineInformation.id,
+                pipelineInformation.name,
+                pipelineInformation.dealNames,
+                pipelineInformation.dealNamesTextList,
+                user_crm_id
               );
               newContacts.push(data.contact);
               newEvents.push(data.event);

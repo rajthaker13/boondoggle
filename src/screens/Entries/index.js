@@ -315,12 +315,11 @@ function NewEntries(props) {
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Workflow</TableHeaderCell>
-                  <TableHeaderCell>Entry Title</TableHeaderCell>
-                  <TableHeaderCell>Summary</TableHeaderCell>
                   <TableHeaderCell>Customer</TableHeaderCell>
-                  <TableHeaderCell>Email</TableHeaderCell>
-                  <TableHeaderCell>LinkedIn</TableHeaderCell>
+                  <TableHeaderCell>Summary</TableHeaderCell>
+                  <TableHeaderCell>Source</TableHeaderCell>
+                  {/* <TableHeaderCell>Email</TableHeaderCell>
+                  <TableHeaderCell>LinkedIn</TableHeaderCell> */}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -332,19 +331,12 @@ function NewEntries(props) {
                     return (
                       <TableRow key={lead.id}>
                         <TableCell>{timeAgoString}</TableCell>
-                        <TableCell>LinkedIn {`->`} Hubspot</TableCell>
-                        <TableCell className="whitespace-normal">
-                          {lead.title}
-                        </TableCell>
-                        <TableCell className="whitespace-normal w-[20vw]">
+                        <TableCell className="whitespace-normal w-[25vw]">{`${lead.customer} - ${lead.title} @ ${lead.company}`}</TableCell>
+                        <TableCell className="whitespace-normal w-[30vw]">
                           {lead.summary}
                         </TableCell>
-                        <TableCell>
-                          {lead.customer === "No Response"
-                            ? "Bank of America"
-                            : lead.customer}
-                        </TableCell>
-                        <TableCell>
+                        <TableCell>{lead.source}</TableCell>
+                        {/* <TableCell>
                           <RiMailLine />
                         </TableCell>
                         <TableCell
@@ -353,7 +345,7 @@ function NewEntries(props) {
                           }}
                         >
                           <RiLinkedinFill />
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}

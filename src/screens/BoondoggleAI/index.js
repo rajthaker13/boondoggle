@@ -223,11 +223,16 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              results = await axios.request(options);
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+              try {
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              } catch (leadDeletedError) {
+                console.log("Contact DELETED ERROR", leadDeletedError);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "Company") {
             const options = {
               method: "GET",
@@ -240,11 +245,16 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
               await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              try {
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              } catch (leadDeletedError) {
+                console.log("Contact DELETED ERROR", leadDeletedError);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "NOTE") {
             const options = {
               method: "GET",
@@ -257,11 +267,16 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
               await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              try {
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              } catch (leadDeletedError) {
+                console.log("Contact DELETED ERROR", leadDeletedError);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "Lead") {
             const options = {
               method: "GET",
@@ -274,11 +289,16 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
               await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              try {
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              } catch (leadDeletedError) {
+                console.log("LEAD DELETED ERROR", leadDeletedError);
+              }
             }
-            queryArray.push(results.data);
           }
         })
       );
@@ -404,7 +424,7 @@ function BoondogggleAI(props) {
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="w-[100vw] h-[100vh] overflow-y-scroll">
+      <div className="w-[100vw] h-[100vh] flex">
         <div>
           <Header db={props.db} selectedTab={3} />
           <div class="ml-[2vw] flex-col">
