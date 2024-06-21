@@ -8,6 +8,9 @@ import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { loadQAMapReduceChain } from "langchain/chains";
+import { Document } from "@langchain/core/documents";
+import { ChatOpenAI } from "@langchain/openai";
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -572,6 +575,7 @@ function Workflows(props) {
               }
             );
             const messageArray = data.text;
+            console.log("Message Array", messageArray);
 
             let new_crm_data = [];
 
@@ -581,15 +585,13 @@ function Workflows(props) {
               const customer = messageData.name;
               const response = await generateLinkedinCRMData(messageData);
               const isSpamMessage = await checkLinkedInMessage(
-                response.title,
-                response.summary
+                response.summary,
+                messageData
               );
 
               if (!isSpamMessage) {
                 const date = Date.now();
                 const uniqueId = generateUniqueId();
-
-                console.log("MessageData", messageData);
 
                 //saves title, summary, todos, and response in data objects
                 var obj = {
@@ -1123,48 +1125,50 @@ function Workflows(props) {
    * @param {Object} email - The email to check.
    * @returns {boolean} - Whether the email should be processed.
    */
-  async function checkLinkedInMessage(title, summary) {
-    const SPAM_DB_LENGTH = 5170; //Number of emails in training dataset
-    const NUM_SPAM_EMAILS = 1499; //Number of emails that are labeled spam in vector db
-    const SPAM_EMAIL_COMPARISIONS = 50;
+  async function checkLinkedInMessage(summary, messageData) {
+    const customer = messageData.name;
+    const linkedInMessageTypes = [
+      new Document({ pageContent: "Marketing" }),
+      new Document({ pageContent: "Recruiting" }),
+      new Document({ pageContent: "Networking" }),
+      new Document({ pageContent: "Spam" }),
+      new Document({ pageContent: "Customer" }),
+    ];
 
-    const index = pinecone.index("spam-data");
-    const ns1 = index.namespace("version-3");
-
-    const embedding = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: `Subject: ${title} \n ${summary}`,
+    const linkedInMessageTypesText = [
+      "Marketing",
+      "Recruiting",
+      "Networking",
+      "Spam",
+      "Customer",
+    ];
+    const model = new ChatOpenAI({
+      model: "gpt-4o",
+      temperature: 0.2,
+      openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
     });
-
-    const spamEmailResponse = await ns1.query({
-      topK: SPAM_EMAIL_COMPARISIONS,
-      vector: embedding.data[0].embedding,
-      includeMetadata: true,
+    const chain = loadQAMapReduceChain(model);
+    const res = await chain.invoke({
+      input_documents: linkedInMessageTypes,
+      question: `Based on the following summary of a LinkedIn conversation between ${customer} and ${messageData.profile}, determine what type of message this is. Only return 'Customer' if the conversation is related to sales for offerings that ${messageData.profile} is providing and should be logged in their company's CRM. You are placing these messages from the point of view of ${messageData.profile}. Here is the summary: ${summary}.`,
     });
+    const filteredMessageType = linkedInMessageTypesText.find((messageType) =>
+      res.text.includes(messageType)
+    );
 
-    const spamMatchesArray = spamEmailResponse.matches;
-    const spamMatches = spamMatchesArray.map((spamMatch) => spamMatch.metadata);
+    console.log(
+      "Filtered Message Type",
+      filteredMessageType,
+      "\n",
+      "Summary",
+      "\n",
+      summary
+    );
 
-    let spamMatchCount = 0;
-
-    spamMatches.map((spamEmail) => {
-      if (spamEmail.label_num == 1) {
-        spamMatchCount += 1;
-      }
-    });
-
-    // Calculate the threshold based on the spam to non-spam ratio in the Vector DB
-    const spamRatio = NUM_SPAM_EMAILS / SPAM_DB_LENGTH;
-    const nonSpamRatio = 1 - spamRatio;
-    const threshold = spamRatio / (spamRatio + nonSpamRatio);
-
-    if (
-      spamMatchCount / SPAM_EMAIL_COMPARISIONS >
-      threshold //Check if queried data has higher ratio than threshold
-    ) {
-      return true;
-    } else {
+    if (filteredMessageType === "Customer") {
       return false;
+    } else {
+      return true;
     }
   }
 
