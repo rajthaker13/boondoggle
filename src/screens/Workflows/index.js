@@ -208,7 +208,7 @@ function Workflows(props) {
               newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
-              const companyID = await fetchCompanyEnrichmentDataLinnkedIn(
+              const companyID = await fetchCompanyEnrichmentDataLinkedIn(
                 update.company,
                 update.companyUrl
               );
