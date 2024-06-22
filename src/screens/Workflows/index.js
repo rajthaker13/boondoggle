@@ -109,10 +109,13 @@ function Workflows(props) {
    * @param new_crm_data - an array of data objects
    * @param {string} source - what 3rd party the data came from
    */
-  async function sendToCRM(new_crm_data, source) {
+  async function sendToCRM(new_crm_data, new_companies = [], source) {
     const connection_id = localStorage.getItem("connection_id");
     let newContacts = [];
     let newEvents = [];
+
+    console.log("NEW_CRM", new_crm_data);
+    console.log("NEW COMPANIES", new_companies);
 
     //iterates through all new data objects
     await Promise.all(
@@ -208,18 +211,23 @@ function Workflows(props) {
               newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
-              const companyID = await fetchCompanyEnrichmentDataLinkedIn(
-                update.company,
-                update.companyUrl
-              );
               let contact;
               if (source == "Email") {
+                console.log("Update", update);
+                // let companyID;
+                // if (update.company !== null) {
+                //   companyID = await fetchCompanyEnrichmentDataLinkedIn(
+                //     update.company,
+                //     update.companyUrl
+                //   );
+                //   console.log("Company ID", companyID);
+                // }
                 contact = {
                   name: update.customer,
-                  title: update.title,
+                  title: update.position,
                   address: update.address,
                   company: update.company,
-                  ...(companyID !== null ? { company_ids: [companyID] } : {}),
+                  company_ids: update.company_ids,
                   emails: [
                     {
                       email: regexCustomer,
@@ -242,7 +250,7 @@ function Workflows(props) {
                     console.log("Initial Object", update);
                     update.customer = enrichObj.name;
                     update.url = enrichObj.url;
-                    update.title = enrichObj.title;
+                    update.title = enrichObj.position;
                     update.address.city = enrichObj.address.city;
                     update.address.country = enrichObj.address.country;
                     update.address.country_code =
@@ -266,7 +274,7 @@ function Workflows(props) {
                 //if contact does not exist, creates contact in the CRM
                 contact = {
                   name: update.customer,
-                  title: update.title,
+                  title: update.position,
                   address: update.address,
                   company: update.company,
                   ...(companyID !== null ? { company_ids: [companyID] } : {}),
@@ -306,9 +314,14 @@ function Workflows(props) {
       newEvents,
       "Event"
     );
+    const companyEmbeddings = await generateEmbeddingsMessages(
+      new_companies,
+      "Company"
+    );
     const allEmbeddings = {
       contacts: contactEmbeddings,
       events: eventEmbeddings,
+      companies: companyEmbeddings,
     };
 
     const index = pinecone.index("boondoggle-data-4");
@@ -656,10 +669,11 @@ function Workflows(props) {
                     obj.address.region = enrichObj.address.region;
                     obj.company = enrichObj.company;
                     obj.companyUrl = enrichObj.companyUrl;
+
+                    // Update CRM and ToDo Lists
+                    new_crm_data.push(obj);
                   }
                 }
-                // Update CRM and ToDo Lists
-                new_crm_data.push(obj);
               }
             }
 
@@ -762,6 +776,97 @@ function Workflows(props) {
     };
   }
 
+  async function createCompanyCRMEmail(companyName, companyData) {
+    const connection_id = localStorage.getItem("connection_id");
+    const listCompaniesOptions = {
+      method: "GET",
+      url: `https://api.unified.to/crm/${connection_id}/company`,
+      headers: {
+        authorization:
+          "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+      },
+      params: {
+        limit: 10,
+        query: companyName,
+      },
+    };
+
+    let listCompanyResults;
+
+    try {
+      listCompanyResults = await axios.request(listCompaniesOptions);
+    } catch (error) {
+      if (error.response && error.response.status === 429) {
+        // If rate limited, wait for 2 seconds and retry the request
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        listCompanyResults = await axios.request(listCompaniesOptions); // Retry the request
+      } else {
+        // For other errors, throw the error
+        return {
+          id: 0,
+          data: {},
+          isNewCompany: false,
+        };
+      }
+    }
+
+    const currentCompanyCRM = listCompanyResults.data[0];
+
+    const companyProfile = companyData.profile;
+    var companyCRMObject = {
+      name: companyName,
+      websites: [companyProfile.website, companyData.url],
+      address: {
+        address1:
+          companyProfile.hq.line_1 !== null ? companyProfile.hq.line_1 : " ",
+        city: companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
+        postal_code:
+          companyProfile.hq.postal_code !== null
+            ? companyProfile.hq.postal_code
+            : " ",
+        country:
+          companyProfile.hq.country !== null ? companyProfile.hq.country : " ",
+      },
+      description: companyProfile.description,
+      // industry: companyProfile.industry,
+      employees: companyProfile.company_size_on_linkedin,
+    };
+
+    if (currentCompanyCRM != undefined) {
+      companyCRMObject.id = currentCompanyCRM.id;
+      return {
+        id: currentCompanyCRM.id,
+        data: companyCRMObject,
+        isNewCompany: false,
+      };
+    } else {
+      const createCompanyOptions = {
+        method: "POST",
+        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/company`,
+        headers: {
+          authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
+        },
+        data: companyCRMObject,
+      };
+
+      let createCompanyResults;
+
+      try {
+        createCompanyResults = await axios.request(createCompanyOptions);
+      } catch (createCompanyError) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        createCompanyResults = await axios.request(createCompanyOptions);
+      }
+      console.log("Create Company Results", createCompanyResults);
+      companyCRMObject.id = createCompanyResults.data.id;
+      return {
+        id: createCompanyResults.data.id,
+        data: companyCRMObject,
+        isNewCompany: true,
+      };
+    }
+  }
+
   // Function to fetch compant enrichment data based on the linkedIn url
   async function fetchCompanyEnrichmentDataLinkedIn(
     companyName,
@@ -859,8 +964,7 @@ function Workflows(props) {
             await new Promise((resolve) => setTimeout(resolve, 2000));
             createCompanyResults = await axios.request(createCompanyOptions);
           }
-
-          return createCompanyResults.data.id;
+          return createCompanyResults.id;
         } else {
           return null;
         }
@@ -875,7 +979,7 @@ function Workflows(props) {
   async function fetchEnrichmentProfile(issueObj) {
     // Define API request options
     // Based on enrich_profile, lookup_depth, and email
-    const apiOptions = (issueObj) => ({
+    const getLinkedInProfileByEmail = (issueObj) => ({
       method: "GET",
       maxBodyLength: Infinity,
       url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/profile/resolve/email?enrich_profile=enrich&lookup_depth=deep&email=${issueObj.email}`,
@@ -884,48 +988,88 @@ function Workflows(props) {
         "X-Requested-With": "XMLHttpRequest",
       },
     });
-    try {
-      const response = await axios.request(apiOptions(issueObj));
-      const res = response.data;
-      if (res !== null && res.linkedin_profile_url !== null) {
-        const profile = res.profile;
-        // Extracting the most recent experience
-        const latestExperience = profile.experiences.reduce(
-          (latest, current) => {
-            const latestDate = new Date(
-              latest.starts_at.year,
-              latest.starts_at.month - 1,
-              latest.starts_at.day
-            );
-            const currentDate = new Date(
-              current.starts_at.year,
-              current.starts_at.month - 1,
-              current.starts_at.day
-            );
-            return currentDate > latestDate ? current : latest;
-          },
-          profile.experiences[0]
-        );
 
-        const conciseProfile = {
-          websites: [
-            `https://www.linkedin.com/in/${profile.public_identifier}`,
-          ],
-          url: `https://www.linkedin.com/in/${profile.public_identifier}`,
-          title: latestExperience.title,
-          name: profile.full_name,
-          address: {
-            city: profile.city,
-            country: profile.country_full_name,
-            country_code: profile.country,
-            region: profile.state,
-          },
-          company: latestExperience.company,
-          companyUrl: latestExperience.company_linkedin_profile_url,
-          emails: profile.personal_emails,
-          telephones: profile.personal_numbers,
-        };
-        return conciseProfile;
+    const fetchCompanyInformation = (issueObj) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://nubela.co/proxycurl/api/linkedin/company/resolve?company_domain=${
+        issueObj.email.split("@")[1]
+      }&enrich_profile=enrich`,
+      headers: {
+        Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    try {
+      const userProfileResponse = await axios.request(
+        getLinkedInProfileByEmail(issueObj)
+      );
+
+      const userProfileData = userProfileResponse.data;
+
+      if (userProfileData.linkedin_profile_url !== null) {
+        const companyProfileResponse = await axios.request(
+          fetchCompanyInformation(issueObj)
+        );
+        const companyProfileData = companyProfileResponse.data;
+        if (companyProfileData.url !== null) {
+          const profile = userProfileData.profile;
+          const companyProfile = companyProfileData.profile;
+          console.log("Initial Profile", profile);
+          // Extracting the most recent experience
+          const latestExperience = profile.experiences.reduce(
+            (latest, current) => {
+              const latestDate = new Date(
+                latest.starts_at.year,
+                latest.starts_at.month - 1,
+                latest.starts_at.day
+              );
+              const currentDate = new Date(
+                current.starts_at.year,
+                current.starts_at.month - 1,
+                current.starts_at.day
+              );
+              return currentDate > latestDate ? current : latest;
+            },
+            profile.experiences[0]
+          );
+
+          const createCompanyResponse = await createCompanyCRMEmail(
+            companyProfile.name,
+            companyProfileData
+          );
+
+          console.log("Create Company Response", createCompanyResponse);
+
+          const conciseProfile = {
+            websites: [
+              `https://www.linkedin.com/in/${profile.public_identifier}`,
+            ],
+            url: `https://www.linkedin.com/in/${profile.public_identifier}`,
+            title: latestExperience.title,
+            name: profile.full_name,
+            address: {
+              city: profile.city,
+              country: profile.country_full_name,
+              country_code: profile.country,
+              region: profile.state,
+            },
+            company: companyProfile.name,
+            companyUrl: companyProfileData.url,
+            emails: profile.personal_emails,
+            telephones: profile.personal_numbers,
+            company_ids: [createCompanyResponse.id],
+            isNewCompany: createCompanyResponse.isNewCompany,
+            companyData: createCompanyResponse.data,
+          };
+
+          console.log("Profile", conciseProfile, "IssueOBJ", issueObj);
+          return conciseProfile;
+        } else {
+          console.error("Company data is not available");
+          return null;
+        }
       } else {
         console.error("Profile data is not available");
         return null;
@@ -977,6 +1121,8 @@ function Workflows(props) {
 
     let new_emails = [];
 
+    let new_companies = [];
+
     //Filters and processes each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
@@ -1006,7 +1152,7 @@ function Workflows(props) {
           );
           const date = Date.now();
 
-          const obj = {
+          var obj = {
             id: email.id,
             customer: email.customer,
             email: email.email,
@@ -1032,17 +1178,21 @@ function Workflows(props) {
             if (enrichObj != null) {
               obj.customer = enrichObj.name;
               obj.url = enrichObj.url;
-              obj.title = enrichObj.title;
+              obj.position = enrichObj.title;
               obj.address.city = enrichObj.address.city;
               obj.address.country = enrichObj.address.country;
               obj.address.country_code = enrichObj.address.country_code;
               obj.address.region = enrichObj.address.region;
               obj.company = enrichObj.company;
               obj.telephones = enrichObj.telephones;
+              obj.companyUrl = enrichObj.companyUrl;
+              obj.company_ids = enrichObj.company_ids;
+              new_crm_data.push(obj);
+              if (enrichObj.isNewCompany) {
+                new_companies.push(enrichObj.companyData);
+              }
             }
           }
-
-          new_crm_data.push(obj);
         }
       })
     );
@@ -1074,7 +1224,7 @@ function Workflows(props) {
       })
       .eq("id", uid);
 
-    await sendToCRM(new_crm_data, "Email");
+    await sendToCRM(new_crm_data, new_companies, "Email");
 
     // End loading indicator
     setIsLoading(false);
