@@ -287,7 +287,7 @@ function Workflows(props) {
                   contact = {
                     name: enrichObj.name,
                     title: enrichObj.title,
-                    address: {},
+                    address: enrichObj.address,
                     company: enrichObj.company,
                     company_ids: enrichObj.company_ids,
                   };
@@ -324,7 +324,7 @@ function Workflows(props) {
                     },
                   }
                 );
-                console.log("DATA", data);
+                console.log("NEW CONTACT DATA", data);
                 newContacts.push(data.contact);
                 newEvents.push(data.event);
               }
@@ -353,7 +353,6 @@ function Workflows(props) {
         .from("users")
         .update({
           crm_data: user_crm_update,
-          emailLinked: true,
         })
         .eq("id", uid);
     }
@@ -920,22 +919,30 @@ function Workflows(props) {
   async function fetchEnrichmentProfile(issueObj) {
     // Define API request options
     // Based on enrich_profile, lookup_depth, and email
-    const getLinkedInProfileByEmail = (issueObj) => ({
+    const getLinkedInURLByEmail = (issueObj) => ({
       method: "GET",
       maxBodyLength: Infinity,
-      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/profile/resolve/email?enrich_profile=enrich&lookup_depth=deep&email=${issueObj.email}`,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/profile/resolve/email?lookup_depth=deep&email=${issueObj.email}`,
       headers: {
         Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
         "X-Requested-With": "XMLHttpRequest",
       },
     });
 
-    const fetchCompanyInformation = (issueObj) => ({
+    const getLinkedInProfileByURL = (url) => ({
       method: "GET",
       maxBodyLength: Infinity,
-      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://nubela.co/proxycurl/api/linkedin/company/resolve?company_domain=${
-        issueObj.email.split("@")[1]
-      }&enrich_profile=enrich`,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/v2/linkedin?url=${url}&use_cache=if-recent`,
+      headers: {
+        Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    const fetchCompanyInformation = (url) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/company?url=${url}`,
       headers: {
         Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
         "X-Requested-With": "XMLHttpRequest",
@@ -952,20 +959,20 @@ function Workflows(props) {
       if (isAutomatedEmailResponse) {
         return null;
       }
-      const companyProfileResponse = await axios.request(
-        fetchCompanyInformation(issueObj)
+
+      const userURLResponse = await axios.request(
+        getLinkedInURLByEmail(issueObj)
       );
-      const companyProfileData = companyProfileResponse.data;
+      const userURLData = userURLResponse.data;
+      console.log("User URL Data", userURLData);
 
-      if (companyProfileData.url !== null) {
+      if (userURLData.linkedin_profile_url !== null) {
         const userProfileResponse = await axios.request(
-          getLinkedInProfileByEmail(issueObj)
+          getLinkedInProfileByURL(userURLData.linkedin_profile_url)
         );
+        const profile = userProfileResponse.data;
 
-        const userProfileData = userProfileResponse.data;
-        if (userProfileData.linkedin_profile_url !== null) {
-          const profile = userProfileData.profile;
-          const companyProfile = companyProfileData.profile;
+        if (profile !== null) {
           console.log("Initial Profile", profile);
           // Extracting the most recent experience
           const latestExperience = profile.experiences.reduce(
@@ -985,33 +992,48 @@ function Workflows(props) {
             profile.experiences[0]
           );
 
-          const createCompanyResponse = await createCompanyCRM(
-            companyProfile.name,
-            companyProfile,
-            companyProfileData.url
-          );
+          if (
+            latestExperience.company_linkedin_profile_url !== null &&
+            latestExperience.company !== null
+          ) {
+            const companyProfileResponse = await axios.request(
+              fetchCompanyInformation(
+                latestExperience.company_linkedin_profile_url
+              )
+            );
+            const companyProfile = companyProfileResponse.data;
 
-          console.log("Create Company Response", createCompanyResponse);
+            const createCompanyResponse = await createCompanyCRM(
+              companyProfile.name,
+              companyProfile,
+              latestExperience.company_linkedin_profile_url
+            );
 
-          const conciseProfile = {
-            websites: [
-              `https://www.linkedin.com/in/${profile.public_identifier}`,
-            ],
-            url: `https://www.linkedin.com/in/${profile.public_identifier}`,
-            title: latestExperience.title,
-            name: profile.full_name,
-            address: createCompanyResponse.data.address,
-            company: companyProfile.name,
-            companyUrl: companyProfileData.url,
-            emails: profile.personal_emails,
-            telephones: profile.personal_numbers,
-            company_ids: [createCompanyResponse.id],
-            isNewCompany: createCompanyResponse.isNewCompany,
-            companyData: createCompanyResponse.data,
-          };
+            console.log("Create Company Response", createCompanyResponse);
+            console.log("User profile", profile);
 
-          console.log("Profile", conciseProfile, "IssueOBJ", issueObj);
-          return conciseProfile;
+            const conciseProfile = {
+              websites: [
+                `https://www.linkedin.com/in/${profile.public_identifier}`,
+              ],
+              url: `https://www.linkedin.com/in/${profile.public_identifier}`,
+              title: latestExperience.title,
+              name: profile.full_name,
+              address: createCompanyResponse.data.address,
+              company: companyProfile.name,
+              companyUrl: latestExperience.company_linkedin_profile_url,
+              emails: profile.personal_emails,
+              telephones: profile.personal_numbers,
+              company_ids: [createCompanyResponse.id],
+              isNewCompany: createCompanyResponse.isNewCompany,
+              companyData: createCompanyResponse.data,
+            };
+
+            console.log("Profile", conciseProfile, "IssueOBJ", issueObj);
+            return conciseProfile;
+          } else {
+            return null;
+          }
         } else {
           console.error("Profile data is not available");
           return null;
