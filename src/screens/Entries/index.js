@@ -315,11 +315,10 @@ function NewEntries(props) {
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Workflow</TableHeaderCell>
-                  <TableHeaderCell>Entry Title</TableHeaderCell>
-                  <TableHeaderCell>Summary</TableHeaderCell>
                   <TableHeaderCell>Customer</TableHeaderCell>
-                  <TableHeaderCell>Email</TableHeaderCell>
+                  <TableHeaderCell>Title</TableHeaderCell>
+                  <TableHeaderCell>Summary</TableHeaderCell>
+                  <TableHeaderCell>Source</TableHeaderCell>
                   <TableHeaderCell>LinkedIn</TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -332,21 +331,14 @@ function NewEntries(props) {
                     return (
                       <TableRow key={lead.id}>
                         <TableCell>{timeAgoString}</TableCell>
-                        <TableCell>LinkedIn {`->`} Hubspot</TableCell>
+                        <TableCell className="whitespace-normal w-[20vw]">{`${lead.customer}: ${lead.position} @ ${lead.company}`}</TableCell>
                         <TableCell className="whitespace-normal">
                           {lead.title}
                         </TableCell>
-                        <TableCell className="whitespace-normal w-[20vw]">
+                        <TableCell className="whitespace-normal w-[30vw]">
                           {lead.summary}
                         </TableCell>
-                        <TableCell>
-                          {lead.customer === "No Response"
-                            ? "Bank of America"
-                            : lead.customer}
-                        </TableCell>
-                        <TableCell>
-                          <RiMailLine />
-                        </TableCell>
+                        <TableCell>{lead.source}</TableCell>
                         <TableCell
                           onClick={() => {
                             window.open(lead.url, "_blank");

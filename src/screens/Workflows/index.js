@@ -117,6 +117,10 @@ function Workflows(props) {
     let crmUpdate = [];
 
     console.log("NEW_CRM", new_crm_data);
+    //fetches and saves current CRM data from Supabase
+    const fetch_crm = await getCRMData();
+    let admin_crm_update = fetch_crm.admin_crm_data;
+    let user_crm_update = fetch_crm.user_crm_data;
 
     //iterates through all new data objects
     await Promise.all(
@@ -193,6 +197,30 @@ function Workflows(props) {
 
             //if contanct exists, updates the contact in the CRM
             if (current_crm != undefined) {
+              console.log("Existing Contact", current_crm);
+              const supabaseContact = admin_crm_update.find(
+                (contact) => contact["customer"] === current_crm.name
+              );
+              console.log("Supabase Contact", supabaseContact);
+
+              const uniqueId = generateUniqueId();
+              crmUpdate.push({
+                id: uniqueId,
+                date: update.date,
+                customer: supabaseContact.customer,
+                title: update.title,
+                position: supabaseContact.position,
+                summary: update.summary,
+                company: supabaseContact.company,
+                url: supabaseContact.url,
+                source: source,
+                ...(source === "Email"
+                  ? { email: update.email }
+                  : supabaseContact.email != null
+                  ? { email: supabaseContact.email }
+                  : { email: null }),
+              });
+
               const event = {
                 id: current_crm.id,
                 type: "NOTE",
@@ -214,7 +242,6 @@ function Workflows(props) {
               //if contact does not exist, creates contact in the CRM
               let contact;
               if (source == "Email") {
-                console.log("Update", update);
                 const enrichObj = await fetchEnrichmentProfile(
                   update.emailObject
                 );
@@ -243,7 +270,7 @@ function Workflows(props) {
                     company: enrichObj.company,
                     email: update.email,
                     url: enrichObj.url,
-                    source: "Email",
+                    source: source,
                   });
                   if (enrichObj.isNewCompany) {
                     newCompanies.push(enrichObj.companyData);
@@ -252,27 +279,25 @@ function Workflows(props) {
                   contact = null;
                 }
               } else if (source == "LinkedIn") {
-                if (update.url != null) {
-                  const enrichObj = await fetchLinkedInProfile(update);
-                  // Updating with 'enrichObj'
-                  if (enrichObj != null) {
-                    console.log("Enrich object", enrichObj);
-                    console.log("Initial Object", update);
-                    update.customer = enrichObj.name;
-                    update.url = enrichObj.url;
-                    update.title = enrichObj.position;
-                    update.address.city = enrichObj.address.city;
-                    update.address.country = enrichObj.address.country;
-                    update.address.country_code =
-                      enrichObj.address.country_code;
-                    update.address.region = enrichObj.address.region;
-                    update.company = enrichObj.company;
-                    update.companyUrl = enrichObj.companyUrl;
-                    update.emails = enrichObj.emails;
-                    update.telephones = enrichObj.telephones;
-                    console.log("Object Update", update);
-                  }
+                const enrichObj = await fetchLinkedInProfile(update);
+                // Updating with 'enrichObj'
+                if (enrichObj != null) {
+                  console.log("Enrich object", enrichObj);
+                  console.log("Initial Object", update);
+                  update.customer = enrichObj.name;
+                  update.url = enrichObj.url;
+                  update.title = enrichObj.position;
+                  update.address.city = enrichObj.address.city;
+                  update.address.country = enrichObj.address.country;
+                  update.address.country_code = enrichObj.address.country_code;
+                  update.address.region = enrichObj.address.region;
+                  update.company = enrichObj.company;
+                  update.companyUrl = enrichObj.companyUrl;
+                  update.emails = enrichObj.emails;
+                  update.telephones = enrichObj.telephones;
+                  console.log("Object Update", update);
                 }
+
                 let companyID = null;
                 if (update.company !== null) {
                   companyID = await fetchCompanyEnrichmentDataLinkedIn(
@@ -320,30 +345,27 @@ function Workflows(props) {
 
     console.log("CRM Update", crmUpdate);
 
-    //fetches and saves current CRM data from Supabase
-    const fetch_crm = await getCRMData();
-    let admin_crm_update = fetch_crm.admin_crm_data;
-    let user_crm_update = fetch_crm.user_crm_data;
+    if (crmUpdate.length > 0) {
+      admin_crm_update = [...admin_crm_update, ...crmUpdate];
+      user_crm_update = [...user_crm_update, ...crmUpdate];
+      // Update CRM with new data
+      await props.db
+        .from("data")
+        .update({
+          crm_data: admin_crm_update,
+        })
+        .eq("connection_id", connection_id);
 
-    admin_crm_update = [...admin_crm_update, ...crmUpdate];
-    user_crm_update = [...user_crm_update, ...crmUpdate];
-    // Update CRM with new data
-    await props.db
-      .from("data")
-      .update({
-        crm_data: admin_crm_update,
-      })
-      .eq("connection_id", connection_id);
+      const uid = localStorage.getItem("uid");
 
-    const uid = localStorage.getItem("uid");
-
-    await props.db
-      .from("users")
-      .update({
-        crm_data: user_crm_update,
-        emailLinked: true,
-      })
-      .eq("id", uid);
+      await props.db
+        .from("users")
+        .update({
+          crm_data: user_crm_update,
+          emailLinked: true,
+        })
+        .eq("id", uid);
+    }
 
     const contactEmbeddings = await generateEmbeddingsMessages(
       newContacts,
@@ -545,21 +567,33 @@ function Workflows(props) {
   async function fetchLinkedInProfile(targetObj) {
     // Define API request options
     // Based on linkedIn profile
-    const apiOptions = (targetObj) => ({
+    const getLinkedInProfileByURL = (targetObj) => ({
       method: "GET",
       maxBodyLength: Infinity,
-      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/v2/linkedin?url=${targetObj.url}&fallback_to_cache=on-error&use_cache=if-present&personal_email=include&personal_contact_number=include`,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/v2/linkedin?url=${targetObj.url}&use_cache=if-recent`,
+      headers: {
+        Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    const fetchCompanyInformation = (url) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/linkedin/company?url=${url}`,
       headers: {
         Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
         "X-Requested-With": "XMLHttpRequest",
       },
     });
     try {
-      const response = await axios.request(apiOptions(targetObj));
-      const profile = response.data;
-      if (profile !== null) {
+      const userProfileResponse = await axios.request(
+        getLinkedInProfileByURL(targetObj)
+      );
+      const userProfileData = userProfileResponse.data;
+      if (userProfileData !== null) {
         // Extracting the most recent experience
-        const latestExperience = profile.experiences.reduce(
+        const latestExperience = userProfileData.experiences.reduce(
           (latest, current) => {
             const latestDate = new Date(
               latest.starts_at.year,
@@ -573,30 +607,56 @@ function Workflows(props) {
             );
             return currentDate > latestDate ? current : latest;
           },
-          profile.experiences[0]
+          userProfileData.experiences[0]
         );
 
-        // Construct the new object
-        const conciseProfile = {
-          websites: [
-            `https://www.linkedin.com/in/${profile.public_identifier}`,
-          ],
-          url: `https://www.linkedin.com/in/${profile.public_identifier}`,
-          title: latestExperience.title,
-          name: profile.full_name,
-          address: {
-            city: profile.city,
-            country: profile.country_full_name,
-            country_code: profile.country,
-            region: profile.state,
-          },
-          company: latestExperience.company,
-          companyUrl: latestExperience.company_linkedin_profile_url,
-          emails: profile.personal_emails,
-          telephones: profile.personal_numbers,
-        };
+        if (
+          latestExperience.company_linkedin_profile_url !== null &&
+          latestExperience.company !== null
+        ) {
+          const companyProfileResponse = await axios.request(
+            fetchCompanyInformation(
+              latestExperience.company_linkedin_profile_url
+            )
+          );
+          const companyProfile = companyProfileResponse.data;
 
-        return conciseProfile;
+          const createCompanyResponse = await createCompanyCRM(
+            companyProfile.name,
+            companyProfile,
+            latestExperience.company_linkedin_profile_url
+          );
+
+          console.log("Create Company Response", createCompanyResponse);
+
+          // Construct the new object
+          const conciseProfile = {
+            websites: [
+              `https://www.linkedin.com/in/${userProfileData.public_identifier}`,
+            ],
+            url: `https://www.linkedin.com/in/${userProfileData.public_identifier}`,
+            title: latestExperience.title,
+            name: userProfileData.full_name,
+            address: {
+              city: userProfileData.city,
+              country: userProfileData.country_full_name,
+              country_code: userProfileData.country,
+              region: userProfileData.state,
+            },
+            company: companyProfile.name,
+            companyUrl: latestExperience.company_linkedin_profile_url,
+            emails: userProfileData.personal_emails,
+            telephones: userProfileData.personal_numbers,
+            company_ids: [createCompanyResponse.id],
+            isNewCompany: createCompanyResponse.isNewCompany,
+            companyData: createCompanyResponse.data,
+          };
+
+          return conciseProfile;
+        } else {
+          console.error("Company data is not available");
+          return null;
+        }
       } else {
         console.error("Profile data is not available");
         return null;
@@ -681,6 +741,7 @@ function Workflows(props) {
                   title: response.title,
                   summary: response.summary,
                   date: date,
+                  messageData: messageData,
                   url: messageData.url,
                   address: {
                     city: null,
@@ -695,61 +756,62 @@ function Workflows(props) {
                   status: "Completed",
                 };
 
-                if (messageData.url != null) {
-                  const enrichObj = await fetchLinkedInProfile(messageData);
-                  // Updating 'obj' with 'enrichObj'
-                  if (enrichObj != null) {
-                    obj.customer = enrichObj.name;
-                    obj.url = enrichObj.url;
-                    obj.title = enrichObj.title;
-                    obj.address.city = enrichObj.address.city;
-                    obj.address.country = enrichObj.address.country;
-                    obj.address.country_code = enrichObj.address.country_code;
-                    obj.address.region = enrichObj.address.region;
-                    obj.company = enrichObj.company;
-                    obj.companyUrl = enrichObj.companyUrl;
+                console.log("Message Data", messageData);
 
-                    // Update CRM and ToDo Lists
-                    new_crm_data.push(obj);
-                  }
+                if (messageData.url != null) {
+                  // const enrichObj = await fetchLinkedInProfile(messageData);
+                  // Updating 'obj' with 'enrichObj'
+                  // if (enrichObj != null) {
+                  //   obj.customer = enrichObj.name;
+                  //   obj.url = enrichObj.url;
+                  //   obj.title = enrichObj.title;
+                  //   obj.address.city = enrichObj.address.city;
+                  //   obj.address.country = enrichObj.address.country;
+                  //   obj.address.country_code = enrichObj.address.country_code;
+                  //   obj.address.region = enrichObj.address.region;
+                  //   obj.company = enrichObj.company;
+                  //   obj.companyUrl = enrichObj.companyUrl;
+
+                  // Update CRM and ToDo Lists
+                  new_crm_data.push(obj);
+                  //     }
                 }
               }
             }
 
-            const fetch_crm = await getCRMData();
-            let admin_crm_update = fetch_crm.admin_crm_data;
-            let admin_to_dos = fetch_crm.admin_to_dos;
-            let user_crm_update = fetch_crm.user_crm_data;
-            let user_to_dos = fetch_crm.user_to_dos;
+            // const fetch_crm = await getCRMData();
+            // let admin_crm_update = fetch_crm.admin_crm_data;
+            // let admin_to_dos = fetch_crm.admin_to_dos;
+            // let user_crm_update = fetch_crm.user_crm_data;
+            // let user_to_dos = fetch_crm.user_to_dos;
 
-            admin_crm_update = [...admin_crm_update, ...new_crm_data];
-            user_crm_update = [...user_crm_update, ...new_crm_data];
+            // admin_crm_update = [...admin_crm_update, ...new_crm_data];
+            // user_crm_update = [...user_crm_update, ...new_crm_data];
 
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
-            const new_connection_id = localStorage.getItem("connection_id");
-            const uid = localStorage.getItem("uid");
+            // const new_connection_id = localStorage.getItem("connection_id");
+            // const uid = localStorage.getItem("uid");
 
             //updates Supabase
-            await props.db
-              .from("data")
-              .update({
-                crm_data: admin_crm_update,
-                tasks: admin_to_dos,
-              })
-              .eq("connection_id", new_connection_id);
-            await props.db
-              .from("users")
-              .update({
-                crm_data: user_crm_update,
-                tasks: user_to_dos,
-                linkedinLinked: true,
-              })
-              .eq("id", uid);
+            // await props.db
+            //   .from("data")
+            //   .update({
+            //     crm_data: admin_crm_update,
+            //     tasks: admin_to_dos,
+            //   })
+            //   .eq("connection_id", new_connection_id);
+            // await props.db
+            //   .from("users")
+            //   .update({
+            //     crm_data: user_crm_update,
+            //     tasks: user_to_dos,
+            //     linkedinLinked: true,
+            //   })
+            //   .eq("id", uid);
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
-            localStorage.setItem("to_dos", user_to_dos);
             setOpenCookieModal(false);
             // Clean up URL by removing query parameters
             var cleanUrl = window.location.href.split("?")[0];
@@ -815,7 +877,11 @@ function Workflows(props) {
     };
   }
 
-  async function createCompanyCRMEmail(companyName, companyData) {
+  async function createCompanyCRM(
+    companyName,
+    companyProfile,
+    companyLinkedIn
+  ) {
     const connection_id = localStorage.getItem("connection_id");
     const listCompaniesOptions = {
       method: "GET",
@@ -851,10 +917,9 @@ function Workflows(props) {
 
     const currentCompanyCRM = listCompanyResults.data[0];
 
-    const companyProfile = companyData.profile;
     var companyCRMObject = {
       name: companyName,
-      websites: [companyProfile.website, companyData.url],
+      websites: [companyProfile.website, companyLinkedIn],
       address: {
         address1:
           companyProfile.hq.line_1 !== null ? companyProfile.hq.line_1 : " ",
@@ -1074,9 +1139,10 @@ function Workflows(props) {
             profile.experiences[0]
           );
 
-          const createCompanyResponse = await createCompanyCRMEmail(
+          const createCompanyResponse = await createCompanyCRM(
             companyProfile.name,
-            companyProfileData
+            companyProfile,
+            companyProfileData.url
           );
 
           console.log("Create Company Response", createCompanyResponse);
@@ -1144,8 +1210,6 @@ function Workflows(props) {
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
 
-    const connection_id = localStorage.getItem("connection_id");
-
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { user_id: id },
@@ -1159,6 +1223,8 @@ function Workflows(props) {
     let new_crm_data = [];
 
     let new_emails = [];
+
+    console.log("All emails", emails);
 
     //Filters and processes each email
     for (const email of emails) {
