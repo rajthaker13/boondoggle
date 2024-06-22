@@ -64,9 +64,12 @@ function Accounts(props) {
         .select()
         .eq("id", localStorage.getItem("uid"));
       if (data && data[0]) {
-        let dbEmailConnected = data[0].emailLinked;
         let connectedEmails = data[0].email_data;
-        setEmailConnected(dbEmailConnected);
+        if (connectedEmails.length > 0) {
+          setEmailConnected(true);
+        } else {
+          setEmailConnected(false);
+        }
         setConnectedEmailsList(connectedEmails);
       }
     }

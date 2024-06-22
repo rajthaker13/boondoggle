@@ -223,11 +223,14 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              results = await axios.request(options);
+              if (err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "Company") {
             const options = {
               method: "GET",
@@ -240,11 +243,14 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              if (err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "NOTE") {
             const options = {
               method: "GET",
@@ -257,11 +263,14 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              if (err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              }
             }
-            queryArray.push(results.data);
           } else if (matchType == "Lead") {
             const options = {
               method: "GET",
@@ -274,11 +283,14 @@ function BoondogggleAI(props) {
             let results;
             try {
               results = await axios.request(options);
+              queryArray.push(results.data);
             } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 5000));
-              results = await axios.request(options);
+              if (err.response.status === 429) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                results = await axios.request(options);
+                queryArray.push(results.data);
+              }
             }
-            queryArray.push(results.data);
           }
         })
       );
