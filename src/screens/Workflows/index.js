@@ -1105,7 +1105,26 @@ function Workflows(props) {
       },
     });
 
+    const isDisposableEmail = (issueObj) => ({
+      method: "GET",
+      maxBodyLength: Infinity,
+      url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/nubela.co/proxycurl/api/disposable-email?email=${issueObj.email}`,
+      headers: {
+        Authorization: "Bearer yfwsEmCNER0b3vzqV4fKLg",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    function isAutomatedEmail(email) {
+      const regex = /no[-]?reply|invoice|notifications|support|team/i;
+      return regex.test(email);
+    }
+
     try {
+      const isAutomatedEmailResponse = isAutomatedEmail(issueObj.email);
+      if (isAutomatedEmailResponse) {
+        return null;
+      }
       const companyProfileResponse = await axios.request(
         fetchCompanyInformation(issueObj)
       );
