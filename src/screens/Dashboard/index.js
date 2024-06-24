@@ -4,7 +4,6 @@ import Accounts from "./Accounts";
 import Issues from "./Issues";
 import Score from "./Score";
 import LoadingBar from "./LoadingBar";
-import LoadingOverlay from "react-loading-overlay";
 import { Dialog, DialogPanel, Button } from "@tremor/react";
 import ContactsDemo from "./DemoData/ContactsDemo";
 import DealsDemo from "./DemoData/DealsDemo";
@@ -205,9 +204,6 @@ function Dashboard(props) {
       }
     }
 
-    
-
-
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
     if (id && !storeDataExecuted) {
@@ -222,7 +218,7 @@ function Dashboard(props) {
   }, [storeDataExecuted]);
 
   return (
-    <div>
+      <div>
       {isLoading && <LoadingBar isLoading={isLoading} scanComplete={scanComplete} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>

@@ -1,12 +1,13 @@
 import { Card, ProgressBar } from '@tremor/react';
 import React, { useEffect, useState } from 'react';
+import { getProgress } from "../../functions/crm_entries";
 
-const LoadingBar = ({ isLoading, scanComplete }) => {
-    const [progress, setProgress] = useState(0);
+function LoadingBar({ isLoading, scanComplete }) { // Correct props destructuring
     const [messageIndex, setMessageIndex] = useState(0);
+    const [progress, setProgress] = useState(0);
 
     const messages = [
-        "Fetching data",
+        "Fetching data...",
         "Scanning contacts...",
         "Analyzing deals...",
         "Surveying events...",
@@ -15,48 +16,54 @@ const LoadingBar = ({ isLoading, scanComplete }) => {
     ];
 
     useEffect(() => {
+        // Function to update progress
+        const updateProgress = () => {
+            const progressValue = getProgress();
+            setProgress(progressValue);
+
+            if (progressValue < 15) {
+                setMessageIndex(0);
+            } else if (progressValue < 30) {
+                setMessageIndex(1);
+            } else if (progressValue < 45) {
+                setMessageIndex(2);
+            } else if (progressValue < 60) {
+                setMessageIndex(3);
+            } else if (progressValue < 75) {
+                setMessageIndex(4);
+            } else {
+                setMessageIndex(5);
+            }
+        };
+
+        // Only set up the interval if isLoading is true
         if (isLoading) {
-          setProgress(0); // Reset progress when loading starts
-          let interval = setInterval(() => {
-            setProgress(prev => {
-              if (scanComplete) {
-                return Math.min(prev + 2, 90); // Cap at 90% until complete
-              }
-              return Math.min(prev + 1, 80); // Increase gradually
-            });
-          }, 100);
-    
-          let messageInterval = setInterval(() => {
-            setMessageIndex(prev => (prev + 1) % messages.length);
-          }, 2000);
-    
-          return () => {
-            clearInterval(interval);
-            clearInterval(messageInterval);
-          };
-        } else if (scanComplete) {
-          setProgress(90);
-        } else {
-          setProgress(100);
+            updateProgress(); // Update immediately on mount
+
+            const intervalId = setInterval(updateProgress, 1000); // Poll every second
+
+            // Cleanup function to clear interval
+            return () => clearInterval(intervalId);
         }
+
     }, [isLoading, scanComplete]);
 
     if (!isLoading) {
         return null;
     }
-    
+
     return (
-        <div className="space-y-3 text-center">
-            <div className="flex justify-center">
-                <Card className="max-w-sm">
-                <ProgressBar value={progress} color="teal" className="mt-3" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80">
+            <div className="w-72">
+                <Card className="p-4">
+                    <ProgressBar value={progress} color="teal" className="mt-3" />
+                    <p className="text-center font-mono text-sm text-slate-500 mt-3">
+                        {messages[messageIndex]}
+                    </p>
                 </Card>
             </div>
-            <p className="text-center font-mono text-sm text-slate-500">
-                {messages[messageIndex]}
-            </p>
         </div>
     );
-};
-    
+}
+
 export default LoadingBar;
