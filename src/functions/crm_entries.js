@@ -382,6 +382,6 @@ export async function createPineconeIndexes(connection_id) {
   } catch (error) {}
 }
 
-export function getProgress() {
+export function getCrmEntriesProgress() {
   return progress
 }

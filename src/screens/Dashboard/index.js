@@ -40,21 +40,24 @@ function Dashboard(props) {
           .select()
           .eq("connection_id", connection_id);
 
-        const contactIssuesTemp = data[0].issuesArray.filter(
-          (item) => item.type === "Contact"
-        );
-        const companyIssuesTemp = data[0].issuesArray.filter(
-          (item) => item.type === "Company"
-        );
-        setAllIssues(data[0].issuesArray);
-        setContactIssues(contactIssuesTemp);
-        setCompanyIssues(companyIssuesTemp);
-        // Calc final score
-        const finalScore = Math.round(
-          (data[0].crm_points / data[0].crm_max_points) * 100
-        );
-        setCRMScore(finalScore);
-        setNumIssues(data[0].issuesArray.length);
+        if(data && data[0]) {
+          console.log("data: ", data);
+          const contactIssuesTemp = data[0].issuesArray.filter(
+            (item) => item.type === "Contact"
+          );
+          const companyIssuesTemp = data[0].issuesArray.filter(
+            (item) => item.type === "Company"
+          );
+          setAllIssues(data[0].issuesArray);
+          setContactIssues(contactIssuesTemp);
+          setCompanyIssues(companyIssuesTemp);
+          // Calc final score
+          const finalScore = Math.round(
+            (data[0].crm_points / data[0].crm_max_points) * 100
+          );
+          setCRMScore(finalScore);
+          setNumIssues(data[0].issuesArray.length);
+        }
       }
       //Check if LinkedIn extension is installed
       try {
@@ -229,8 +232,7 @@ function Dashboard(props) {
         "Generating embeddings...",
         "Finalizing insights and storing findings...",
       ]} 
-      isLoading={isLoading} 
-      scanComplete={scanComplete} />}
+      isLoading={isLoading} screen={"dashboard"} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && (
