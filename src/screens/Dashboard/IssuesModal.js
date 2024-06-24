@@ -8,28 +8,35 @@ import {
   TableRow,
 } from "@tremor/react";
 
-function ContactsDemo(props) {
+function IssuesModal(props) {
   const [maxPriority, setMaxPriority] = useState(0);
   useEffect(() => {
-    setMaxPriority(props.issues[0].priority);
-    console.log("Data", props.issues);
-  }, [props.issues]);
+    setMaxPriority(props.allIssues[0].priority);
+    console.log(props.allIssues);
+  }, [props.issues, props.allIssues]);
 
   return (
     <div className="overflow-y-auto">
       <Table className="h-[50vh]">
         <TableHead>
           <TableRow>
-            <TableHeaderCell>Name</TableHeaderCell>
+            <TableHeaderCell>
+              {props.type === "Contact"
+                ? "Name"
+                : props.type === "Company"
+                ? "Company"
+                : "ID"}
+            </TableHeaderCell>
             <TableHeaderCell>Missing Fields</TableHeaderCell>
             <TableHeaderCell>Priority</TableHeaderCell>
+            {props.type === "All" && <TableHeaderCell>Type</TableHeaderCell>}
           </TableRow>
         </TableHead>
         <TableBody>
           {props.issues.map((issue, index) => {
             let issueMissingFields = "";
             issue.missingFields.map((field) => {
-              if (field == "emails[0].email") {
+              if (field == "emails[0].email" || field == "emails.email") {
                 issueMissingFields += "Email ";
               } else {
                 issueMissingFields += `${
@@ -46,6 +53,7 @@ function ContactsDemo(props) {
                 <TableCell>
                   {Math.round((issue.priority / maxPriority) * 100)}
                 </TableCell>
+                {props.type === "All" && <TableCell>{issue.type}</TableCell>}
               </TableRow>
             );
           })}
@@ -55,4 +63,4 @@ function ContactsDemo(props) {
   );
 }
 
-export default ContactsDemo;
+export default IssuesModal;

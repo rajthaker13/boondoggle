@@ -5,10 +5,9 @@ import Issues from "./Issues";
 import Score from "./Score";
 import LoadingBar from "./LoadingBar";
 import { Dialog, DialogPanel, Button } from "@tremor/react";
-import ContactsDemo from "./DemoData/ContactsDemo";
-import DealsDemo from "./DemoData/DealsDemo";
 import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
+import IssuesModal from "./IssuesModal";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -23,6 +22,7 @@ function Dashboard(props) {
   const [linkedInLinked, setLinkedInLinked] = useState(false);
   const [emailLinked, setEmailLinked] = useState(false);
   const [storeDataExecuted, setStoreDataExecuted] = useState(false);
+  const [allIssues, setAllIssues] = useState([]);
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
 
@@ -46,6 +46,7 @@ function Dashboard(props) {
         const companyIssuesTemp = data[0].issuesArray.filter(
           (item) => item.type === "Company"
         );
+        setAllIssues(data[0].issuesArray);
         setContactIssues(contactIssuesTemp);
         setCompanyIssues(companyIssuesTemp);
         // Calc final score
@@ -222,12 +223,27 @@ function Dashboard(props) {
       {isLoading && <LoadingBar isLoading={isLoading} scanComplete={scanComplete} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
-          {modalStep === 0 && <ContactsDemo issues={contactIssues} />}
-          {modalStep === 1 && <DealsDemo />}
-          {modalStep === 2 && (
+          {modalStep == 0 && (
+            <IssuesModal
+              issues={contactIssues}
+              allIssues={allIssues}
+              type="Contact"
+            />
+          )}
+          {modalStep == 1 && (
+            <IssuesModal
+              issues={companyIssues}
+              allIssues={allIssues}
+              type="Company"
+            />
+          )}
+          {modalStep == 2 && (
             <>
-              <ContactsDemo />
-              <DealsDemo />
+              <IssuesModal
+                issues={allIssues}
+                allIssues={allIssues}
+                type="All"
+              />
             </>
           )}
   
@@ -256,7 +272,7 @@ function Dashboard(props) {
             <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
               {modalStep === 0
                 ? "Continue"
-                : modalStep === 1
+                : modalStep == 1
                 ? "Review"
                 : "Resolve"}
             </div>
