@@ -362,6 +362,7 @@ export async function createPineconeIndexes(connection_id) {
         }
       }
       progress += 8;
+      console.log("upserted: ", Date.now()-startTime);
     }
     // Calc final score
     const finalScore = Math.round(

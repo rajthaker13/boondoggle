@@ -220,7 +220,17 @@ function Dashboard(props) {
 
   return (
       <div>
-      {isLoading && <LoadingBar isLoading={isLoading} scanComplete={scanComplete} />}
+      {isLoading && <LoadingBar 
+      messages={[
+        "Fetching CRM data...",
+        "Scanning contacts...",
+        "Analyzing deals...",
+        "Surveying events...",
+        "Generating embeddings...",
+        "Finalizing insights and storing findings...",
+      ]} 
+      isLoading={isLoading} 
+      scanComplete={scanComplete} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && (

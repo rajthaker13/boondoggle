@@ -2,37 +2,27 @@ import { Card, ProgressBar } from '@tremor/react';
 import React, { useEffect, useState } from 'react';
 import { getProgress } from "../../functions/crm_entries";
 
-function LoadingBar({ isLoading, scanComplete }) { // Correct props destructuring
-    const [messageIndex, setMessageIndex] = useState(0);
+function LoadingBar({ messages, isLoading, scanComplete }) { // Correct props destructuring
     const [progress, setProgress] = useState(0);
-
-    const messages = [
-        "Fetching CRM data...",
-        "Scanning contacts...",
-        "Analyzing deals...",
-        "Surveying events...",
-        "Generating embeddings...",
-        "Finalizing insights and storing findings...",
-    ];
+    const [messageIndex, setMessageIndex] = useState(0);
 
     useEffect(() => {
+
+        const progressMarker = 100/messages.length;
+        let progressMarkerIdx = 1;
+        let mi = 0;
+
         // Function to update progress
         const updateProgress = () => {
             const progressValue = getProgress();
             setProgress(progressValue);
-
-            if (progressValue < 15) {
-                setMessageIndex(0);
-            } else if (progressValue < 30) {
-                setMessageIndex(1);
-            } else if (progressValue < 45) {
-                setMessageIndex(2);
-            } else if (progressValue < 60) {
-                setMessageIndex(3);
-            } else if (progressValue < 75) {
-                setMessageIndex(4);
-            } else {
-                setMessageIndex(5);
+            console.log("progress value: ", progressValue);
+            console.log("progress marker: ", progressMarker*progressMarkerIdx);
+            console.log("message index: ", mi);
+            if (progressValue > progressMarker*progressMarkerIdx) {
+                mi++;
+                setMessageIndex(mi);
+                progressMarkerIdx++;
             }
         };
 
