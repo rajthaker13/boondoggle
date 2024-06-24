@@ -116,13 +116,18 @@ export async function createPineconeIndexes(connection_id) {
         missingFieldNormalized * 0.7 + objectPriority * 0.3;
 
       if (missingFields.length > 0 && type !== "Deal") {
-        issuesArray.push({
-          UnifiedID: item.id,
-          itemData: item,
-          type: type,
-          missingFields: missingFields,
-          priority: enrichmentPriority,
-        });
+        if (type === "Contact" && missingFields.includes("emails[0].email") && missingFields.includes("company")) {
+          // Do not push to issuesArray if both 'emails[0].email' and 'company' are missing for Contacts
+        } else {
+          // Push to issuesArray for other types or if not both fields are missing for Contacts
+          issuesArray.push({
+            UnifiedID: item.id,
+            itemData: item,
+            type: type,
+            missingFields: missingFields,
+            priority: enrichmentPriority,
+          });
+        }
       }
 
       return {
@@ -351,5 +356,5 @@ export async function createPineconeIndexes(connection_id) {
       points: Math.round(score),
       maxPoints: Math.round(maxScore),
     };
-  } catch (error) {}
+  } catch (error) { }
 }

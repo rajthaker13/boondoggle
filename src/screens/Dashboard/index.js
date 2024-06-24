@@ -8,6 +8,7 @@ import { Dialog, DialogPanel, Button } from "@tremor/react";
 import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
 import IssuesModal from "./IssuesModal";
+import { fetchEnrichmentProfile } from '../../functions/enrich_crm';
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -251,7 +252,45 @@ function Dashboard(props) {
               if (modalStep == 2) {
                 setIsLoading(true);
                 await new Promise((resolve) => setTimeout(resolve, 5000));
+                console.log(contactIssues);
+                if (contactIssues.length > 0) {
+                  let crmUpdate = [];
+                  console.log("Start fixing")
+                  let count = 0;
+                  for (let contact of contactIssues) {
 
+                    if (count >= 5) break; // Stop after 10 successful fetches
+            
+                    if (contact.itemData.emails && contact.itemData.emails.length > 0 && contact.itemData.emails[0].email) {
+                      let profileData = {...contact.itemData}; 
+                      profileData.email = contact.itemData.emails[0].email; 
+                      try {
+                        const result = await fetchEnrichmentProfile(profileData, "Email");
+                        if (result !== null) {
+                          console.log("Fixed", result); // Logging the enriched profile data
+                          crmUpdate.push(result); // Temp store the result in this array.
+                          count++; // Increment only if fetch is successful
+                        }
+                      } catch (error) {
+                        console.error("Error fetching profile data:", error);
+                      }
+                    } else { // If issue obj do not have email associated with, enrich it with the company
+                      let profileData = {...contact.itemData}; 
+                      console.log("SC", profileData);
+                      try {
+                        const result = await fetchEnrichmentProfile(profileData, "SearchCompany");
+                        if (result !== null) {
+                          console.log("Fixed", result); // Logging the enriched profile data
+                          crmUpdate.push(result); // Temp store the result in this array.
+                          count++; // Increment only if fetch is successful
+                        }
+                      } catch (error) {
+                        console.error("Error fetching profile data:", error);
+                      }
+                    }
+                  }
+                }
+              
                 setIsLoading(false);
 
                 setCRMScore(90);
