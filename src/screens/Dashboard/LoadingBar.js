@@ -7,12 +7,12 @@ function LoadingBar({ isLoading, scanComplete }) { // Correct props destructurin
     const [progress, setProgress] = useState(0);
 
     const messages = [
-        "Fetching data...",
+        "Fetching CRM data...",
         "Scanning contacts...",
         "Analyzing deals...",
         "Surveying events...",
         "Generating embeddings...",
-        "Uploading data...",
+        "Finalizing insights and storing findings...",
     ];
 
     useEffect(() => {
