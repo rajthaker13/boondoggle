@@ -11,6 +11,7 @@ import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
+import SpamModal from "./SpamModal";
 
 let progress = 0;
 
@@ -29,6 +30,8 @@ function Workflows(props) {
   const [hamEmails, setHamEmails] = useState([]);
   const [spamEmails, setSpamEmails] = useState([]);
   const [showSpamModal, setShowSpamModal] = useState(false);
+  const [fetchingEmails, setFetchingEmails] = useState(false);
+  const [modalStep, setModalStep] = useState(0);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -1002,6 +1005,7 @@ function Workflows(props) {
    */
   async function fetchEmails() {
     setIsLoading(true);
+    setFetchingEmails(true);
     setShowSpamModal(false);
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
@@ -1032,11 +1036,16 @@ function Workflows(props) {
       }
       progress++;
     }
+    setIsLoading(false);
+    setFetchingEmails(false);
+    setShowSpamModal(true);
+    progress = 0;
   }
 
   async function uploadEmails() {
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
+    progress = 0;
 
     let new_crm_data = [];
     let new_emails = [];
@@ -1056,9 +1065,8 @@ function Workflows(props) {
           createNewEmail(new_emails, email, userEmail);
         }
       }
+      progress++;
     }
-
-    progress = 39;;
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -1107,7 +1115,7 @@ function Workflows(props) {
 
     // End loading indicator
     setIsLoading(false);
-    setOpenCookieModal(false);
+    setShowSpamModal(false);
     progress = 0;
 
     // Clean up URL by removing query parameters
@@ -1373,16 +1381,21 @@ function Workflows(props) {
 
   return (
     <div>
-      {isLoading && <LoadingBar 
+      {isLoading && !fetchingEmails && <LoadingBar 
+      messages={[
+        "Analyzing content...",
+        "Generating summaries...",
+        "Uploading data to CRM..."
+      ]} 
+      isLoading={isLoading} screen={"workflows"} />}
+
+      {isLoading && fetchingEmails && <LoadingBar 
       messages={[
         "Fetching messages...",
         "Filtering spam...",
-        "Analyzing content...",
-        "Generating summaries...",
-        "Uploading data to CRM...",
-        ""
       ]} 
       isLoading={isLoading} screen={"workflows"} />}
+
       {!isLoading && (
         <div>
           <Dialog
@@ -1459,6 +1472,7 @@ function Workflows(props) {
                   variant="primary"
                   onClick={async () => {
                     if (source == "Email") {
+                      setOpenCookieModal(false);
                       await fetchEmails();
                     } else if (source == "LinkedIn") {
                       await uploadLinkedin();
@@ -1470,6 +1484,83 @@ function Workflows(props) {
               </div>
             </DialogPanel>
           </Dialog>
+          
+          <Dialog
+            open={showSpamModal}
+            onClose={(val) => {
+              if (!isLoading) {
+                setShowSpamModal(val);
+              }
+            }}
+            static={true}
+            >
+            <DialogPanel
+              style={{
+                width: "100%",
+                maxWidth: "75vw",
+                display: "flex",
+                justifyContent: "center",
+              }}>
+                <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
+                  {modalStep == 0 ? "Review Important Emails" : "Review Spam Emails"}
+                </div>
+                {modalStep == 0 && (
+                  <SpamModal
+                  emails={hamEmails}
+                  setFunction={setHamEmails}
+                  otherEmails={spamEmails}
+                  otherSetFunction={setSpamEmails}
+                  step={modalStep}
+                />
+                )}
+                {modalStep == 1 && (
+                  <SpamModal
+                  emails={spamEmails}
+                  setFunction={setSpamEmails}
+                  otherEmails={hamEmails}
+                  otherSetFunction={setHamEmails}
+                  step={modalStep}
+                />
+                )}
+                <div className="flex flex-col space-y-2 mt-4 items-center">
+                  <Button
+                    variant="primary"
+                    color="blue"
+                    style={{
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      width: '30%',
+                    }}
+                    onClick={async () => {
+                      if (modalStep === 1) {
+                        setIsLoading(true);
+                        setModalStep(0);
+                        setShowSpamModal(false);
+                        await uploadEmails(hamEmails);
+                      } else {
+                        setModalStep(modalStep + 1);
+                      }
+                    }}
+                  >
+                    {modalStep === 0 ? "Continue" : "Finish"}
+                  </Button>
+                  {modalStep === 1 && (
+                    <Button
+                      variant="secondary"
+                      style={{
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        width: '30%',
+                      }}
+                      onClick={() => setModalStep(modalStep - 1)}
+                    >
+                      Back
+                    </Button>
+                  )}
+                </div>
+            </DialogPanel>
+          </Dialog>
+
           <Header db={props.db} selectedTab={1} />
           <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
             <WorkflowSidebar
