@@ -4,13 +4,19 @@ import axios from "axios";
 import Header from "../../components/Header";
 import WorkflowSidebar from "../../components/WorkflowSidebar";
 import { Button, Dialog, DialogPanel, Select, SelectItem } from "@tremor/react";
-import LoadingOverlay from "react-loading-overlay";
 import workflowData from "../../data/workflows";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
+import LoadingBar from "../Dashboard/LoadingBar";
+
+let progress = 0;
+
+export function getWorkflowsProgress() {
+  return progress;
+}
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +26,8 @@ function Workflows(props) {
   const [cookieError, setCookieError] = useState("");
   const [connectedEmailsList, setConnectedEmailsList] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState({});
+  const [hamEmails, setHamEmails] = useState([]);
+  const [spamEmails, setSpamEmails] = useState([]);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -203,7 +211,8 @@ function Workflows(props) {
               );
               console.log("Supabase Contact", supabaseContact);
 
-              const uniqueId = generateUniqueId();
+              if(supabaseContact) {
+                const uniqueId = generateUniqueId();
               crmUpdate.push({
                 id: uniqueId,
                 date: update.date,
@@ -220,6 +229,7 @@ function Workflows(props) {
                   ? { email: supabaseContact.email }
                   : { email: null }),
               });
+              }
 
               const event = {
                 id: current_crm.id,
@@ -586,12 +596,17 @@ function Workflows(props) {
         async function (response) {
           if (response && response.cookie != null) {
             const cookie = response.cookie;
+            const startTime = Date.now();
+            console.log("start: ", 0);
+            
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
               {
                 body: { session_cookie: cookie },
               }
             );
+            console.log("time to scrape: ", Date.now()-startTime);
+            progress = 15;
             const messageArray = data.text;
 
             let new_crm_data = [];
@@ -632,21 +647,28 @@ function Workflows(props) {
                   status: "Completed",
                 };
 
-                console.log("Message Data", messageData);
+                //console.log("Message Data", messageData);
 
                 if (messageData.url != null) {
                   // Update CRM and ToDo Lists
                   new_crm_data.push(obj);
                 }
               }
+              console.log("time for each message: ", Date.now()-startTime);
+              progress++;
             }
+            
+            progress = 65;
 
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
+            console.log("time to finish: ", Date.now()-startTime);
+
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
             setOpenCookieModal(false);
+            progress = 0;
             // Clean up URL by removing query parameters
             var cleanUrl = window.location.href.split("?")[0];
             window.history.replaceState({}, document.title, cleanUrl);
@@ -980,35 +1002,47 @@ function Workflows(props) {
   async function uploadEmails() {
     setIsLoading(true);
     const id = selectedEmail.connection_id;
-    const userEmail = selectedEmail.email;
+    const userEmail = selectedEmail.email
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { user_id: id },
     });
 
+    progress = 15;
+
     let emails = data.emailData;
 
-    //let userEmail = channels[0].members[0].email //only works for gmail
     localStorage.setItem("user_email", userEmail);
 
     let new_crm_data = [];
 
-    let new_emails = [];
-
-    console.log("All emails", emails);
-
-    //Filters and processes each email
+    //Filters each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
-      if (!isSpamEmail) {
+      if(isSpamEmail) {
+        let temp = spamEmails;
+        temp.push(email);
+        setSpamEmails(temp);
+      }
+      else {
+        let temp = hamEmails;
+        temp.push(email);
+        setHamEmails(temp);
+      }
+    }
+
+    let new_emails = [];
+    //processes all real emails
+    for (const email of hamEmails) {
+      {
         const fromIndex = new_emails.findIndex(
           (item) => item.customer === email.author_member.name
         );
         const toIndex = new_emails.findIndex(
           (item) => item.customer === email.destination_members[0].name
         );
-
+  
         if (fromIndex !== -1 || toIndex !== -1) {
           updateExistingEmail(new_emails, fromIndex, toIndex, email);
         } else {
@@ -1016,6 +1050,8 @@ function Workflows(props) {
         }
       }
     }
+
+    progress = 39;;
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -1052,14 +1088,20 @@ function Workflows(props) {
             new_crm_data.push(obj);
           }
         }
+        progress++;
       })
     );
 
+    progress = 80;
+
     await sendToCRM(new_crm_data, "Email");
+
+    progress = 100;
 
     // End loading indicator
     setIsLoading(false);
     setOpenCookieModal(false);
+    progress = 0;
 
     // Clean up URL by removing query parameters
     var cleanUrl = window.location.href.split("?")[0];
@@ -1322,105 +1364,133 @@ function Workflows(props) {
   }
 
   return (
-    <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div>
-        <Dialog
-          open={openCookieModal}
-          onClose={(val) => {
-            if (!isLoading) {
-              setOpenCookieModal(val);
-            }
-          }}
-          static={true}
-        >
-          <DialogPanel>
-            <div
-              className="modal-content"
-              style={{
-                height: "auto",
-                width: "100%",
-                maxWidth: "60vw",
-                display: "flex",
-                flexDirection: "column",
-                background: "#fff",
-              }}
+    <div>
+      {isLoading && <LoadingBar 
+      messages={[
+        "Fetching messages...",
+        "Filtering spam...",
+        "Analyzing content...",
+        "Generating summaries...",
+        "Uploading data to CRM...",
+        ""
+      ]} 
+      isLoading={isLoading} screen={"workflows"} />}
+      {!isLoading && (
+        <div>
+          <Dialog
+            open={openCookieModal}
+            onClose={(val) => {
+              if (!isLoading) {
+                setOpenCookieModal(val);
+              }
+            }}
+            static={true}
             >
-              <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                Create Workflow
-              </div>
-              <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[2vh]">
-                <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
-                  <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
-                    <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
-                      {source}
-                    </div>
-                    <div class="w-5 h-5 relative"></div>
-                  </div>
-                </div>
-                <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
-                  {`->`}
-                </div>
-                <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
-                  <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
-                    <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
-                      {localStorage.getItem("crmType") == "airtable"
-                        ? "Airtable"
-                        : "CRM"}
-                    </div>
-                    <div class="w-5 h-5 relative"></div>
-                  </div>
-                </div>
-              </div>
-
-              {source === "Email" && (
-                <>
-                  <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
-                    Select Email
-                  </div>
-                  <Select className="mb-[2vh]" defaultValue="1">
-                    {connectedEmailsList.map((email, index) => {
-                      return (
-                        <SelectItem
-                          value={(index + 1).toString()}
-                          onClick={() => {
-                            setSelectedEmail(email);
-                          }}
-                        >
-                          {email.email}
-                        </SelectItem>
-                      );
-                    })}
-                  </Select>
-                </>
-              )}
-
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  if (source == "Email") {
-                    await uploadEmails();
-                  } else if (source == "LinkedIn") {
-                    await uploadLinkedin();
-                  }
+            <DialogPanel>
+              <div
+                className="modal-content"
+                style={{
+                  height: "auto",
+                  width: "100%",
+                  maxWidth: "60vw",
+                  display: "flex",
+                  flexDirection: "column",
+                  background: "#fff",
                 }}
               >
-                Confirm
-              </Button>
-            </div>
-          </DialogPanel>
-        </Dialog>
+                <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
+                  Create Workflow
+                </div>
+                <div class="w-[100%] h-9 justify-start items-center gap-2.5 inline-flex mb-[2vh]">
+                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                        {source}
+                      </div>
+                      <div class="w-5 h-5 relative"></div>
+                    </div>
+                  </div>
+                  <div class="text-gray-700 text-lg font-medium font-['Inter'] leading-7">
+                    {`->`}
+                  </div>
+                  <div class="grow shrink basis-0 pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 flex-col justify-start items-start gap-2.5 inline-flex">
+                    <div class="self-stretch justify-start items-start gap-2.5 inline-flex">
+                      <div class="grow shrink basis-0 text-gray-700 text-sm font-normal font-['Inter'] leading-tight">
+                        {localStorage.getItem("crmType") == "airtable"
+                          ? "Airtable"
+                          : "CRM"}
+                      </div>
+                      <div class="w-5 h-5 relative"></div>
+                    </div>
+                  </div>
+                </div>
 
-        <Header db={props.db} selectedTab={1} />
-        <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
-          <WorkflowSidebar
-            selectedWorkflow={selectedWorkflow}
-            setSelectedWorkflow={setSelectedWorkflow}
-          />
-          <div class="w-[100vw] h-[auto] justify-start items-center gap-[18px] flex-column">
-            <div class="flex flex-wrap justify-start gap-[18px]">
-              {workflowData.map((workflow) => {
-                if (selectedWorkflow != "") {
-                  if (workflow.source == selectedWorkflow) {
+                {source === "Email" && (
+                  <>
+                    <div class="w-[338px] text-gray-700 text-sm font-bold font-['Inter'] leading-tight mb-[2vh]">
+                      Select Email
+                    </div>
+                    <Select className="mb-[2vh]" defaultValue="1">
+                      {connectedEmailsList.map((email, index) => {
+                        return (
+                          <SelectItem
+                            value={(index + 1).toString()}
+                            onClick={() => {
+                              setSelectedEmail(email);
+                            }}
+                          >
+                            {email.email}
+                          </SelectItem>
+                        );
+                      })}
+                    </Select>
+                  </>
+                )}
+
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (source == "Email") {
+                      await uploadEmails();
+                    } else if (source == "LinkedIn") {
+                      await uploadLinkedin();
+                    }
+                  }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </DialogPanel>
+          </Dialog>
+          <Header db={props.db} selectedTab={1} />
+          <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
+            <WorkflowSidebar
+              selectedWorkflow={selectedWorkflow}
+              setSelectedWorkflow={setSelectedWorkflow}
+            />
+            <div class="w-[100vw] h-[auto] justify-start items-center gap-[18px] flex-column">
+              <div class="flex flex-wrap justify-start gap-[18px]">
+                {workflowData.map((workflow) => {
+                  if (selectedWorkflow != "") {
+                    if (workflow.source == selectedWorkflow) {
+                      return (
+                        <div
+                          class="w-[445px] h-[285px] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex hover:bg-blue-200"
+                          onClick={() => {
+                            setSource(workflow.source);
+                            setOpenCookieModal(true);
+                          }}
+                        >
+                          <img src={workflow.src}></img>
+                          <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
+                            <div class="grow shrink basis-0 text-gray-700 text-lg font-semibold font-['Inter'] leading-7">
+                              {workflow.title}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  } else {
                     return (
                       <div
                         class="w-[445px] h-[285px] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex hover:bg-blue-200"
@@ -1431,37 +1501,21 @@ function Workflows(props) {
                       >
                         <img src={workflow.src}></img>
                         <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
-                          <div class="grow shrink basis-0 text-gray-700 text-lg font-semibold font-['Inter'] leading-7">
+                          <div class="grow shrink basis-0 text-gray-700 text-sm font-semibold font-['Inter'] leading-7 whitespace-nowrap overflow-hidden">
                             {workflow.title}
                           </div>
                         </div>
                       </div>
                     );
                   }
-                } else {
-                  return (
-                    <div
-                      class="w-[445px] h-[285px] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex hover:bg-blue-200"
-                      onClick={() => {
-                        setSource(workflow.source);
-                        setOpenCookieModal(true);
-                      }}
-                    >
-                      <img src={workflow.src}></img>
-                      <div class="self-stretch justify-start items-center gap-2.5 inline-flex">
-                        <div class="grow shrink basis-0 text-gray-700 text-sm font-semibold font-['Inter'] leading-7 whitespace-nowrap overflow-hidden">
-                          {workflow.title}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-              })}
+                })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </LoadingOverlay>
+      )}
+      
+    </div>
   );
 }
 
