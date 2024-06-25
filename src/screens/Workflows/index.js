@@ -28,6 +28,7 @@ function Workflows(props) {
   const [selectedEmail, setSelectedEmail] = useState({});
   const [hamEmails, setHamEmails] = useState([]);
   const [spamEmails, setSpamEmails] = useState([]);
+  const [showSpamModal, setShowSpamModal] = useState(false);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -999,23 +1000,22 @@ function Workflows(props) {
    *
    * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
    */
-  async function uploadEmails() {
+  async function fetchEmails() {
     setIsLoading(true);
+    setShowSpamModal(false);
     const id = selectedEmail.connection_id;
-    const userEmail = selectedEmail.email
+    const userEmail = selectedEmail.email;
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { user_id: id },
     });
 
-    progress = 15;
+    progress = 50;
 
     let emails = data.emailData;
 
     localStorage.setItem("user_email", userEmail);
-
-    let new_crm_data = [];
 
     //Filters each email
     for (const email of emails) {
@@ -1030,8 +1030,15 @@ function Workflows(props) {
         temp.push(email);
         setHamEmails(temp);
       }
+      progress++;
     }
+  }
 
+  async function uploadEmails() {
+    const id = selectedEmail.connection_id;
+    const userEmail = selectedEmail.email;
+
+    let new_crm_data = [];
     let new_emails = [];
     //processes all real emails
     for (const email of hamEmails) {
@@ -1107,6 +1114,7 @@ function Workflows(props) {
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
   }
+
   /**
    * Checks if an email is spam based on certain criteria.
    * @param {Object} email - The email to check.
@@ -1451,7 +1459,7 @@ function Workflows(props) {
                   variant="primary"
                   onClick={async () => {
                     if (source == "Email") {
-                      await uploadEmails();
+                      await fetchEmails();
                     } else if (source == "LinkedIn") {
                       await uploadLinkedin();
                     }
