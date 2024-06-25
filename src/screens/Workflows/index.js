@@ -26,6 +26,8 @@ function Workflows(props) {
   const [cookieError, setCookieError] = useState("");
   const [connectedEmailsList, setConnectedEmailsList] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState({});
+  const [hamEmails, setHamEmails] = useState([]);
+  const [spamEmails, setSpamEmails] = useState([]);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -1011,26 +1013,36 @@ function Workflows(props) {
 
     let emails = data.emailData;
 
-    //let userEmail = channels[0].members[0].email //only works for gmail
     localStorage.setItem("user_email", userEmail);
 
     let new_crm_data = [];
 
-    let new_emails = [];
-
-    console.log("All emails", emails);
-
-    //Filters and processes each email
+    //Filters each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
-      if (!isSpamEmail) {
+      if(isSpamEmail) {
+        let temp = spamEmails;
+        temp.push(email);
+        setSpamEmails(temp);
+      }
+      else {
+        let temp = hamEmails;
+        temp.push(email);
+        setHamEmails(temp);
+      }
+    }
+
+    let new_emails = [];
+    //processes all real emails
+    for (const email of hamEmails) {
+      {
         const fromIndex = new_emails.findIndex(
           (item) => item.customer === email.author_member.name
         );
         const toIndex = new_emails.findIndex(
           (item) => item.customer === email.destination_members[0].name
         );
-
+  
         if (fromIndex !== -1 || toIndex !== -1) {
           updateExistingEmail(new_emails, fromIndex, toIndex, email);
         } else {
