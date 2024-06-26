@@ -652,6 +652,7 @@ function Workflows(props) {
             setIsLoading(false);
             setShowSpamModal(true);
             setLinkedinWorkflow(true);
+            setFetchingEmails(false);
             progress = 0;
           } else {
             setCookieError("LoggedIn");
@@ -668,7 +669,6 @@ function Workflows(props) {
 
   async function uploadLinkedin() {
     setIsLoading(true);
-    setFetchingEmails(false);
     setShowSpamModal(false);
 
     let new_crm_data = [];
