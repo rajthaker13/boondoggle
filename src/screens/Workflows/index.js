@@ -32,6 +32,8 @@ function Workflows(props) {
   const [showSpamModal, setShowSpamModal] = useState(false);
   const [fetchingEmails, setFetchingEmails] = useState(false);
   const [modalStep, setModalStep] = useState(0);
+  const [emailWorkflow, setEmailWorkflow] = useState(false);
+  const [linkedinWorkflow, setLinkedinWorkflow] = useState(false);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -579,9 +581,11 @@ function Workflows(props) {
    *
    * These objects are then saved in the Supabase db.
    */
-  async function uploadLinkedin() {
+  async function fetchLinkedin() {
     // Extension ID
     setIsLoading(true);
+    setShowSpamModal(false);
+    setFetchingEmails(true);
 
     const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
 
@@ -593,6 +597,8 @@ function Workflows(props) {
     };
 
     try {
+      progress = 0;
+
       //Fetches Linkedin cookie
       window.chrome.runtime.sendMessage(
         extensionId,
@@ -600,8 +606,6 @@ function Workflows(props) {
         async function (response) {
           if (response && response.cookie != null) {
             const cookie = response.cookie;
-            const startTime = Date.now();
-            console.log("start: ", 0);
             
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
@@ -609,73 +613,46 @@ function Workflows(props) {
                 body: { session_cookie: cookie },
               }
             );
-            console.log("time to scrape: ", Date.now()-startTime);
-            progress = 15;
+            progress = 40;
             const messageArray = data.text;
+            console.log(messageArray)
+            let tempHamEmails = [];
+            let tempSpamEmails = [];
 
-            let new_crm_data = [];
-
-            //Generates title, summary, to-do item, response for each chat history
             for (let i = 0; i < messageArray.length; i++) {
               const messageData = messageArray[i];
-              const customer = messageData.name;
               const response = await generateLinkedinCRMData(messageData);
+              progress++;
               const isSpamMessage = await checkLinkedInMessage(
                 response.summary,
                 messageData
               );
-
-              if (!isSpamMessage) {
-                const date = Date.now();
-                const uniqueId = generateUniqueId();
-
-                //saves title, summary, todos, and response in data objects
-                var obj = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.title,
-                  summary: response.summary,
-                  date: date,
-                  messageData: messageData,
-                  url: messageData.url,
-                  address: {
-                    city: null,
-                    country: null,
-                    country_code: null,
-                    region: null,
-                  },
-                  company: null,
-                  emails: [],
-                  telephones: [],
-                  source: "LinkedIn",
-                  status: "Completed",
-                };
-
-                //console.log("Message Data", messageData);
-
-                if (messageData.url != null) {
-                  // Update CRM and ToDo Lists
-                  new_crm_data.push(obj);
-                }
-              }
-              console.log("time for each message: ", Date.now()-startTime);
               progress++;
+
+              const messageObj = {
+                author_member: {
+                  name: messageData.name
+                },
+                subject: response.title,
+                message: messageData.messages[0].text,
+                messageData: messageData,
+                response: response
+              }
+              if(isSpamMessage) {
+                tempSpamEmails.push(messageObj)
+              }
+              else {
+                tempHamEmails.push(messageObj)
+              }
+              
             }
-            
-            progress = 65;
-
-            //updates the CRM
-            await sendToCRM(new_crm_data, "LinkedIn");
-
-            console.log("time to finish: ", Date.now()-startTime);
+            setSpamEmails(tempSpamEmails);
+            setHamEmails(tempHamEmails);
 
             setIsLoading(false);
-            localStorage.setItem("linkedInLinked", true);
-            setOpenCookieModal(false);
+            setShowSpamModal(true);
+            setLinkedinWorkflow(true);
             progress = 0;
-            // Clean up URL by removing query parameters
-            var cleanUrl = window.location.href.split("?")[0];
-            window.history.replaceState({}, document.title, cleanUrl);
           } else {
             setCookieError("LoggedIn");
             setIsLoading(false);
@@ -685,7 +662,74 @@ function Workflows(props) {
     } catch (error) {
       setCookieError("Extension");
       setIsLoading(false);
+      progress = 0;
     }
+  }
+
+  async function uploadLinkedin() {
+    setIsLoading(true);
+    setFetchingEmails(false);
+    setShowSpamModal(false);
+
+    let new_crm_data = [];
+    progress = 0;
+
+    //Generates title, summary, to-do item, response for each chat history
+    for (let i = 0; i < hamEmails.length; i++) {
+      const messageData = hamEmails[i].messageData;
+      const customer = messageData.name;
+      const response = hamEmails[i].response;
+
+      const date = Date.now();
+      const uniqueId = generateUniqueId();
+
+      //saves title, summary, todos, and response in data objects
+      var obj = {
+        id: uniqueId,
+        customer: customer,
+        title: response.title,
+        summary: response.summary,
+        date: date,
+        messageData: messageData,
+        url: messageData.url,
+        address: {
+          city: null,
+          country: null,
+          country_code: null,
+          region: null,
+        },
+        company: null,
+        emails: [],
+        telephones: [],
+        source: "LinkedIn",
+        status: "Completed",
+      };
+
+      //console.log("Message Data", messageData);
+
+      if (messageData.url != null) {
+        // Update CRM and ToDo Lists
+        new_crm_data.push(obj);
+      }
+      progress++;
+    }
+
+    progress = 65;
+
+    //updates the CRM
+    await sendToCRM(new_crm_data, "LinkedIn");
+
+    progress = 100;
+
+    setIsLoading(false);
+    localStorage.setItem("linkedInLinked", true);
+    setOpenCookieModal(false);
+    setShowSpamModal(false);
+    setLinkedinWorkflow(false);
+    progress = 0;
+    // Clean up URL by removing query parameters
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 
   /**
@@ -1007,6 +1051,7 @@ function Workflows(props) {
     setIsLoading(true);
     setFetchingEmails(true);
     setShowSpamModal(false);
+
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
 
@@ -1022,23 +1067,29 @@ function Workflows(props) {
     localStorage.setItem("user_email", userEmail);
 
     //Filters each email
+    // Initialize temporary arrays
+    const tempHamEmails = [];
+    const tempSpamEmails = [];
+
+    // Filters each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
-      if(isSpamEmail) {
-        let temp = spamEmails;
-        temp.push(email);
-        setSpamEmails(temp);
-      }
-      else {
-        let temp = hamEmails;
-        temp.push(email);
-        setHamEmails(temp);
+      if (isSpamEmail) {
+        tempSpamEmails.push(email);
+      } else {
+        tempHamEmails.push(email);
       }
       progress++;
     }
+
+    // Update state after processing all emails
+    setHamEmails(tempHamEmails);
+    setSpamEmails(tempSpamEmails);
+
     setIsLoading(false);
     setFetchingEmails(false);
     setShowSpamModal(true);
+    setEmailWorkflow(true);
     progress = 0;
   }
 
@@ -1116,6 +1167,7 @@ function Workflows(props) {
     // End loading indicator
     setIsLoading(false);
     setShowSpamModal(false);
+    setEmailWorkflow(false);
     progress = 0;
 
     // Clean up URL by removing query parameters
@@ -1475,7 +1527,7 @@ function Workflows(props) {
                       setOpenCookieModal(false);
                       await fetchEmails();
                     } else if (source == "LinkedIn") {
-                      await uploadLinkedin();
+                      await fetchLinkedin();
                     }
                   }}
                 >
@@ -1502,7 +1554,7 @@ function Workflows(props) {
                 justifyContent: "center",
               }}>
                 <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                  {modalStep == 0 ? "Review Important Emails" : "Review Spam Emails"}
+                  {modalStep == 0 ? "Review Important Messages" : "Review Spam Messages"}
                 </div>
                 {modalStep == 0 && (
                   <SpamModal
@@ -1536,7 +1588,12 @@ function Workflows(props) {
                         setIsLoading(true);
                         setModalStep(0);
                         setShowSpamModal(false);
-                        await uploadEmails(hamEmails);
+                        if(emailWorkflow) {
+                          await uploadEmails(hamEmails);
+                        }
+                        else if(linkedinWorkflow) {
+                          await uploadLinkedin(hamEmails);
+                        }
                       } else {
                         setModalStep(modalStep + 1);
                       }
