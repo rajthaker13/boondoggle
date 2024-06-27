@@ -21,9 +21,6 @@ export const CRITERIA_WEIGHTS = {
   company: {
     fields: {
       name: 30,
-      emails: {
-        email: 20,
-      },
       websites: 15,
       description: 10,
       industry: 10,

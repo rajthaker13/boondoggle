@@ -11,6 +11,7 @@ import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
+import { CRITERIA_WEIGHTS } from "../../functions/schemas/criteria_weights";
 
 let progress = 0;
 
@@ -28,6 +29,100 @@ function Workflows(props) {
   const [selectedEmail, setSelectedEmail] = useState({});
   const [hamEmails, setHamEmails] = useState([]);
   const [spamEmails, setSpamEmails] = useState([]);
+
+  // Calculate completeness score for different types of CRM data
+  const scoreCompleteness = (item, type) => {
+    let itemScore = 0;
+    let totalWeight = 0;
+
+    // Define scoring criteria based on data type (Contact, Deal, etc.)
+    let criteria;
+    if (type === "Contact") {
+      criteria = CRITERIA_WEIGHTS.contact;
+    } else if (type === "Deal") {
+      criteria = CRITERIA_WEIGHTS.deal;
+    } else if (type === "Company") {
+      criteria = CRITERIA_WEIGHTS.company;
+    }
+
+    let missingFields = [];
+    let missingFieldsPenalty = 0;
+    // Calculate score based on presence of fields and their weighted importance
+    // Add missing fields to the issue arrays
+    for (const [field, weight] of Object.entries(criteria.fields)) {
+      console.log(
+        "ITEM",
+        item,
+        "Weight",
+        weight,
+        "weight type",
+        typeof weight,
+        "Field",
+        field,
+        "Field type",
+        typeof field
+      );
+      if (typeof weight === "object") {
+        // Nested object handling for note field
+        if (item[field] !== undefined) {
+          for (const [subField, subWeight] of Object.entries(weight)) {
+            totalWeight += subWeight;
+            if (Array.isArray(item[field])) {
+              if (
+                item[field][0] !== undefined &&
+                item[field][0][subField] !== undefined
+              ) {
+                itemScore += subWeight;
+              } else {
+                missingFields.push(`${field}[0].${subField}`);
+                missingFieldsPenalty += subWeight;
+              }
+            } else if (item[field][subField] !== undefined) {
+              itemScore += subWeight;
+            } else {
+              missingFields.push(`${field}.${subField}`);
+              missingFieldsPenalty += subWeight;
+            }
+          }
+        } else {
+          for (const subField of Object.keys(weight)) {
+            totalWeight += weight[subField];
+            missingFields.push(`${field}.${subField}`);
+            missingFieldsPenalty += weight[subField];
+          }
+        }
+      } else {
+        totalWeight += weight;
+        if (item[field] !== undefined) {
+          itemScore += weight;
+        } else {
+          missingFields.push(field);
+          missingFieldsPenalty += weight;
+        }
+      }
+    }
+
+    const maxPossibleScore = 100; // Maximum possible score, considering recency, creation, and no missing fields
+
+    // Normalize scores to 0-100 scale
+    const missingFieldNormalized = (missingFieldsPenalty / totalWeight) * 100; // Missing fields normalized score
+
+    // if (missingFields.length > 0 && type !== "Deal") {
+    //   issuesArray.push({
+    //     UnifiedID: item.id,
+    //     itemData: item,
+    //     type: type,
+    //     missingFields: missingFields,
+    //     priority: enrichmentPriority,
+    //   });
+    // }
+
+    return {
+      itemScore: 100 - missingFieldNormalized, // Adjusted score calculation
+      totalWeight: maxPossibleScore, // Account for recency weight in the total weight
+      missingFields: missingFields,
+    };
+  };
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -127,8 +222,11 @@ function Workflows(props) {
     console.log("NEW_CRM", new_crm_data);
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
+    console.log("Fetch crm", fetch_crm);
     let admin_crm_update = fetch_crm.admin_crm_data;
     let user_crm_update = fetch_crm.user_crm_data;
+    let crm_points = fetch_crm.crm_points;
+    let crm_max_points = fetch_crm.crm_max_points;
 
     //iterates through all new data objects
     await Promise.all(
@@ -211,24 +309,24 @@ function Workflows(props) {
               );
               console.log("Supabase Contact", supabaseContact);
 
-              if(supabaseContact) {
+              if (supabaseContact) {
                 const uniqueId = generateUniqueId();
-              crmUpdate.push({
-                id: uniqueId,
-                date: update.date,
-                customer: supabaseContact.customer,
-                title: update.title,
-                position: supabaseContact.position,
-                summary: update.summary,
-                company: supabaseContact.company,
-                url: supabaseContact.url,
-                source: source,
-                ...(source === "Email"
-                  ? { email: update.email }
-                  : supabaseContact.email != null
-                  ? { email: supabaseContact.email }
-                  : { email: null }),
-              });
+                crmUpdate.push({
+                  id: uniqueId,
+                  date: update.date,
+                  customer: supabaseContact.customer,
+                  title: update.title,
+                  position: supabaseContact.position,
+                  summary: update.summary,
+                  company: supabaseContact.company,
+                  url: supabaseContact.url,
+                  source: source,
+                  ...(source === "Email"
+                    ? { email: update.email }
+                    : supabaseContact.email != null
+                    ? { email: supabaseContact.email }
+                    : { email: null }),
+                });
               }
 
               const event = {
@@ -346,29 +444,6 @@ function Workflows(props) {
       })
     );
 
-    console.log("CRM Update", crmUpdate);
-
-    if (crmUpdate.length > 0) {
-      admin_crm_update = [...admin_crm_update, ...crmUpdate];
-      user_crm_update = [...user_crm_update, ...crmUpdate];
-      // Update CRM with new data
-      await props.db
-        .from("data")
-        .update({
-          crm_data: admin_crm_update,
-        })
-        .eq("connection_id", connection_id);
-
-      const uid = localStorage.getItem("uid");
-
-      await props.db
-        .from("users")
-        .update({
-          crm_data: user_crm_update,
-        })
-        .eq("id", uid);
-    }
-
     const contactEmbeddings = await generateEmbeddingsMessages(
       newContacts,
       "Contact"
@@ -434,6 +509,56 @@ function Workflows(props) {
           await delay(5000); // Wait for 5 seconds before retrying
         }
       }
+    }
+    console.log("CRM Update", crmUpdate);
+
+    if (crmUpdate.length > 0) {
+      admin_crm_update = [...admin_crm_update, ...crmUpdate];
+      user_crm_update = [...user_crm_update, ...crmUpdate];
+
+      console.log("Original CRM POInts", crm_points, "type", typeof crm_points);
+      console.log("Original CRM MAX", crm_max_points);
+
+      if (newContacts.length > 0) {
+        newContacts.map((item) => {
+          console.log("Contact Item", item);
+          const completenessScore = scoreCompleteness(item, "Contact");
+          console.log("Completeness Score Contact", completenessScore);
+          console.log("Type of item score", typeof completenessScore.itemScore);
+          crm_points += completenessScore.itemScore;
+          crm_max_points += completenessScore.totalWeight;
+        });
+      }
+      if (newCompanies.length > 0) {
+        newCompanies.map((item) => {
+          console.log("COmpany Item", item);
+          const completenessScore = scoreCompleteness(item, "Company");
+          console.log("Completeness Score C", completenessScore);
+          crm_points += completenessScore.itemScore;
+          crm_max_points += completenessScore.totalWeight;
+        });
+      }
+
+      console.log("Updated CRM POInts", crm_points);
+      console.log("Updated CRM MAX", crm_max_points);
+      // Update CRM with new data
+      await props.db
+        .from("data")
+        .update({
+          crm_data: admin_crm_update,
+          crm_points: crm_points,
+          crm_max_points: crm_max_points,
+        })
+        .eq("connection_id", connection_id);
+
+      const uid = localStorage.getItem("uid");
+
+      await props.db
+        .from("users")
+        .update({
+          crm_data: user_crm_update,
+        })
+        .eq("id", uid);
     }
   }
 
@@ -534,13 +659,9 @@ function Workflows(props) {
       .eq("connection_id", connection_id);
     const admin_crm_data = data[0].crm_data;
     const admin_to_dos = data[0].tasks;
+    const current_crm_points = data[0].crm_points;
+    const current_crm_max_points = data[0].crm_max_points;
     const type = data[0].type;
-    let baseID;
-    let fieldOptions;
-    if (type == "airtable") {
-      baseID = data[0].baseID;
-      fieldOptions = data[0].fieldOptions;
-    }
 
     let user_crm_data = admin_crm_data;
     let user_to_dos = admin_to_dos;
@@ -560,8 +681,8 @@ function Workflows(props) {
       user_crm_data: user_crm_data,
       user_to_dos: user_to_dos,
       type: type,
-      baseID: baseID,
-      fieldOptions: fieldOptions,
+      crm_points: current_crm_points,
+      crm_max_points: current_crm_max_points,
     };
   }
 
@@ -598,14 +719,14 @@ function Workflows(props) {
             const cookie = response.cookie;
             const startTime = Date.now();
             console.log("start: ", 0);
-            
+
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
               {
                 body: { session_cookie: cookie },
               }
             );
-            console.log("time to scrape: ", Date.now()-startTime);
+            console.log("time to scrape: ", Date.now() - startTime);
             progress = 15;
             const messageArray = data.text;
 
@@ -654,16 +775,16 @@ function Workflows(props) {
                   new_crm_data.push(obj);
                 }
               }
-              console.log("time for each message: ", Date.now()-startTime);
+              console.log("time for each message: ", Date.now() - startTime);
               progress++;
             }
-            
+
             progress = 65;
 
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
 
-            console.log("time to finish: ", Date.now()-startTime);
+            console.log("time to finish: ", Date.now() - startTime);
 
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
@@ -776,17 +897,27 @@ function Workflows(props) {
     var companyCRMObject = {
       name: companyName,
       websites: [companyProfile.website, companyLinkedIn],
-      address: {
-        address1:
-          companyProfile.hq.line_1 !== null ? companyProfile.hq.line_1 : " ",
-        city: companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
-        postal_code:
-          companyProfile.hq.postal_code !== null
-            ? companyProfile.hq.postal_code
-            : " ",
-        country:
-          companyProfile.hq.country !== null ? companyProfile.hq.country : " ",
-      },
+      ...(companyProfile.hq !== null
+        ? {
+            address: {
+              address1:
+                companyProfile.hq.line_1 !== null
+                  ? companyProfile.hq.line_1
+                  : " ",
+              city:
+                companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
+              postal_code:
+                companyProfile.hq.postal_code !== null
+                  ? companyProfile.hq.postal_code
+                  : " ",
+              country:
+                companyProfile.hq.country !== null
+                  ? companyProfile.hq.country
+                  : " ",
+            },
+          }
+        : { address: {} }),
+
       description: companyProfile.description,
       // industry: companyProfile.industry,
       employees: companyProfile.company_size_on_linkedin,
@@ -897,7 +1028,7 @@ function Workflows(props) {
       } else if (source === "LinkedIn") {
         try {
           const userProfileResponse = await axios.request(
-            getLinkedInProfileByURL(profileData.urll)
+            getLinkedInProfileByURL(profileData.url)
           );
           userLinkedInUrl = profileData.url;
           profile = userProfileResponse.data;
@@ -937,6 +1068,8 @@ function Workflows(props) {
             )
           );
           const companyProfile = companyProfileResponse.data;
+
+          console.log("COmpany profile", companyProfile);
 
           const createCompanyResponse = await createCompanyCRM(
             companyProfile.name,
@@ -1002,7 +1135,7 @@ function Workflows(props) {
   async function uploadEmails() {
     setIsLoading(true);
     const id = selectedEmail.connection_id;
-    const userEmail = selectedEmail.email
+    const userEmail = selectedEmail.email;
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
@@ -1020,12 +1153,11 @@ function Workflows(props) {
     //Filters each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
-      if(isSpamEmail) {
+      if (isSpamEmail) {
         let temp = spamEmails;
         temp.push(email);
         setSpamEmails(temp);
-      }
-      else {
+      } else {
         let temp = hamEmails;
         temp.push(email);
         setHamEmails(temp);
@@ -1042,7 +1174,7 @@ function Workflows(props) {
         const toIndex = new_emails.findIndex(
           (item) => item.customer === email.destination_members[0].name
         );
-  
+
         if (fromIndex !== -1 || toIndex !== -1) {
           updateExistingEmail(new_emails, fromIndex, toIndex, email);
         } else {
@@ -1051,7 +1183,7 @@ function Workflows(props) {
       }
     }
 
-    progress = 39;;
+    progress = 39;
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -1365,16 +1497,20 @@ function Workflows(props) {
 
   return (
     <div>
-      {isLoading && <LoadingBar 
-      messages={[
-        "Fetching messages...",
-        "Filtering spam...",
-        "Analyzing content...",
-        "Generating summaries...",
-        "Uploading data to CRM...",
-        ""
-      ]} 
-      isLoading={isLoading} screen={"workflows"} />}
+      {isLoading && (
+        <LoadingBar
+          messages={[
+            "Fetching messages...",
+            "Filtering spam...",
+            "Analyzing content...",
+            "Generating summaries...",
+            "Uploading data to CRM...",
+            "",
+          ]}
+          isLoading={isLoading}
+          screen={"workflows"}
+        />
+      )}
       {!isLoading && (
         <div>
           <Dialog
@@ -1385,7 +1521,7 @@ function Workflows(props) {
               }
             }}
             static={true}
-            >
+          >
             <DialogPanel>
               <div
                 className="modal-content"
@@ -1514,7 +1650,6 @@ function Workflows(props) {
           </div>
         </div>
       )}
-      
     </div>
   );
 }
