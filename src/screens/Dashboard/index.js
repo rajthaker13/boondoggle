@@ -265,10 +265,18 @@ function Dashboard(props) {
                       let profileData = {...contact.itemData}; 
                       profileData.email = contact.itemData.emails[0].email; 
                       try {
-                        const result = await fetchEnrichmentProfile(profileData, "Email");
-                        if (result !== null) {
-                          console.log("Fixed", result); // Logging the enriched profile data
-                          crmUpdate.push(result); // Temp store the result in this array.
+                        const enrichObj = await fetchEnrichmentProfile(profileData, "Email");
+                        if (enrichObj !== null) {
+                          console.log("Fixed", enrichObj); // Logging the enriched profile data
+              
+                          crmUpdate.push({
+                            id: contact.UnifiedID,
+                            customer: enrichObj.name,
+                            title: enrichObj.title,
+                            position: enrichObj.title,
+                            company: enrichObj.company,
+                            url: enrichObj.url,
+                          });
                           count++; // Increment only if fetch is successful
                         }
                       } catch (error) {
@@ -278,10 +286,17 @@ function Dashboard(props) {
                       let profileData = {...contact.itemData}; 
                       console.log("SC", profileData);
                       try {
-                        const result = await fetchEnrichmentProfile(profileData, "SearchCompany");
-                        if (result !== null) {
-                          console.log("Fixed", result); // Logging the enriched profile data
-                          crmUpdate.push(result); // Temp store the result in this array.
+                        const enrichObj = await fetchEnrichmentProfile(profileData, "SearchCompany");
+                        if (enrichObj !== null) {
+                          console.log("Fixed", enrichObj); // Logging the enriched profile data
+                          crmUpdate.push({
+                            id: contact.UnifiedID,
+                            customer: enrichObj.name,
+                            title: enrichObj.title,
+                            position: enrichObj.title,
+                            company: enrichObj.company,
+                            url: enrichObj.url,
+                          });
                           count++; // Increment only if fetch is successful
                         }
                       } catch (error) {
