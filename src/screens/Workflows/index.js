@@ -217,24 +217,24 @@ function Workflows(props) {
               );
               console.log("Supabase Contact", supabaseContact);
 
-              if(supabaseContact) {
+              if (supabaseContact) {
                 const uniqueId = generateUniqueId();
-              crmUpdate.push({
-                id: uniqueId,
-                date: update.date,
-                customer: supabaseContact.customer,
-                title: update.title,
-                position: supabaseContact.position,
-                summary: update.summary,
-                company: supabaseContact.company,
-                url: supabaseContact.url,
-                source: source,
-                ...(source === "Email"
-                  ? { email: update.email }
-                  : supabaseContact.email != null
-                  ? { email: supabaseContact.email }
-                  : { email: null }),
-              });
+                crmUpdate.push({
+                  id: uniqueId,
+                  date: update.date,
+                  customer: supabaseContact.customer,
+                  title: update.title,
+                  position: supabaseContact.position,
+                  summary: update.summary,
+                  company: supabaseContact.company,
+                  url: supabaseContact.url,
+                  source: source,
+                  ...(source === "Email"
+                    ? { email: update.email }
+                    : supabaseContact.email != null
+                    ? { email: supabaseContact.email }
+                    : { email: null }),
+                });
               }
 
               const event = {
@@ -606,7 +606,7 @@ function Workflows(props) {
         async function (response) {
           if (response && response.cookie != null) {
             const cookie = response.cookie;
-            
+
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
               {
@@ -615,7 +615,7 @@ function Workflows(props) {
             );
             progress = 40;
             const messageArray = data.text;
-            console.log(messageArray)
+            console.log(messageArray);
             let tempHamEmails = [];
             let tempSpamEmails = [];
 
@@ -631,20 +631,18 @@ function Workflows(props) {
 
               const messageObj = {
                 author_member: {
-                  name: messageData.name
+                  name: messageData.name,
                 },
                 subject: response.title,
                 message: messageData.messages[0].text,
                 messageData: messageData,
-                response: response
+                response: response,
+              };
+              if (isSpamMessage) {
+                tempSpamEmails.push(messageObj);
+              } else {
+                tempHamEmails.push(messageObj);
               }
-              if(isSpamMessage) {
-                tempSpamEmails.push(messageObj)
-              }
-              else {
-                tempHamEmails.push(messageObj)
-              }
-              
             }
             setSpamEmails(tempSpamEmails);
             setHamEmails(tempHamEmails);
@@ -909,20 +907,10 @@ function Workflows(props) {
       },
     });
 
-    function isAutomatedEmail(email) {
-      const regex = /no[-]?reply|invoice|notifications|support|team/i;
-      return regex.test(email);
-    }
-
     try {
       let userLinkedInUrl;
       let profile = null;
       if (source === "Email") {
-        const isAutomatedEmailResponse = isAutomatedEmail(profileData.email);
-        if (isAutomatedEmailResponse) {
-          return null;
-        }
-
         try {
           const userURLResponse = await axios.request(
             getLinkedInURLByEmail(profileData.email)
@@ -1100,6 +1088,8 @@ function Workflows(props) {
 
     let new_crm_data = [];
     let new_emails = [];
+
+    console.log("Ham Emails", hamEmails);
     //processes all real emails
     for (const email of hamEmails) {
       {
@@ -1109,15 +1099,19 @@ function Workflows(props) {
         const toIndex = new_emails.findIndex(
           (item) => item.customer === email.destination_members[0].name
         );
-  
+
         if (fromIndex !== -1 || toIndex !== -1) {
           updateExistingEmail(new_emails, fromIndex, toIndex, email);
+          console.log("New_Emails, old_contact update", new_emails);
         } else {
           createNewEmail(new_emails, email, userEmail);
+          console.log("New_Emails, new_contact update", new_emails);
         }
       }
       progress++;
     }
+
+    console.log("Final new_emails", new_emails);
 
     // Generate CRM entries for new emails
     await Promise.all(
@@ -1160,6 +1154,8 @@ function Workflows(props) {
 
     progress = 80;
 
+    console.log("NEW CRM DATA", new_crm_data);
+
     await sendToCRM(new_crm_data, "Email");
 
     progress = 100;
@@ -1193,7 +1189,24 @@ function Workflows(props) {
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
 
+    function isAutomatedEmail(customerEmail) {
+      const regex = /no[-]?reply|invoice|notifications|support|team/i;
+      return regex.test(customerEmail);
+    }
+
     try {
+      const customerEmail = email.author_member.email;
+      const customerName = email.author_member.name;
+
+      if (customerEmail === null || customerName === null) {
+        return true;
+      } else {
+        const isAutomatedEmailResponse = isAutomatedEmail(customerEmail);
+        if (isAutomatedEmailResponse) {
+          return true;
+        }
+      }
+
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: `Subject: ${subject} \n ${body}`,
@@ -1292,6 +1305,7 @@ function Workflows(props) {
    * @param email - The email data to update.
    */
   function updateExistingEmail(new_emails, fromIndex, toIndex, email) {
+    console.log("Update existing Email", email);
     const sender = email.author_member.name
       ? email.author_member.name
       : email.author_member.email;
@@ -1310,6 +1324,7 @@ function Workflows(props) {
    * @param userEmail - The user's email address.
    */
   function createNewEmail(new_emails, email, userEmail) {
+    console.log("Create New Email", email);
     const sender = email.author_member.name
       ? email.author_member.name
       : email.author_member.email;
@@ -1433,20 +1448,25 @@ function Workflows(props) {
 
   return (
     <div>
-      {isLoading && !fetchingEmails && <LoadingBar 
-      messages={[
-        "Analyzing content...",
-        "Generating summaries...",
-        "Uploading data to CRM..."
-      ]} 
-      isLoading={isLoading} screen={"workflows"} />}
+      {isLoading && !fetchingEmails && (
+        <LoadingBar
+          messages={[
+            "Analyzing content...",
+            "Generating summaries...",
+            "Uploading data to CRM...",
+          ]}
+          isLoading={isLoading}
+          screen={"workflows"}
+        />
+      )}
 
-      {isLoading && fetchingEmails && <LoadingBar 
-      messages={[
-        "Fetching messages...",
-        "Filtering spam...",
-      ]} 
-      isLoading={isLoading} screen={"workflows"} />}
+      {isLoading && fetchingEmails && (
+        <LoadingBar
+          messages={["Fetching messages...", "Filtering spam..."]}
+          isLoading={isLoading}
+          screen={"workflows"}
+        />
+      )}
 
       {!isLoading && (
         <div>
@@ -1458,7 +1478,7 @@ function Workflows(props) {
               }
             }}
             static={true}
-            >
+          >
             <DialogPanel>
               <div
                 className="modal-content"
@@ -1536,7 +1556,7 @@ function Workflows(props) {
               </div>
             </DialogPanel>
           </Dialog>
-          
+
           <Dialog
             open={showSpamModal}
             onClose={(val) => {
@@ -1545,76 +1565,78 @@ function Workflows(props) {
               }
             }}
             static={true}
-            >
+          >
             <DialogPanel
               style={{
                 width: "100%",
                 maxWidth: "75vw",
                 display: "flex",
                 justifyContent: "center",
-              }}>
-                <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                  {modalStep == 0 ? "Review Important Messages" : "Review Spam Messages"}
-                </div>
-                {modalStep == 0 && (
-                  <SpamModal
+              }}
+            >
+              <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
+                {modalStep == 0
+                  ? "Review Important Messages"
+                  : "Review Spam Messages"}
+              </div>
+              {modalStep == 0 && (
+                <SpamModal
                   emails={hamEmails}
                   setFunction={setHamEmails}
                   otherEmails={spamEmails}
                   otherSetFunction={setSpamEmails}
                   step={modalStep}
                 />
-                )}
-                {modalStep == 1 && (
-                  <SpamModal
+              )}
+              {modalStep == 1 && (
+                <SpamModal
                   emails={spamEmails}
                   setFunction={setSpamEmails}
                   otherEmails={hamEmails}
                   otherSetFunction={setHamEmails}
                   step={modalStep}
                 />
-                )}
-                <div className="flex flex-col space-y-2 mt-4 items-center">
-                  <Button
-                    variant="primary"
-                    color="blue"
-                    style={{
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      width: '30%',
-                    }}
-                    onClick={async () => {
-                      if (modalStep === 1) {
-                        setIsLoading(true);
-                        setModalStep(0);
-                        setShowSpamModal(false);
-                        if(emailWorkflow) {
-                          await uploadEmails(hamEmails);
-                        }
-                        else if(linkedinWorkflow) {
-                          await uploadLinkedin(hamEmails);
-                        }
-                      } else {
-                        setModalStep(modalStep + 1);
+              )}
+              <div className="flex flex-col space-y-2 mt-4 items-center">
+                <Button
+                  variant="primary"
+                  color="blue"
+                  style={{
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    width: "30%",
+                  }}
+                  onClick={async () => {
+                    if (modalStep === 1) {
+                      setIsLoading(true);
+                      setModalStep(0);
+                      setShowSpamModal(false);
+                      if (emailWorkflow) {
+                        await uploadEmails(hamEmails);
+                      } else if (linkedinWorkflow) {
+                        await uploadLinkedin(hamEmails);
                       }
+                    } else {
+                      setModalStep(modalStep + 1);
+                    }
+                  }}
+                >
+                  {modalStep === 0 ? "Continue" : "Finish"}
+                </Button>
+                {modalStep === 1 && (
+                  <Button
+                    variant="secondary"
+                    style={{
+                      borderRadius: "8px",
+                      padding: "8px 16px",
+                      width: "30%",
                     }}
+                    onClick={() => setModalStep(modalStep - 1)}
                   >
-                    {modalStep === 0 ? "Continue" : "Finish"}
+                    Back
                   </Button>
-                  {modalStep === 1 && (
-                    <Button
-                      variant="secondary"
-                      style={{
-                        borderRadius: '8px',
-                        padding: '8px 16px',
-                        width: '30%',
-                      }}
-                      onClick={() => setModalStep(modalStep - 1)}
-                    >
-                      Back
-                    </Button>
-                  )}
-                </div>
+                )}
+              </div>
             </DialogPanel>
           </Dialog>
 
@@ -1670,7 +1692,6 @@ function Workflows(props) {
           </div>
         </div>
       )}
-      
     </div>
   );
 }
