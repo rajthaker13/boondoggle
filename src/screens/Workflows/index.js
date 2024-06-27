@@ -262,6 +262,7 @@ function Workflows(props) {
                   update.emailObject,
                   "Email"
                 );
+                console.log("Enrich obj", enrichObj);
                 if (enrichObj !== null) {
                   contact = {
                     name: enrichObj.name,
@@ -300,6 +301,7 @@ function Workflows(props) {
                   update.messageData,
                   "LinkedIn"
                 );
+                console.log("Enrich OBJ linkedIN", enrichObj);
                 // Updating with 'enrichObj'
                 if (enrichObj != null) {
                   contact = {
@@ -634,7 +636,7 @@ function Workflows(props) {
                   name: messageData.name,
                 },
                 subject: response.title,
-                message: messageData.messages[0].text,
+                message: response.summary,
                 messageData: messageData,
                 response: response,
               };
@@ -822,17 +824,26 @@ function Workflows(props) {
     var companyCRMObject = {
       name: companyName,
       websites: [companyProfile.website, companyLinkedIn],
-      address: {
-        address1:
-          companyProfile.hq.line_1 !== null ? companyProfile.hq.line_1 : " ",
-        city: companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
-        postal_code:
-          companyProfile.hq.postal_code !== null
-            ? companyProfile.hq.postal_code
-            : " ",
-        country:
-          companyProfile.hq.country !== null ? companyProfile.hq.country : " ",
-      },
+      ...(companyProfile.hq !== null
+        ? {
+            address: {
+              address1:
+                companyProfile.hq.line_1 !== null
+                  ? companyProfile.hq.line_1
+                  : " ",
+              city:
+                companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
+              postal_code:
+                companyProfile.hq.postal_code !== null
+                  ? companyProfile.hq.postal_code
+                  : " ",
+              country:
+                companyProfile.hq.country !== null
+                  ? companyProfile.hq.country
+                  : " ",
+            },
+          }
+        : { address: {} }),
       description: companyProfile.description,
       // industry: companyProfile.industry,
       employees: companyProfile.company_size_on_linkedin,
@@ -917,6 +928,8 @@ function Workflows(props) {
           );
           const userURLData = userURLResponse.data;
 
+          console.log("User URL DATA", userURLData, "Email", profileData);
+
           if (userURLData.linkedin_profile_url !== null) {
             const userProfileResponse = await axios.request(
               getLinkedInProfileByURL(userURLData.linkedin_profile_url)
@@ -933,7 +946,7 @@ function Workflows(props) {
       } else if (source === "LinkedIn") {
         try {
           const userProfileResponse = await axios.request(
-            getLinkedInProfileByURL(profileData.urll)
+            getLinkedInProfileByURL(profileData.url)
           );
           userLinkedInUrl = profileData.url;
           profile = userProfileResponse.data;
@@ -963,6 +976,8 @@ function Workflows(props) {
           profile.experiences[0]
         );
 
+        console.log("Latest Experience", latestExperience);
+
         if (
           latestExperience.company_linkedin_profile_url !== null &&
           latestExperience.company !== null
@@ -973,6 +988,8 @@ function Workflows(props) {
             )
           );
           const companyProfile = companyProfileResponse.data;
+
+          console.log("Company Profile", companyProfile, "EMAIL", profileData);
 
           const createCompanyResponse = await createCompanyCRM(
             companyProfile.name,
