@@ -50,18 +50,6 @@ function Workflows(props) {
     // Calculate score based on presence of fields and their weighted importance
     // Add missing fields to the issue arrays
     for (const [field, weight] of Object.entries(criteria.fields)) {
-      console.log(
-        "ITEM",
-        item,
-        "Weight",
-        weight,
-        "weight type",
-        typeof weight,
-        "Field",
-        field,
-        "Field type",
-        typeof field
-      );
       if (typeof weight === "object") {
         // Nested object handling for note field
         if (item[field] !== undefined) {
@@ -103,23 +91,14 @@ function Workflows(props) {
     }
 
     const maxPossibleScore = 100; // Maximum possible score, considering recency, creation, and no missing fields
+    const objectPriority = 100; //Maximum Priority because the entry is new
 
     // Normalize scores to 0-100 scale
     const missingFieldNormalized = (missingFieldsPenalty / totalWeight) * 100; // Missing fields normalized score
 
-    // if (missingFields.length > 0 && type !== "Deal") {
-    //   issuesArray.push({
-    //     UnifiedID: item.id,
-    //     itemData: item,
-    //     type: type,
-    //     missingFields: missingFields,
-    //     priority: enrichmentPriority,
-    //   });
-    // }
-
     return {
-      itemScore: 100 - missingFieldNormalized, // Adjusted score calculation
-      totalWeight: maxPossibleScore, // Account for recency weight in the total weight
+      itemScore: (100 - missingFieldNormalized) * objectPriority, // Adjusted score calculation
+      totalWeight: maxPossibleScore * objectPriority, // Account for recency weight in the total weight
       missingFields: missingFields,
     };
   };
@@ -219,10 +198,8 @@ function Workflows(props) {
     let newCompanies = [];
     let crmUpdate = [];
 
-    console.log("NEW_CRM", new_crm_data);
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
-    console.log("Fetch crm", fetch_crm);
     let admin_crm_update = fetch_crm.admin_crm_data;
     let user_crm_update = fetch_crm.user_crm_data;
     let crm_points = fetch_crm.crm_points;
@@ -303,11 +280,9 @@ function Workflows(props) {
 
             //if contanct exists, updates the contact in the CRM
             if (current_crm != undefined) {
-              console.log("Existing Contact", current_crm);
               const supabaseContact = admin_crm_update.find(
                 (contact) => contact["customer"] === current_crm.name
               );
-              console.log("Supabase Contact", supabaseContact);
 
               if (supabaseContact) {
                 const uniqueId = generateUniqueId();
@@ -434,7 +409,6 @@ function Workflows(props) {
                     },
                   }
                 );
-                console.log("NEW CONTACT DATA", data);
                 newContacts.push(data.contact);
                 newEvents.push(data.event);
               }
@@ -510,37 +484,26 @@ function Workflows(props) {
         }
       }
     }
-    console.log("CRM Update", crmUpdate);
 
     if (crmUpdate.length > 0) {
       admin_crm_update = [...admin_crm_update, ...crmUpdate];
       user_crm_update = [...user_crm_update, ...crmUpdate];
 
-      console.log("Original CRM POInts", crm_points, "type", typeof crm_points);
-      console.log("Original CRM MAX", crm_max_points);
-
       if (newContacts.length > 0) {
         newContacts.map((item) => {
-          console.log("Contact Item", item);
           const completenessScore = scoreCompleteness(item, "Contact");
-          console.log("Completeness Score Contact", completenessScore);
-          console.log("Type of item score", typeof completenessScore.itemScore);
           crm_points += completenessScore.itemScore;
           crm_max_points += completenessScore.totalWeight;
         });
       }
       if (newCompanies.length > 0) {
         newCompanies.map((item) => {
-          console.log("COmpany Item", item);
           const completenessScore = scoreCompleteness(item, "Company");
-          console.log("Completeness Score C", completenessScore);
           crm_points += completenessScore.itemScore;
           crm_max_points += completenessScore.totalWeight;
         });
       }
 
-      console.log("Updated CRM POInts", crm_points);
-      console.log("Updated CRM MAX", crm_max_points);
       // Update CRM with new data
       await props.db
         .from("data")
@@ -718,7 +681,6 @@ function Workflows(props) {
           if (response && response.cookie != null) {
             const cookie = response.cookie;
             const startTime = Date.now();
-            console.log("start: ", 0);
 
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
@@ -726,7 +688,6 @@ function Workflows(props) {
                 body: { session_cookie: cookie },
               }
             );
-            console.log("time to scrape: ", Date.now() - startTime);
             progress = 15;
             const messageArray = data.text;
 
@@ -768,14 +729,11 @@ function Workflows(props) {
                   status: "Completed",
                 };
 
-                //console.log("Message Data", messageData);
-
                 if (messageData.url != null) {
                   // Update CRM and ToDo Lists
                   new_crm_data.push(obj);
                 }
               }
-              console.log("time for each message: ", Date.now() - startTime);
               progress++;
             }
 
@@ -783,8 +741,6 @@ function Workflows(props) {
 
             //updates the CRM
             await sendToCRM(new_crm_data, "LinkedIn");
-
-            console.log("time to finish: ", Date.now() - startTime);
 
             setIsLoading(false);
             localStorage.setItem("linkedInLinked", true);
@@ -919,7 +875,6 @@ function Workflows(props) {
         : { address: {} }),
 
       description: companyProfile.description,
-      // industry: companyProfile.industry,
       employees: companyProfile.company_size_on_linkedin,
     };
 
@@ -948,7 +903,6 @@ function Workflows(props) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         createCompanyResults = await axios.request(createCompanyOptions);
       }
-      console.log("Create Company Results", createCompanyResults);
       companyCRMObject.id = createCompanyResults.data.id;
       return {
         id: createCompanyResults.data.id,
@@ -992,20 +946,10 @@ function Workflows(props) {
       },
     });
 
-    function isAutomatedEmail(email) {
-      const regex = /no[-]?reply|invoice|notifications|support|team/i;
-      return regex.test(email);
-    }
-
     try {
       let userLinkedInUrl;
       let profile = null;
       if (source === "Email") {
-        const isAutomatedEmailResponse = isAutomatedEmail(profileData.email);
-        if (isAutomatedEmailResponse) {
-          return null;
-        }
-
         try {
           const userURLResponse = await axios.request(
             getLinkedInURLByEmail(profileData.email)
@@ -1039,7 +983,6 @@ function Workflows(props) {
       }
 
       if (profile !== null) {
-        console.log("Initial Profile", profile);
         // Extracting the most recent experience
         const latestExperience = profile.experiences.reduce(
           (latest, current) => {
@@ -1069,16 +1012,11 @@ function Workflows(props) {
           );
           const companyProfile = companyProfileResponse.data;
 
-          console.log("COmpany profile", companyProfile);
-
           const createCompanyResponse = await createCompanyCRM(
             companyProfile.name,
             companyProfile,
             latestExperience.company_linkedin_profile_url
           );
-
-          console.log("Create Company Response", createCompanyResponse);
-          console.log("User profile", profile);
 
           const conciseProfile = {
             websites: [
@@ -1097,7 +1035,6 @@ function Workflows(props) {
             companyData: createCompanyResponse.data,
           };
 
-          console.log("Profile", conciseProfile, "profileData", profileData);
           return conciseProfile;
         } else {
           return null;
@@ -1257,7 +1194,23 @@ function Workflows(props) {
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
 
+    function isAutomatedEmail(customerEmail) {
+      const regex = /no[-]?reply|invoice|notifications|support|team/i;
+      return regex.test(customerEmail);
+    }
+
     try {
+      const customerEmail = email.author_member.email;
+      const customerName = email.author_member.name;
+
+      if (customerEmail === null || customerName === null) {
+        return true;
+      } else {
+        const isAutomatedEmailResponse = isAutomatedEmail(customerEmail);
+        if (isAutomatedEmailResponse) {
+          return true;
+        }
+      }
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: `Subject: ${subject} \n ${body}`,
