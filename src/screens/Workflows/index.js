@@ -29,6 +29,7 @@ function Workflows(props) {
   const [selectedEmail, setSelectedEmail] = useState({});
   const [hamEmails, setHamEmails] = useState([]);
   const [spamEmails, setSpamEmails] = useState([]);
+  const [allEmails, setAllEmails] = useState([]);
   const [showSpamModal, setShowSpamModal] = useState(false);
   const [fetchingEmails, setFetchingEmails] = useState(false);
   const [modalStep, setModalStep] = useState(0);
@@ -1068,33 +1069,26 @@ function Workflows(props) {
     progress = 50;
 
     let emails = data.emailData;
+    setAllEmails(emails);
 
     localStorage.setItem("user_email", userEmail);
-
-    //Filters each email
-    // Initialize temporary arrays
-    const tempHamEmails = [];
-    const tempSpamEmails = [];
 
     // Filters each email
     for (const email of emails) {
       const isSpamEmail = await checkEmail(email);
-      if (isSpamEmail) {
-        tempSpamEmails.push(email);
-      } else {
-        tempHamEmails.push(email);
-      }
+      email.isSpam = isSpamEmail;
       progress++;
     }
 
-    // Update state after processing all emails
-    setHamEmails(tempHamEmails);
-    setSpamEmails(tempSpamEmails);
+    emails.sort((a, b) => a.isSpam - b.isSpam);
+
+    setAllEmails(emails);
 
     setIsLoading(false);
     setFetchingEmails(false);
     setShowSpamModal(true);
     setEmailWorkflow(true);
+
     progress = 0;
   }
 
@@ -1102,6 +1096,8 @@ function Workflows(props) {
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
     progress = 0;
+
+    console.log("allEmails after: ", allEmails);
 
     let new_crm_data = [];
     let new_emails = [];
@@ -1592,27 +1588,17 @@ function Workflows(props) {
               }}
             >
               <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                {modalStep == 0
-                  ? "Review Important Messages"
-                  : "Review Spam Messages"}
+                {modalStep == 0 ? "Adjust Messages" : "Review"}
               </div>
               {modalStep == 0 && (
                 <SpamModal
-                  emails={hamEmails}
-                  setFunction={setHamEmails}
-                  otherEmails={spamEmails}
-                  otherSetFunction={setSpamEmails}
+                  allEmails={allEmails}
+                  setAllEmails={setAllEmails}
                   step={modalStep}
                 />
               )}
               {modalStep == 1 && (
-                <SpamModal
-                  emails={spamEmails}
-                  setFunction={setSpamEmails}
-                  otherEmails={hamEmails}
-                  otherSetFunction={setHamEmails}
-                  step={modalStep}
-                />
+                <SpamModal allEmails={hamEmails} step={modalStep} />
               )}
               <div className="flex flex-col space-y-2 mt-4 items-center">
                 <Button
@@ -1634,6 +1620,13 @@ function Workflows(props) {
                         await uploadLinkedin(hamEmails);
                       }
                     } else {
+                      let tempHamEmails = [];
+                      for (const email of allEmails) {
+                        if (!email.isSpam) {
+                          tempHamEmails.push(email);
+                        }
+                      }
+                      setHamEmails(tempHamEmails);
                       setModalStep(modalStep + 1);
                     }
                   }}
