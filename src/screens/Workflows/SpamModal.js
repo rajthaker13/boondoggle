@@ -65,10 +65,10 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
                   </TableCell>
                   <TableCell className="w-[20%] whitespace-normal">
                     {isExpanded
-                      ? email.data.subject
-                      : email.data.subject.length > 80
-                      ? email.data.subject.slice(0, 60) + "..."
-                      : email.data.subject}
+                      ? email.title
+                      : email.title.length > 80
+                      ? email.title.slice(0, 60) + "..."
+                      : email.title}
                   </TableCell>
                   <TableCell className="w-[40%] whitespace-normal">
                     {isExpanded

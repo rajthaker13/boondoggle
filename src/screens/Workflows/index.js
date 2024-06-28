@@ -260,7 +260,7 @@ function Workflows(props) {
               let contact;
               if (source == "Email") {
                 const enrichObj = await fetchEnrichmentProfile(
-                  update.emailObject,
+                  update,
                   "Email"
                 );
                 console.log("Enrich obj", enrichObj);
@@ -631,7 +631,7 @@ function Workflows(props) {
                 response.summary,
                 messageData
               );
-              progress++;
+              progress+=2;
 
               //create message obj that is compatible with spam modal
               const date = Date.now();
@@ -668,6 +668,9 @@ function Workflows(props) {
               messageObjects.push(messageObj);
               console.log("linkedin obj: ", messageObj);
             }
+
+            messageObjects.sort((a, b) => a.isSpam - b.isSpam);
+
             setAllEmails(messageObjects);
 
             setIsLoading(false);
