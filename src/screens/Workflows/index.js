@@ -1381,10 +1381,9 @@ function Workflows(props) {
    */
   async function generateEmailCRMData(email) {
     const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
-    const to =
-      email.data.destination_members.length > 0
-        ? `${email.data.destination_members[0].name} (${email.data.destination_members[0].email})`
-        : `${selectedEmail.name}`;
+    const to = email.data.destination_members
+      ? `${email.data.destination_members[0].name} (${email.data.destination_members[0].email})`
+      : `${selectedEmail.name}`;
     const subject = email.data.subject;
     const MAX_SNIPPET_SIZE = 5000;
 
