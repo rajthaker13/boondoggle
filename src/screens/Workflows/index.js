@@ -619,36 +619,39 @@ function Workflows(props) {
             progress = 40;
             const messageArray = data.text;
             console.log(messageArray);
-            let tempHamEmails = [];
-            let tempSpamEmails = [];
 
+            let messageObjects = [];
             for (let i = 0; i < messageArray.length; i++) {
               const messageData = messageArray[i];
+              //generates title and summary
               const response = await generateLinkedinCRMData(messageData);
               progress++;
+              //checks if spam based on summary and message data
               const isSpamMessage = await checkLinkedInMessage(
                 response.summary,
                 messageData
               );
               progress++;
 
+              //create message obj that is compatible with spam modal
               const messageObj = {
-                author_member: {
-                  name: messageData.name,
+                data: {
+                  author_member: {
+                    name: messageData.name,
+                  },
+                  subject: response.title,
                 },
-                subject: response.title,
-                message: response.summary,
+                summary: response.summary,
+                customer: messageData.name,
                 messageData: messageData,
                 response: response,
               };
-              if (isSpamMessage) {
-                tempSpamEmails.push(messageObj);
-              } else {
-                tempHamEmails.push(messageObj);
-              }
+
+              messageObj.isSpam = isSpamMessage;
+              messageObjects.push(messageObj);
+              console.log("linkedin obj: ", messageObj);
             }
-            setSpamEmails(tempSpamEmails);
-            setHamEmails(tempHamEmails);
+            setAllEmails(messageObjects);
 
             setIsLoading(false);
             setShowSpamModal(true);
@@ -1073,16 +1076,47 @@ function Workflows(props) {
 
     localStorage.setItem("user_email", userEmail);
 
+    let new_emails = [];
+
     // Filters each email
-    for (const email of emails) {
-      const isSpamEmail = await checkEmail(email);
-      email.isSpam = isSpamEmail;
+    for (let i = 0; i < emails.length; i++) {
+      const email = emails[i];
+
+      // Find other emails with the same parent_message_id
+      const children = emails.filter((child, index) => {
+        if (
+          child.parent_message_id === email.parent_message_id &&
+          index !== i
+        ) {
+          return true; // Include child in children list
+        }
+        return false; // Exclude child from children list
+      });
+
+      // Remove children from emails array
+      children.forEach((child) => {
+        const index = emails.indexOf(child);
+        if (index > -1) {
+          emails.splice(index, 1);
+        }
+      });
+
+      console.log("new email to be sent to genCRMData: ", email);
+
+      createNewEmailObj(new_emails, email, userEmail, i);
+
+      const { title, summary } = await generateEmailCRMData(new_emails[i]);
+      new_emails[i].title = title;
+      new_emails[i].summary = summary;
+
+      const isSpamEmail = await checkEmail(new_emails[i]);
+      new_emails[i].isSpam = isSpamEmail;
       progress++;
     }
 
-    emails.sort((a, b) => a.isSpam - b.isSpam);
+    new_emails.sort((a, b) => a.isSpam - b.isSpam);
 
-    setAllEmails(emails);
+    setAllEmails(new_emails);
 
     setIsLoading(false);
     setFetchingEmails(false);
@@ -1100,66 +1134,12 @@ function Workflows(props) {
     console.log("allEmails after: ", allEmails);
 
     let new_crm_data = [];
-    let new_emails = [];
-
-    console.log("Ham Emails", hamEmails);
-    //processes all real emails
-    for (const email of hamEmails) {
-      {
-        const fromIndex = new_emails.findIndex(
-          (item) => item.customer === email.author_member.name
-        );
-        const toIndex = new_emails.findIndex(
-          (item) => item.customer === email.destination_members[0].name
-        );
-
-        if (fromIndex !== -1 || toIndex !== -1) {
-          updateExistingEmail(new_emails, fromIndex, toIndex, email);
-          console.log("New_Emails, old_contact update", new_emails);
-        } else {
-          createNewEmail(new_emails, email, userEmail);
-          console.log("New_Emails, new_contact update", new_emails);
-        }
-      }
-      progress++;
-    }
-
-    console.log("Final new_emails", new_emails);
 
     // Generate CRM entries for new emails
     await Promise.all(
-      new_emails.map(async (email) => {
-        if (email.customer) {
-          const { title, summary } = await generateEmailCRMData(
-            email,
-            userEmail
-          );
-          const date = Date.now();
-
-          var obj = {
-            id: email.id,
-            customer: email.customer,
-            email: email.email,
-            emailObject: email,
-            title: title,
-            summary: summary,
-            date: date,
-            url: null,
-            address: {
-              city: null,
-              country: null,
-              country_code: null,
-              region: null,
-            },
-            company: null,
-            emails: [],
-            telephones: [],
-            source: "Email",
-            status: email.status,
-          };
-          if (email.email != null) {
-            new_crm_data.push(obj);
-          }
+      allEmails.map(async (email) => {
+        if (email.customer && email.email) {
+          new_crm_data.push(email);
         }
         progress++;
       })
@@ -1195,8 +1175,8 @@ function Workflows(props) {
     const SPAM_EMAIL_COMPARISIONS = 50;
     const MAX_TOKEN_SIZE = 8191; // Define your maximum token size here
 
-    const subject = email.subject.toLowerCase();
-    let body = email.message.replace(/<[^>]+>/g, ""); // Remove HTML content
+    const subject = email.data.subject.toLowerCase();
+    let body = email.data.message.replace(/<[^>]+>/g, ""); // Remove HTML content
     body = body.substring(0, MAX_TOKEN_SIZE); //Adjusting for additional characters
 
     const index = pinecone.index("spam-data");
@@ -1208,10 +1188,10 @@ function Workflows(props) {
     }
 
     try {
-      const customerEmail = email.author_member.email;
-      const customerName = email.author_member.name;
+      const customerEmail = email.email;
+      const customerName = email.customer;
 
-      if (customerEmail === null || customerName === null) {
+      if (customerEmail === "" || customerName === "") {
         return true;
       } else {
         const isAutomatedEmailResponse = isAutomatedEmail(customerEmail);
@@ -1336,83 +1316,97 @@ function Workflows(props) {
    * @param email - The email data to add.
    * @param userEmail - The user's email address.
    */
-  function createNewEmail(new_emails, email, userEmail) {
-    console.log("Create New Email", email);
+  function createNewEmailObj(new_emails, email, userEmail, index) {
     const sender = email.author_member.name
       ? email.author_member.name
       : email.author_member.email;
+
+    const date = Date.now();
 
     if (email.author_member.email == userEmail) {
       var obj = {
         id: email.id,
         customer: email.destination_members[0].name
           ? email.destination_members[0].name
-          : email.destination_members[0].email,
-        email: email.destination_members[0].email,
+          : "",
+        email: email.destination_members[0].email
+          ? email.destination_members[0].email
+          : "",
         data: email,
-        snippet: [
-          {
-            message: email.message,
-            sender: sender,
-          },
-        ],
+        emailObject: email,
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
           email.author_member,
         ],
+        date: date,
+        url: null,
+        address: {
+          city: null,
+          country: null,
+          country_code: null,
+          region: null,
+        },
         type: "OUTBOUND",
+        company: null,
+        emails: [],
+        telephones: [],
+        source: "Email",
         status: "Completed",
       };
 
-      new_emails.push(obj);
+      new_emails.splice(index, 0, obj);
     } else {
       var obj = {
         id: email.id,
-        customer: email.author_member.name
-          ? email.author_member.name
-          : email.author_member.email,
-        email: email.author_member.email,
+        customer: email.author_member.name ? email.author_member.name : "",
+        email: email.author_member.email ? email.author_member.email : "",
         data: email,
-        snippet: [
-          {
-            message: email.message,
-            sender: sender,
-          },
-        ],
+        emailObject: email,
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
           email.author_member,
         ],
+        date: date,
+        url: null,
+        address: {
+          city: null,
+          country: null,
+          country_code: null,
+          region: null,
+        },
         type: "INBOUND",
+        company: null,
+        emails: [],
+        telephones: [],
+        source: "Email",
         status: "Completed",
       };
 
-      new_emails.push(obj);
+      new_emails.splice(index, 0, obj);
     }
   }
 
   /**
    * Generates title, summary, to-do item, and response for an email.
    * @param {Object} email - The email data.
-   * @param {string} userEmail - The user's email address.
+   * @param {string} concatString - A string of the email chain, if there is a chain
    * @returns An object containing title, summary, toDoTitle, and toDoResponse.
    */
-  async function generateEmailCRMData(email, userEmail) {
+  async function generateEmailCRMData(email) {
     const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
     const subject = email.data.subject;
     const MAX_SNIPPET_SIZE = 5000;
 
-    const snippetString = email.snippet
-      .map((message) => `${message.sender}: ${message.message}`)
-      .join("\n");
+    console.log(email);
 
     const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
-      selectedEmail.name
-    }. This is an array containing the content of the conversation: ${snippetString.substring(
+      email.data.destination_members[0].name
+    } (${email.data.destination_members[0].email}). 
+    This is a string containing the content of the conversation: ${email.data.message.substring(
       0,
       MAX_SNIPPET_SIZE
     )} under the subject: ${subject}. This is a ${

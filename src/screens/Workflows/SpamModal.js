@@ -30,7 +30,7 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
         <Table className="h-[50vh]">
           <TableHead>
             <TableRow>
-              <TableHeaderCell>Sender</TableHeaderCell>
+              <TableHeaderCell>Customer</TableHeaderCell>
               <TableHeaderCell>Subject</TableHeaderCell>
               <TableHeaderCell>Content</TableHeaderCell>
               {step == 0 && (
@@ -44,17 +44,13 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
             {allEmails.map((email, index) => (
               <TableRow key={index}>
                 <TableCell className="w-[20%] whitespace-normal">
-                  {email.author_member.name
-                    ? email.author_member.name
-                    : email.author_member.email}
+                  {email.customer ? email.customer : email.email}
                 </TableCell>
                 <TableCell className="w-[20%] whitespace-normal">
-                  {email.subject}
+                  {email.data.subject}
                 </TableCell>
                 <TableCell className="w-[40%] whitespace-normal">
-                  {email.message.length > 100
-                    ? email.message.slice(0, 100) + "..."
-                    : email.message}
+                  {email.summary}
                 </TableCell>
                 {step == 0 && (
                   <TableCell className="w-[10%] whitespace-normal text-center">
