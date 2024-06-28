@@ -634,7 +634,11 @@ function Workflows(props) {
               progress++;
 
               //create message obj that is compatible with spam modal
+              const date = Date.now();
+              const uniqueId = generateUniqueId();
+
               const messageObj = {
+                id: uniqueId,
                 data: {
                   author_member: {
                     name: messageData.name,
@@ -643,8 +647,21 @@ function Workflows(props) {
                 },
                 summary: response.summary,
                 customer: messageData.name,
+                date: date,
                 messageData: messageData,
-                response: response,
+                title: response.title,
+                url: messageData.url,
+                address: {
+                  city: null,
+                  country: null,
+                  country_code: null,
+                  region: null,
+                },
+                company: null,
+                emails: [],
+                telephones: [],
+                source: "LinkedIn",
+                status: "Completed",
               };
 
               messageObj.isSpam = isSpamMessage;
@@ -679,41 +696,10 @@ function Workflows(props) {
     progress = 0;
 
     //Generates title, summary, to-do item, response for each chat history
-    for (let i = 0; i < hamEmails.length; i++) {
-      const messageData = hamEmails[i].messageData;
-      const customer = messageData.name;
-      const response = hamEmails[i].response;
-
-      const date = Date.now();
-      const uniqueId = generateUniqueId();
-
-      //saves title, summary, todos, and response in data objects
-      var obj = {
-        id: uniqueId,
-        customer: customer,
-        title: response.title,
-        summary: response.summary,
-        date: date,
-        messageData: messageData,
-        url: messageData.url,
-        address: {
-          city: null,
-          country: null,
-          country_code: null,
-          region: null,
-        },
-        company: null,
-        emails: [],
-        telephones: [],
-        source: "LinkedIn",
-        status: "Completed",
-      };
-
-      //console.log("Message Data", messageData);
-
-      if (messageData.url != null) {
+    for (let i = 0; i < allEmails.length; i++) {
+      if (!allEmails[i].isSpan && allEmails[i].url != null) {
         // Update CRM and ToDo Lists
-        new_crm_data.push(obj);
+        new_crm_data.push(allEmails[i]);
       }
       progress++;
     }
@@ -1135,17 +1121,14 @@ function Workflows(props) {
 
     let new_crm_data = [];
 
-    // Generate CRM entries for new emails
-    await Promise.all(
-      allEmails.map(async (email) => {
-        if (email.customer && email.email) {
-          new_crm_data.push(email);
-        }
-        progress++;
-      })
-    );
+    allEmails.map(async (email) => {
+      if (email.customer && email.email && !email.isSpam) {
+        new_crm_data.push(email);
+      }
+      progress++;
+    });
 
-    progress = 80;
+    progress = 67;
 
     console.log("NEW CRM DATA", new_crm_data);
 
@@ -1457,11 +1440,7 @@ function Workflows(props) {
     <div>
       {isLoading && !fetchingEmails && (
         <LoadingBar
-          messages={[
-            "Analyzing content...",
-            "Generating summaries...",
-            "Uploading data to CRM...",
-          ]}
+          messages={["Analyzing content...", "Uploading data to CRM..."]}
           isLoading={isLoading}
           screen={"workflows"}
         />
@@ -1469,7 +1448,11 @@ function Workflows(props) {
 
       {isLoading && fetchingEmails && (
         <LoadingBar
-          messages={["Fetching messages...", "Filtering spam..."]}
+          messages={[
+            "Fetching messages...",
+            "Filtering spam...",
+            "Generating summaries...",
+          ]}
           isLoading={isLoading}
           screen={"workflows"}
         />
@@ -1609,9 +1592,9 @@ function Workflows(props) {
                       setModalStep(0);
                       setShowSpamModal(false);
                       if (emailWorkflow) {
-                        await uploadEmails(hamEmails);
+                        await uploadEmails();
                       } else if (linkedinWorkflow) {
-                        await uploadLinkedin(hamEmails);
+                        await uploadLinkedin();
                       }
                     } else {
                       let tempHamEmails = [];

@@ -8,9 +8,19 @@ import {
   Card,
 } from "@tremor/react";
 
+import Reach, { useState } from "react";
+
 const SpamModal = ({ allEmails, setAllEmails, step }) => {
-  console.log("all emails: ", allEmails);
+  const [expandedRows, setExpandedRows] = useState({});
+
   const empty = allEmails.length == 0;
+
+  const toggleRowExpansion = (index) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
 
   const switchEmail = (emailToChange) => {
     const updatedEmails = allEmails.map((email) =>
@@ -41,36 +51,55 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {allEmails.map((email, index) => (
-              <TableRow key={index}>
-                <TableCell className="w-[20%] whitespace-normal">
-                  {email.customer ? email.customer : email.email}
-                </TableCell>
-                <TableCell className="w-[20%] whitespace-normal">
-                  {email.data.subject}
-                </TableCell>
-                <TableCell className="w-[40%] whitespace-normal">
-                  {email.summary}
-                </TableCell>
-                {step == 0 && (
-                  <TableCell className="w-[10%] whitespace-normal text-center">
-                    <button
-                      style={{
-                        backgroundColor: email.isSpam ? "#FF4D4D" : "#3B81F5",
-                        color: "white",
-                        borderRadius: "8px",
-                        padding: "6px 12px",
-                        border: "none",
-                        fontSize: "13px",
-                      }}
-                      onClick={() => switchEmail(email)}
-                    >
-                      {email.isSpam ? "Spam" : "Important"}
-                    </button>
+            {allEmails.map((email, index) => {
+              const isExpanded = expandedRows[index];
+              return (
+                <TableRow
+                  key={index}
+                  className="hover:cursor-pointer hover:bg-gray-100"
+                  title={isExpanded ? "Click to minimize" : "Click to enlarge"}
+                  onClick={() => toggleRowExpansion(index)}
+                >
+                  <TableCell className="w-[20%] whitespace-normal">
+                    {email.customer ? email.customer : email.email}
                   </TableCell>
-                )}
-              </TableRow>
-            ))}
+                  <TableCell className="w-[20%] whitespace-normal">
+                    {isExpanded
+                      ? email.data.subject
+                      : email.data.subject.length > 80
+                      ? email.data.subject.slice(0, 60) + "..."
+                      : email.data.subject}
+                  </TableCell>
+                  <TableCell className="w-[40%] whitespace-normal">
+                    {isExpanded
+                      ? email.summary
+                      : email.summary.length > 145
+                      ? email.summary.slice(0, 135) + "..."
+                      : email.summary}
+                  </TableCell>
+                  {step === 0 && (
+                    <TableCell className="w-[10%] whitespace-normal text-center">
+                      <button
+                        style={{
+                          backgroundColor: email.isSpam ? "#FF4D4D" : "#3B81F5",
+                          color: "white",
+                          borderRadius: "8px",
+                          padding: "6px 12px",
+                          border: "none",
+                          fontSize: "13px",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent the row click from toggling the expansion
+                          switchEmail(email);
+                        }}
+                      >
+                        {email.isSpam ? "Spam" : "Important"}
+                      </button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
