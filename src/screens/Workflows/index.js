@@ -1381,14 +1381,16 @@ function Workflows(props) {
    */
   async function generateEmailCRMData(email) {
     const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
+    const to =
+      email.data.destination_members.length > 0
+        ? `${email.data.destination_members[0].name} (${email.data.destination_members[0].email})`
+        : `${selectedEmail.name}`;
     const subject = email.data.subject;
     const MAX_SNIPPET_SIZE = 5000;
 
     console.log(email);
 
-    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
-      email.data.destination_members[0].name
-    } (${email.data.destination_members[0].email}). 
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${to}. 
     This is a string containing the content of the conversation: ${email.data.message.substring(
       0,
       MAX_SNIPPET_SIZE
