@@ -3,7 +3,7 @@ import Header from "../../components/Header";
 import Accounts from "./Accounts";
 import Issues from "./Issues";
 import Score from "./Score";
-import LoadingOverlay from "react-loading-overlay";
+import LoadingBar from "./LoadingBar";
 import { Dialog, DialogPanel, Button } from "@tremor/react";
 import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
@@ -13,6 +13,7 @@ import { fetchEnrichmentProfile } from '../../functions/enrich_crm';
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [openCookieModal, setOpenCookieModal] = useState(false);
   const [modalStep, setModalStep] = useState(0);
@@ -40,21 +41,24 @@ function Dashboard(props) {
           .select()
           .eq("connection_id", connection_id);
 
-        const contactIssuesTemp = data[0].issuesArray.filter(
-          (item) => item.type === "Contact"
-        );
-        const companyIssuesTemp = data[0].issuesArray.filter(
-          (item) => item.type === "Company"
-        );
-        setAllIssues(data[0].issuesArray);
-        setContactIssues(contactIssuesTemp);
-        setCompanyIssues(companyIssuesTemp);
-        // Calc final score
-        const finalScore = Math.round(
-          (data[0].crm_points / data[0].crm_max_points) * 100
-        );
-        setCRMScore(finalScore);
-        setNumIssues(data[0].issuesArray.length);
+        if(data && data[0]) {
+          console.log("data: ", data);
+          const contactIssuesTemp = data[0].issuesArray.filter(
+            (item) => item.type === "Contact"
+          );
+          const companyIssuesTemp = data[0].issuesArray.filter(
+            (item) => item.type === "Company"
+          );
+          setAllIssues(data[0].issuesArray);
+          setContactIssues(contactIssuesTemp);
+          setCompanyIssues(companyIssuesTemp);
+          // Calc final score
+          const finalScore = Math.round(
+            (data[0].crm_points / data[0].crm_max_points) * 100
+          );
+          setCRMScore(finalScore);
+          setNumIssues(data[0].issuesArray.length);
+        }
       }
       //Check if LinkedIn extension is installed
       try {
@@ -79,6 +83,7 @@ function Dashboard(props) {
         );
       } catch (erorr) {
         setLinkedInLinked(false);
+        setIsLoading(false); //loading state is reset on error
       }
     }
 
@@ -99,7 +104,9 @@ function Dashboard(props) {
         //retrieve the CRM scan score and the array of issues
         let scanResult;
         try {
+          setScanComplete(false);
           scanResult = await createPineconeIndexes(connection_id);
+          setScanComplete(true);
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
           console.log(issuesArray);
@@ -144,6 +151,7 @@ function Dashboard(props) {
           setCRMConnected(true);
         } catch (error) {
           console.log(error);
+          setIsLoading(false); //loading state is reset on error
         }
       } else if (integrationCategory == "messaging") {
         /**
@@ -215,7 +223,17 @@ function Dashboard(props) {
   }, [storeDataExecuted]);
 
   return (
-    <LoadingOverlay active={isLoading} spinner text="Please wait...">
+      <div>
+      {isLoading && <LoadingBar 
+      messages={[
+        "Fetching CRM data...",
+        "Scanning contacts...",
+        "Analyzing deals...",
+        "Surveying events...",
+        "Generating embeddings...",
+        "Finalizing insights and storing findings...",
+      ]} 
+      isLoading={isLoading} screen={"dashboard"} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && (
@@ -241,15 +259,15 @@ function Dashboard(props) {
               />
             </>
           )}
-
+  
           <Button
-            class={
-              modalStep == 2
+            className={
+              modalStep === 2
                 ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
                 : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
             onClick={async () => {
-              if (modalStep == 2) {
+              if (modalStep === 2) {
                 setIsLoading(true);
                 await new Promise((resolve) => setTimeout(resolve, 5000));
                 console.log(contactIssues);
@@ -307,7 +325,7 @@ function Dashboard(props) {
                 }
               
                 setIsLoading(false);
-
+  
                 setCRMScore(90);
                 setIssuesResolved(true);
                 setIsOpen(false);
@@ -317,8 +335,8 @@ function Dashboard(props) {
               }
             }}
           >
-            <div class="text-white text-sm font-medium font-['Inter'] leading-tight">
-              {modalStep == 0
+            <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
+              {modalStep === 0
                 ? "Continue"
                 : modalStep == 1
                 ? "Review"
@@ -327,35 +345,36 @@ function Dashboard(props) {
           </Button>
         </DialogPanel>
       </Dialog>
-
-      <div className="justify-center items-center w-[100vw] h-[100vh]">
-        <Header selectedTab={0} db={props.db} />
-        <Score
-          crmConnected={crmConnected}
-          setCRMConnected={setCRMConnected}
-          setIsLoading={true}
-          crmScore={crmScore}
-          numIssues={numIssues}
-          issuesResolved={issuesResolved}
-        />
-
-        <Accounts
-          crmConnected={crmConnected}
-          linkedInLinked={linkedInLinked}
-          db={props.db}
-          emailLinked={emailLinked}
-        />
-        {crmConnected && (
-          <Issues
+  
+      {!isLoading && (
+        <div className="justify-center items-center w-full h-full">
+          <Header selectedTab={0} db={props.db} />
+          <Score
             crmConnected={crmConnected}
-            setIsOpen={setIsOpen}
-            setOpenCookieModal={setOpenCookieModal}
+            setCRMConnected={setCRMConnected}
+            crmScore={crmScore}
+            numIssues={numIssues}
             issuesResolved={issuesResolved}
-            linkedInLinked={linkedInLinked}
           />
-        )}
-      </div>
-    </LoadingOverlay>
+  
+          <Accounts
+            crmConnected={crmConnected}
+            linkedInLinked={linkedInLinked}
+            db={props.db}
+            emailLinked={emailLinked}
+          />
+          {crmConnected && (
+            <Issues
+              crmConnected={crmConnected}
+              setIsOpen={setIsOpen}
+              setOpenCookieModal={setOpenCookieModal}
+              issuesResolved={issuesResolved}
+              linkedInLinked={linkedInLinked}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
