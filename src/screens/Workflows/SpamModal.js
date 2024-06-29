@@ -5,10 +5,14 @@ import {
   TableHead,
   TableHeaderCell,
   TableRow,
+  Accordion,
+  AccordionBody,
+  AccordionHeader,
+  AccordionList,
   Card,
 } from "@tremor/react";
 
-import Reach, { useState } from "react";
+import { useState } from "react";
 
 const SpamModal = ({ allEmails, setAllEmails, step }) => {
   const [expandedRows, setExpandedRows] = useState({});
@@ -36,7 +40,7 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
           <p className="text-slate-400">You don't have any email data</p>
         </Card>
       )}
-      {!empty && (
+      {!empty && (step == 0 || step == 1) && (
         <Table className="h-[50vh]">
           <TableHead>
             <TableRow>
@@ -102,6 +106,45 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
             })}
           </TableBody>
         </Table>
+      )}
+      {!empty && step == 2 && (
+        <AccordionList>
+          {allEmails.map((modalObject, index) => (
+            <Accordion key={index}>
+              <AccordionHeader className="text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
+                {modalObject.contact.name} @ {modalObject.company.name}
+              </AccordionHeader>
+              <AccordionBody className="leading-6 space-y-4">
+                <div>
+                  <strong>Contact:</strong>
+                  <p>
+                    {modalObject.contact.name}, {modalObject.contact.title}
+                  </p>
+                </div>
+                <div>
+                  <strong>Company:</strong>
+                  <p>{modalObject.company.name}</p>
+                  <p>{modalObject.company.description}</p>
+                </div>
+                {modalObject.events && modalObject.events.length > 0 && (
+                  <Accordion className="mt-4">
+                    <AccordionHeader className="text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
+                      Notes
+                    </AccordionHeader>
+                    <AccordionBody className="leading-6">
+                      {modalObject.events.map((event, idx) => (
+                        <div key={idx} className="mt-2">
+                          <strong>{event.title}</strong>
+                          <p>{event.summary}</p>
+                        </div>
+                      ))}
+                    </AccordionBody>
+                  </Accordion>
+                )}
+              </AccordionBody>
+            </Accordion>
+          ))}
+        </AccordionList>
       )}
     </>
   );

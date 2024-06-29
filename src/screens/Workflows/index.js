@@ -35,6 +35,7 @@ function Workflows(props) {
   const [modalStep, setModalStep] = useState(0);
   const [emailWorkflow, setEmailWorkflow] = useState(false);
   const [linkedinWorkflow, setLinkedinWorkflow] = useState(false);
+  const [modalArray, setModalArray] = useState([]);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -70,6 +71,8 @@ function Workflows(props) {
       }
     }
     getConnectedEmails();
+    setModalStep(0);
+    console.log("modal step: ", modalStep);
   }, []);
 
   /**
@@ -254,15 +257,14 @@ function Workflows(props) {
                   body: { connection_id: connection_id, event: event },
                 }
               );
+              data.result.title = update.title;
+              data.result.summary = update.summary;
               newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
               let contact;
               if (source == "Email") {
-                const enrichObj = await fetchEnrichmentProfile(
-                  update,
-                  "Email"
-                );
+                const enrichObj = await fetchEnrichmentProfile(update, "Email");
                 console.log("Enrich obj", enrichObj);
                 if (enrichObj !== null) {
                   contact = {
@@ -346,6 +348,8 @@ function Workflows(props) {
                   }
                 );
                 console.log("NEW CONTACT DATA", data);
+                data.event.title = update.title;
+                data.event.summary = update.summary;
                 newContacts.push(data.contact);
                 newEvents.push(data.event);
               }
@@ -355,7 +359,29 @@ function Workflows(props) {
       })
     );
 
-    console.log("CRM Update", crmUpdate);
+    let tempModalArray = [];
+    for (const contact of newContacts) {
+      let modalObj = {
+        contact: contact,
+        company: null,
+        events: [],
+      };
+      for (const company of newCompanies) {
+        if (contact.company == company.name) {
+          modalObj.company = company;
+        }
+      }
+      for (const event of newEvents) {
+        for (const id of event.contact_ids) {
+          if (id == contact.id) {
+            modalObj.events.push(event);
+          }
+        }
+      }
+      tempModalArray.push(modalObj);
+      console.log(JSON.stringify(modalObj));
+    }
+    setModalArray(tempModalArray);
 
     if (crmUpdate.length > 0) {
       admin_crm_update = [...admin_crm_update, ...crmUpdate];
@@ -631,7 +657,7 @@ function Workflows(props) {
                 response.summary,
                 messageData
               );
-              progress+=2;
+              progress += 2;
 
               //create message obj that is compatible with spam modal
               const date = Date.now();
@@ -717,7 +743,8 @@ function Workflows(props) {
     setIsLoading(false);
     localStorage.setItem("linkedInLinked", true);
     setOpenCookieModal(false);
-    setShowSpamModal(false);
+    setShowSpamModal(true);
+    setModalStep(2);
     setLinkedinWorkflow(false);
     progress = 0;
     // Clean up URL by removing query parameters
@@ -1116,6 +1143,8 @@ function Workflows(props) {
   }
 
   async function uploadEmails() {
+    setModalArray([]);
+
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
     progress = 0;
@@ -1141,7 +1170,8 @@ function Workflows(props) {
 
     // End loading indicator
     setIsLoading(false);
-    setShowSpamModal(false);
+    setShowSpamModal(true);
+    setModalStep(2);
     setEmailWorkflow(false);
     progress = 0;
 
@@ -1581,6 +1611,9 @@ function Workflows(props) {
               {modalStep == 1 && (
                 <SpamModal allEmails={hamEmails} step={modalStep} />
               )}
+              {modalStep == 2 && (
+                <SpamModal allEmails={modalArray} step={modalStep} />
+              )}
               <div className="flex flex-col space-y-2 mt-4 items-center">
                 <Button
                   variant="primary"
@@ -1600,7 +1633,7 @@ function Workflows(props) {
                       } else if (linkedinWorkflow) {
                         await uploadLinkedin();
                       }
-                    } else {
+                    } else if (modalStep == 0) {
                       let tempHamEmails = [];
                       for (const email of allEmails) {
                         if (!email.isSpam) {
@@ -1609,6 +1642,8 @@ function Workflows(props) {
                       }
                       setHamEmails(tempHamEmails);
                       setModalStep(modalStep + 1);
+                    } else {
+                      setShowSpamModal(false);
                     }
                   }}
                 >
