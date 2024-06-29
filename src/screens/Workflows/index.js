@@ -71,8 +71,6 @@ function Workflows(props) {
       }
     }
     getConnectedEmails();
-    setModalStep(0);
-    console.log("modal step: ", modalStep);
   }, []);
 
   /**
@@ -744,7 +742,6 @@ function Workflows(props) {
     localStorage.setItem("linkedInLinked", true);
     setOpenCookieModal(false);
     setShowSpamModal(true);
-    setModalStep(2);
     setLinkedinWorkflow(false);
     progress = 0;
     // Clean up URL by removing query parameters
@@ -1076,6 +1073,7 @@ function Workflows(props) {
     setIsLoading(true);
     setFetchingEmails(true);
     setShowSpamModal(false);
+    setModalStep(0);
 
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
@@ -1171,7 +1169,6 @@ function Workflows(props) {
     // End loading indicator
     setIsLoading(false);
     setShowSpamModal(true);
-    setModalStep(2);
     setEmailWorkflow(false);
     progress = 0;
 
@@ -1599,7 +1596,11 @@ function Workflows(props) {
               }}
             >
               <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
-                {modalStep == 0 ? "Adjust Messages" : "Review"}
+                {modalStep == 0
+                  ? "Adjust Messages"
+                  : modalStep == 1
+                  ? "Review Messages"
+                  : "Review Updates"}
               </div>
               {modalStep == 0 && (
                 <SpamModal
@@ -1624,9 +1625,9 @@ function Workflows(props) {
                     width: "30%",
                   }}
                   onClick={async () => {
-                    if (modalStep === 1) {
+                    if (modalStep == 1) {
                       setIsLoading(true);
-                      setModalStep(0);
+                      setModalStep(2);
                       setShowSpamModal(false);
                       if (emailWorkflow) {
                         await uploadEmails();
@@ -1641,13 +1642,17 @@ function Workflows(props) {
                         }
                       }
                       setHamEmails(tempHamEmails);
-                      setModalStep(modalStep + 1);
+                      setModalStep(1);
                     } else {
                       setShowSpamModal(false);
                     }
                   }}
                 >
-                  {modalStep === 0 ? "Continue" : "Finish"}
+                  {modalStep === 0
+                    ? "Continue"
+                    : modalStep == 1
+                    ? "Finish"
+                    : "Done"}
                 </Button>
                 {modalStep === 1 && (
                   <Button
@@ -1657,7 +1662,7 @@ function Workflows(props) {
                       padding: "8px 16px",
                       width: "30%",
                     }}
-                    onClick={() => setModalStep(modalStep - 1)}
+                    onClick={() => setModalStep(0)}
                   >
                     Back
                   </Button>

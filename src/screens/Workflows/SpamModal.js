@@ -37,7 +37,11 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
     <>
       {empty && (
         <Card className="h-[50vh] text-center">
-          <p className="text-slate-400">You don't have any email data</p>
+          <p className="text-slate-400">
+            {step == 2
+              ? "There were no updates to the CRM"
+              : "You don't have any email data"}
+          </p>
         </Card>
       )}
       {!empty && (step == 0 || step == 1) && (
