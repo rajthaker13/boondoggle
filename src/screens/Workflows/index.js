@@ -11,13 +11,13 @@ import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
+import { fetchEnrichmentProfile } from '../../functions/enrich_crm';
 
 let progress = 0;
 
 export function getWorkflowsProgress() {
   return progress;
 }
-import { fetchEnrichmentProfile } from '../../functions/enrich_crm';
 
 function Workflows(props) {
   const [isLoading, setIsLoading] = useState(false);

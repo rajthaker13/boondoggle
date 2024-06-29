@@ -41,7 +41,7 @@ function Dashboard(props) {
           .select()
           .eq("connection_id", connection_id);
 
-        if(data && data[0]) {
+        if (data && data[0]) {
           console.log("data: ", data);
           const contactIssuesTemp = data[0].issuesArray.filter(
             (item) => item.type === "Contact"
@@ -214,26 +214,147 @@ function Dashboard(props) {
     if (id && !storeDataExecuted) {
       setStoreDataExecuted(true);
       storeData();
-      // const tmpObj = { email: "josh@meetapollo.io" };
-      // const res = fetchEnrichmentProfile(tmpObj);
-      // console.log("RES", res);
     }
 
     getDashboardData();
   }, [storeDataExecuted]);
+  // Function to update a contact using the API
+  async function updateContact(connection_id, contact) {
+    const options = {
+      method: 'PUT',
+      url: `https://api.unified.to/crm/${connection_id}/contact/${contact.id}`,
+      headers: {
+        authorization: "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0"
+      },
+      data: {
+        id: contact.id,
+        name: contact.customer,
+        ...(contact.title && { title: contact.title }),
+        ...(contact.company && { company: contact.company }),
+        ...(contact.emails && contact.emails.length > 0 && { emails: contact.emails }),
+        ...(contact.telephones && contact.telephones.length > 0 && { telephones: contact.telephones }),
+        ...(contact.company_ids && contact.company_ids.length > 0 && { company_ids: contact.company_ids }),
+        ...(contact.address && Object.keys(contact.address).length > 0 && { address: contact.address })
+      }
+    };
+    try {
+      const results = await axios.request(options);
+      console.log("Contact updated successfully:", results.data);
+    } catch (error) {
+      console.error("Error updating contact:", error);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (modalStep === 2) {
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      console.log(contactIssues);
+      let crmUpdate = [];
+      if (contactIssues.length > 0) {
+        console.log("Start fixing")
+        let count = 0;
+        for (let contact of contactIssues) {
+
+          if (count >= 1) break; // Stop after 3 successful fetches
+
+          if (contact.itemData.emails && contact.itemData.emails.length > 0 && contact.itemData.emails[0].email) {
+            let profileData = { ...contact.itemData };
+            profileData.email = contact.itemData.emails[0].email;
+            try {
+              const enrichObj = await fetchEnrichmentProfile(profileData, "Email");
+              if (enrichObj !== null) {
+                console.log("Fixed", enrichObj); // Logging the enriched profile data
+
+                crmUpdate.push({
+                  id: contact.UnifiedID,
+                  customer: enrichObj.name,
+                  title: enrichObj.title,
+                  company: enrichObj.company,
+                  telephones: enrichObj.telephones,
+                  company_ids: enrichObj.company_ids,
+                  address: enrichObj.address,
+                });
+                count++; // Increment only if fetch is successful
+              }
+            } catch (error) {
+              console.error("Error fetching profile data:", error);
+            }
+          } else { // If issue obj do not have email associated with, enrich it with the company
+            let profileData = { ...contact.itemData };
+            console.log("SC", profileData);
+            try {
+              const enrichObj = await fetchEnrichmentProfile(profileData, "SearchCompany");
+              if (enrichObj !== null) {
+                console.log("Fixed", enrichObj); // Logging the enriched profile data
+                crmUpdate.push({
+                  id: contact.UnifiedID,
+                  customer: enrichObj.name,
+                  title: enrichObj.title,
+                  company: enrichObj.company,
+                  telephones: enrichObj.telephones,
+                  company_ids: enrichObj.company_ids,
+                  address: enrichObj.address,
+                  emails: enrichObj.emails,
+                });
+                count++; // Increment only if fetch is successful
+              }
+            } catch (error) {
+              console.error("Error fetching profile data:", error);
+            }
+          }
+        }
+
+      }
+
+      // Update all contacts in crmUpdate array
+      if (crmUpdate.length > 0) {
+        const connection_id = localStorage.getItem("connection_id");
+
+        // Perform all updateContact calls and wait for them to complete
+        await Promise.all(crmUpdate.map(contact => updateContact(connection_id, contact)));
+
+        // Remove updated contacts from allIssues
+        const updatedIssues = allIssues.filter(issue => !crmUpdate.some(contact => contact.id === issue.itemData.id));
+        setAllIssues(updatedIssues);
+
+        // Wait for the state to update before updating Supabase
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        // Update Supabase with the modified allIssues array
+        await props.db
+          .from("data")
+          .update({
+            issuesArray: updatedIssues,
+          })
+          .eq("connection_id", connection_id);
+
+        console.log("Supabase updated with modified allIssues array");
+      }
+
+      setIsLoading(false);
+
+      setCRMScore(90);
+      setIssuesResolved(true);
+      setIsOpen(false);
+      localStorage.setItem("resolvedIssues", true);
+    } else {
+      setModalStep(modalStep + 1);
+    }
+  };
 
   return (
-      <div>
-      {isLoading && <LoadingBar 
-      messages={[
-        "Fetching CRM data...",
-        "Scanning contacts...",
-        "Analyzing deals...",
-        "Surveying events...",
-        "Generating embeddings...",
-        "Finalizing insights and storing findings...",
-      ]} 
-      isLoading={isLoading} screen={"dashboard"} />}
+    <div>
+      {isLoading && <LoadingBar
+        messages={[
+          "Fetching CRM data...",
+          "Scanning contacts...",
+          "Analyzing deals...",
+          "Surveying events...",
+          "Generating embeddings...",
+          "Finalizing insights and storing findings...",
+        ]}
+        isLoading={isLoading} screen={"dashboard"} />}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && (
@@ -259,93 +380,26 @@ function Dashboard(props) {
               />
             </>
           )}
-  
+
           <Button
             className={
               modalStep === 2
                 ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
                 : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
-            onClick={async () => {
-              if (modalStep === 2) {
-                setIsLoading(true);
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-                console.log(contactIssues);
-                if (contactIssues.length > 0) {
-                  let crmUpdate = [];
-                  console.log("Start fixing")
-                  let count = 0;
-                  for (let contact of contactIssues) {
-
-                    if (count >= 5) break; // Stop after 10 successful fetches
-            
-                    if (contact.itemData.emails && contact.itemData.emails.length > 0 && contact.itemData.emails[0].email) {
-                      let profileData = {...contact.itemData}; 
-                      profileData.email = contact.itemData.emails[0].email; 
-                      try {
-                        const enrichObj = await fetchEnrichmentProfile(profileData, "Email");
-                        if (enrichObj !== null) {
-                          console.log("Fixed", enrichObj); // Logging the enriched profile data
-              
-                          crmUpdate.push({
-                            id: contact.UnifiedID,
-                            customer: enrichObj.name,
-                            title: enrichObj.title,
-                            position: enrichObj.title,
-                            company: enrichObj.company,
-                            url: enrichObj.url,
-                          });
-                          count++; // Increment only if fetch is successful
-                        }
-                      } catch (error) {
-                        console.error("Error fetching profile data:", error);
-                      }
-                    } else { // If issue obj do not have email associated with, enrich it with the company
-                      let profileData = {...contact.itemData}; 
-                      console.log("SC", profileData);
-                      try {
-                        const enrichObj = await fetchEnrichmentProfile(profileData, "SearchCompany");
-                        if (enrichObj !== null) {
-                          console.log("Fixed", enrichObj); // Logging the enriched profile data
-                          crmUpdate.push({
-                            id: contact.UnifiedID,
-                            customer: enrichObj.name,
-                            title: enrichObj.title,
-                            position: enrichObj.title,
-                            company: enrichObj.company,
-                            url: enrichObj.url,
-                          });
-                          count++; // Increment only if fetch is successful
-                        }
-                      } catch (error) {
-                        console.error("Error fetching profile data:", error);
-                      }
-                    }
-                  }
-                }
-              
-                setIsLoading(false);
-  
-                setCRMScore(90);
-                setIssuesResolved(true);
-                setIsOpen(false);
-                localStorage.setItem("resolvedIssues", true);
-              } else {
-                setModalStep(modalStep + 1);
-              }
-            }}
+            onClick={handleUpdate}
           >
             <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
               {modalStep === 0
                 ? "Continue"
                 : modalStep == 1
-                ? "Review"
-                : "Resolve"}
+                  ? "Review"
+                  : "Resolve"}
             </div>
           </Button>
         </DialogPanel>
       </Dialog>
-  
+
       {!isLoading && (
         <div className="justify-center items-center w-full h-full">
           <Header selectedTab={0} db={props.db} />
@@ -356,7 +410,7 @@ function Dashboard(props) {
             numIssues={numIssues}
             issuesResolved={issuesResolved}
           />
-  
+
           <Accounts
             crmConnected={crmConnected}
             linkedInLinked={linkedInLinked}
