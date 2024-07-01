@@ -127,6 +127,7 @@ function Workflows(props) {
    */
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
+    let allContacts = [];
     let newContacts = [];
     let newEvents = [];
     let newCompanies = [];
@@ -257,6 +258,12 @@ function Workflows(props) {
               );
               data.result.title = update.title;
               data.result.summary = update.summary;
+              console.log("event data object: ", data);
+              if (
+                !allContacts.some((contact) => contact.id === current_crm.id)
+              ) {
+                allContacts.push(current_crm);
+              }
               newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
@@ -348,8 +355,19 @@ function Workflows(props) {
                 console.log("NEW CONTACT DATA", data);
                 data.event.title = update.title;
                 data.event.summary = update.summary;
-                newContacts.push(data.contact);
-                newEvents.push(data.event);
+                if (!data.contact.error) {
+                  if (
+                    !allContacts.some(
+                      (contact) => contact.id === data.contact.id
+                    )
+                  ) {
+                    allContacts.push(data.contact);
+                    newContacts.push(data.contact);
+                  }
+                }
+                if (data.event && !data.event.error) {
+                  newEvents.push(data.event);
+                }
               }
             }
           }
@@ -358,12 +376,18 @@ function Workflows(props) {
     );
 
     let tempModalArray = [];
-    for (const contact of newContacts) {
+    for (const contact of allContacts) {
       let modalObj = {
         contact: contact,
         company: null,
         events: [],
+        contactIsNew: false,
       };
+      for(const newContact of newContacts) {
+        if(newContact.id == contact.id) {
+          modalObj.contactIsNew = true;
+        }
+      }
       for (const company of newCompanies) {
         if (contact.company == company.name) {
           modalObj.company = company;
@@ -377,7 +401,6 @@ function Workflows(props) {
         }
       }
       tempModalArray.push(modalObj);
-      console.log(JSON.stringify(modalObj));
     }
     setModalArray(tempModalArray);
 

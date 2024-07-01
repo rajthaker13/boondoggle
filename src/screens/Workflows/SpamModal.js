@@ -10,6 +10,7 @@ import {
   AccordionHeader,
   AccordionList,
   Card,
+  Badge,
 } from "@tremor/react";
 
 import { useState } from "react";
@@ -115,21 +116,43 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
         <AccordionList>
           {allEmails.map((modalObject, index) => (
             <Accordion key={index}>
-              <AccordionHeader className="text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
-                {modalObject.contact.name} @ {modalObject.company.name}
+              <AccordionHeader className="flex items-center justify-between text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
+                <div className="mr-2">
+                  {modalObject.contact.name}{" "}
+                  {modalObject.company
+                    ? "@ " + modalObject.company.name
+                    : modalObject.contact.company
+                    ? "@ " + modalObject.contact.company
+                    : ""}
+                </div>
+                <div className="flex-grow"></div>
+                <Badge
+                  size="xs"
+                  color={modalObject.contactIsNew ? "green" : "blue"}
+                >
+                  {modalObject.contactIsNew
+                    ? "New Contact"
+                    : "Existing Contact"}
+                </Badge>
               </AccordionHeader>
               <AccordionBody className="leading-6 space-y-4">
                 <div>
                   <strong>Contact:</strong>
                   <p>
-                    {modalObject.contact.name}, {modalObject.contact.title}
+                    {modalObject.contact.title != undefined
+                      ? modalObject.contact.name +
+                        ", " +
+                        modalObject.contact.title
+                      : modalObject.contact.name}
                   </p>
                 </div>
-                <div>
-                  <strong>Company:</strong>
-                  <p>{modalObject.company.name}</p>
-                  <p>{modalObject.company.description}</p>
-                </div>
+                {modalObject.company && (
+                  <div>
+                    <strong>Company:</strong>
+                    <p>{modalObject.company.name}</p>
+                    <p>{modalObject.company.description}</p>
+                  </div>
+                )}
                 {modalObject.events && modalObject.events.length > 0 && (
                   <Accordion className="mt-4">
                     <AccordionHeader className="text-sm font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">
