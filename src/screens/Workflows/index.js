@@ -503,27 +503,6 @@ function Workflows(props) {
     }
     setModalArray(tempModalArray);
 
-    if (crmUpdate.length > 0) {
-      admin_crm_update = [...admin_crm_update, ...crmUpdate];
-      user_crm_update = [...user_crm_update, ...crmUpdate];
-      // Update CRM with new data
-      await props.db
-        .from("data")
-        .update({
-          crm_data: admin_crm_update,
-        })
-        .eq("connection_id", connection_id);
-
-      const uid = localStorage.getItem("uid");
-
-      await props.db
-        .from("users")
-        .update({
-          crm_data: user_crm_update,
-        })
-        .eq("id", uid);
-    }
-
     const contactEmbeddings = await generateEmbeddingsMessages(
       newContacts,
       "Contact"
