@@ -20,6 +20,8 @@ import {
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import Sidebar from "./Sidebar";
+import "./index.css";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -47,6 +49,8 @@ function BoondogggleAI(props) {
     },
   ]);
   const [langchainMessages, setLangChainMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
 
   useEffect(() => {
     // Scroll chat window
@@ -54,6 +58,28 @@ function BoondogggleAI(props) {
       chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
     }
   }, [answer]);
+
+  //get past conversation
+  async function loadConversation(conversationId) {
+    setIsLoading(true);
+    const selectedConversation = conversations.find(
+      (c) => c.id === conversationId
+    );
+    if (selectedConversation) {
+      setLangChainMessages(selectedConversation.messages);
+      // Simulate loading chat history
+      const chatContent = document.getElementById("boondoggle-ai-chat-content");
+      chatContent.innerHTML = ""; // Clear current chat
+      selectedConversation.messages.forEach((msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.className = "boondoggle-ai-chat";
+        messageElement.textContent = msg.content;
+        chatContent.appendChild(messageElement);
+      });
+    }
+    setIsLoading(false);
+  }
+
   // Handle user submits a query
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
@@ -411,28 +437,35 @@ function BoondogggleAI(props) {
         new AIMessage(finalAnswer)
       );
 
+      console.log("messages array", temp_langchain);
+
       setLangChainMessages(temp_langchain);
     }
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="w-[100vw] h-[100vh] overflow-y-scroll">
-        <div>
-          <Header db={props.db} selectedTab={3} />
-          <div class="ml-[2vw] flex-col">
+      <div className="boondoggle-ai-container">
+        <Header db={props.db} selectedTab={3} />
+        <div className="boondoggle-ai-content">
+          <Sidebar
+            conversations={conversations}
+            onSelectConversation={loadConversation}
+          />
+          <div className="boondoggle-ai-main">
             <div
-              class="flex flex-col items-start gap-[35px] self-stretch overflow-y-auto h-[80vh] mb-[2vh] mt-[2vh]"
+              className="boondoggle-ai-chat-content"
               id="boondoggle-ai-chat-content"
               ref={chatContentRef}
-            />
-
-            <input
-              onKeyDown={async (event) => await onBoondoggleQuery(event)}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="flex w-[95vw] mb-[1vh] p-4 flex-col justify-center items-start gap-2 relative rounded-[24px] border border-brand-light bg-gradient-to-r from-[rgba(128,84,255,0.05)] to-[rgba(1,131,251,0.05)] bg-white bg-opacity-80 backdrop-blur-[50px]"
-            ></input>
-            <p>Press Enter to Query</p>
+            ></div>
+            <div className="boondoggle-ai-input">
+              <input
+                onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Press Enter to Query"
+              />
+            </div>
           </div>
         </div>
       </div>
