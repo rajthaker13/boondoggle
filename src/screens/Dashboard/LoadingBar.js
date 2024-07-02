@@ -4,7 +4,6 @@ import { getCrmEntriesProgress } from "../../functions/crm_entries";
 import { getWorkflowsProgress } from "../Workflows";
 
 function LoadingBar({ messages, isLoading, screen }) {
-  // Correct props destructuring
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -20,9 +19,13 @@ function LoadingBar({ messages, isLoading, screen }) {
         progressValue = getCrmEntriesProgress();
       }
       if (screen == "workflows") {
+        console.log("progress: ", getWorkflowsProgress());
         progressValue = getWorkflowsProgress();
       }
       setProgress(progressValue);
+      /*console.log("progress value: ", progressValue);
+            console.log("progress marker: ", progressMarker*progressMarkerIdx);
+            console.log("message index: ", mi);*/
       if (progressValue > progressMarker * progressMarkerIdx) {
         mi++;
         setMessageIndex(mi);

@@ -14,7 +14,6 @@ function Dashboard(props) {
   const [isLoading, setIsLoading] = useState(false);
   const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [openCookieModal, setOpenCookieModal] = useState(false);
   const [modalStep, setModalStep] = useState(0);
   const [crmScore, setCRMScore] = useState(0);
   const [numIssues, setNumIssues] = useState(0);
@@ -311,7 +310,6 @@ function Dashboard(props) {
             <Issues
               crmConnected={crmConnected}
               setIsOpen={setIsOpen}
-              setOpenCookieModal={setOpenCookieModal}
               issuesResolved={issuesResolved}
               linkedInLinked={linkedInLinked}
             />
