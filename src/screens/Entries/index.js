@@ -41,9 +41,7 @@ function NewEntries(props) {
           (entry) => entry.id == id
         );
         const update = tableData[matchedEntryIndex];
-        console.log("UPDATE", update);
         const source = update.source;
-        console.log("SOURCE", source);
         if (update.customer != "") {
           let regexCustomer;
           if (source == "Email") {
@@ -325,7 +323,6 @@ function NewEntries(props) {
               <TableBody>
                 <>
                   {tableData.map((lead, index) => {
-                    console.log(tableData);
                     const timestamp = lead.date;
                     const timeAgoString = timeAgo(timestamp);
                     return (

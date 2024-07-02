@@ -12,7 +12,6 @@ function IssuesModal(props) {
   const [maxPriority, setMaxPriority] = useState(0);
   useEffect(() => {
     setMaxPriority(props.allIssues[0].priority);
-    console.log(props.allIssues);
   }, [props.issues, props.allIssues]);
 
   return (

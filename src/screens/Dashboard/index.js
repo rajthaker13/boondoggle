@@ -39,8 +39,7 @@ function Dashboard(props) {
           .select()
           .eq("connection_id", connection_id);
 
-        if(data && data[0]) {
-          console.log("data: ", data);
+        if (data && data[0]) {
           const contactIssuesTemp = data[0].issuesArray.filter(
             (item) => item.type === "Contact"
           );
@@ -107,7 +106,6 @@ function Dashboard(props) {
           setScanComplete(true);
           const newScore = scanResult.score;
           const issuesArray = scanResult.issuesArray;
-          console.log(issuesArray);
 
           await props.db.from("data").insert({
             connection_id: connection_id,
@@ -148,7 +146,6 @@ function Dashboard(props) {
           window.history.replaceState({}, document.title, cleanUrl);
           setCRMConnected(true);
         } catch (error) {
-          console.log(error);
           setIsLoading(false); //loading state is reset on error
         }
       } else if (integrationCategory == "messaging") {
@@ -212,26 +209,27 @@ function Dashboard(props) {
     if (id && !storeDataExecuted) {
       setStoreDataExecuted(true);
       storeData();
-      // const tmpObj = { email: "josh@meetapollo.io" };
-      // const res = fetchEnrichmentProfile(tmpObj);
-      // console.log("RES", res);
     }
 
     getDashboardData();
   }, [storeDataExecuted]);
 
   return (
-      <div>
-      {isLoading && <LoadingBar 
-      messages={[
-        "Fetching CRM data...",
-        "Scanning contacts...",
-        "Analyzing deals...",
-        "Surveying events...",
-        "Generating embeddings...",
-        "Finalizing insights and storing findings...",
-      ]} 
-      isLoading={isLoading} screen={"dashboard"} />}
+    <div>
+      {isLoading && (
+        <LoadingBar
+          messages={[
+            "Fetching CRM data...",
+            "Scanning contacts...",
+            "Analyzing deals...",
+            "Surveying events...",
+            "Generating embeddings...",
+            "Finalizing insights and storing findings...",
+          ]}
+          isLoading={isLoading}
+          screen={"dashboard"}
+        />
+      )}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
           {modalStep == 0 && (
@@ -257,7 +255,7 @@ function Dashboard(props) {
               />
             </>
           )}
-  
+
           <Button
             className={
               modalStep === 2
@@ -268,9 +266,9 @@ function Dashboard(props) {
               if (modalStep === 2) {
                 setIsLoading(true);
                 await new Promise((resolve) => setTimeout(resolve, 5000));
-  
+
                 setIsLoading(false);
-  
+
                 setCRMScore(90);
                 setIssuesResolved(true);
                 setIsOpen(false);
@@ -290,7 +288,7 @@ function Dashboard(props) {
           </Button>
         </DialogPanel>
       </Dialog>
-  
+
       {!isLoading && (
         <div className="justify-center items-center w-full h-full">
           <Header selectedTab={0} db={props.db} />
@@ -301,7 +299,7 @@ function Dashboard(props) {
             numIssues={numIssues}
             issuesResolved={issuesResolved}
           />
-  
+
           <Accounts
             crmConnected={crmConnected}
             linkedInLinked={linkedInLinked}

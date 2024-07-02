@@ -7,7 +7,7 @@ import { CRITERIA_WEIGHTS } from "./schemas/criteria_weights";
 // Initialize OpenAI and Pinecone clients with API keys from environment variables
 const openai = new OpenAI({
   apiKey: process.env.REACT_APP_OPENAI_KEY,
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true,
 });
 
 const pinecone = new Pinecone({
@@ -19,10 +19,6 @@ let progress = 0;
 // Create Pinecone indexes and manage data embedding and upsertion
 export async function createPineconeIndexes(connection_id) {
   progress = 0;
-  let scoreMultiplier = 1.47;
-  const startTime = Date.now();
-  console.log("start time: ", 0);
-
   try {
     const index = pinecone.index("boondoggle-data-4");
 
@@ -351,7 +347,6 @@ export async function createPineconeIndexes(connection_id) {
         }
       }
       progress += 8;
-      console.log("upserted: ", Date.now()-startTime);
     }
     // Calc final score
     const finalScore = Math.round(
@@ -372,5 +367,5 @@ export async function createPineconeIndexes(connection_id) {
 }
 
 export function getCrmEntriesProgress() {
-  return progress
+  return progress;
 }
