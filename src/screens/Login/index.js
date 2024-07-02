@@ -27,8 +27,6 @@ export default function Login(props) {
   // });
 
   async function signIn() {
-    console.log(email);
-    console.log(password);
     const { data, error } = await props.db.auth.signInWithPassword({
       email: email,
       password: password,
