@@ -1109,7 +1109,7 @@ function Workflows(props) {
           (item) => item.customer === email.author_member.name
         );
         const toIndex = new_emails.findIndex(
-          (item) => item.customer === email.destination_members[0].name
+          (item) => item.customer === email.destination_members[0]?.name
         );
 
         if (fromIndex !== -1 || toIndex !== -1) {
