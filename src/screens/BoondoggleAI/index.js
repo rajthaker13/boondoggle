@@ -48,9 +48,8 @@ function BoondogggleAI(props) {
       content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions.`,
     },
   ]);
-  const [langchainMessages, setLangChainMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [convoID, setConvoID] = useState("");
 
   useEffect(() => {
     // Scroll chat window
@@ -59,25 +58,49 @@ function BoondogggleAI(props) {
     }
   }, [answer]);
 
+  useEffect(() => {
+    loadConversation(convoID);
+  }, [convoID]);
+
+  function generateUniqueId() {
+    const timestamp = Date.now().toString(); // Get current timestamp as string
+    const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
+    const uniqueId = timestamp + randomString; // Concatenate timestamp and random string
+    return uniqueId; // Extract first 10 characters to ensure 10-digit length
+  }
+
+  function formatText(text) {
+    const formattedAnswer = text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+      .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
+      .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
+      .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
+    return formattedAnswer;
+  }
+
   //get past conversation
   async function loadConversation(conversationId) {
-    setIsLoading(true);
-    const selectedConversation = conversations.find(
+    setConvoID(conversationId);
+
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    const supaConversations = data[0].boondoggle_conversations;
+    setConversations(supaConversations);
+
+    const selectedConversation = supaConversations.find(
       (c) => c.id === conversationId
     );
     if (selectedConversation) {
-      setLangChainMessages(selectedConversation.messages);
       // Simulate loading chat history
       const chatContent = document.getElementById("boondoggle-ai-chat-content");
       chatContent.innerHTML = ""; // Clear current chat
       selectedConversation.messages.forEach((msg) => {
         const messageElement = document.createElement("div");
         messageElement.className = "boondoggle-ai-chat";
-        messageElement.textContent = msg.content;
+        messageElement.innerHTML = formatText(msg);
         chatContent.appendChild(messageElement);
       });
     }
-    setIsLoading(false);
   }
 
   // Handle user submits a query
@@ -98,7 +121,19 @@ function BoondogggleAI(props) {
       userQueryContainer.appendChild(userQueryText);
       boondoggleAiChatContent.appendChild(userQueryContainer);
 
-      let temp_langchain = langchainMessages;
+      let temp_langchain = [];
+      const selectedConversation = conversations.find((c) => c.id === convoID);
+      let messages = selectedConversation ? selectedConversation.messages : [];
+      for (let i = 0; messages != null && i < messages.length; i++) {
+        if (i % 2 == 0) {
+          const userMess = new HumanMessage(messages[i]);
+          temp_langchain.push(userMess);
+        } else {
+          const aiMess = new AIMessage(messages[i]);
+          temp_langchain.push(aiMess);
+        }
+      }
+
       // System Prompt here
       const SYSTEM_TEMPLATE = `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions
 
@@ -360,14 +395,6 @@ function BoondogggleAI(props) {
         answer: documentChain,
       });
 
-      function formatText(text) {
-        const formattedAnswer = text
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
-          .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
-          .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
-          .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
-        return formattedAnswer;
-      }
       // Add Ai response frontend container
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
@@ -438,8 +465,73 @@ function BoondogggleAI(props) {
       );
 
       console.log("messages array", temp_langchain);
+      let newMessagesArr = [];
+      for (const obj of temp_langchain) {
+        newMessagesArr.push(obj.content);
+      }
 
-      setLangChainMessages(temp_langchain);
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      let updatePackage = [];
+
+      if (data && data[0]) {
+        if (convoID == "") {
+          let titleCompletion = "";
+          //generate title for query
+          const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${searchQuery}. You should not respond as if you are an AI.`;
+          let completionMessages = [
+            { role: "system", content: titleContext },
+            {
+              role: "user",
+              content: `Generate one sentence title that captures what this query is about. Do not return a response longer than a few words.`,
+            },
+          ];
+
+          titleCompletion = await openai.chat.completions
+            .create({
+              messages: completionMessages,
+              model: "gpt-4",
+            })
+            .choices[0].message.content.replace(/^"(.*)"$/, "$1");
+
+          console.log(titleCompletion);
+
+          const newId = generateUniqueId();
+          let newConvoObj = {
+            messages: newMessagesArr,
+            id: newId,
+            title: titleCompletion,
+          };
+
+          updatePackage = [...data[0].boondoggle_conversations, newConvoObj];
+          await props.db
+            .from("users")
+            .update({
+              boondoggle_conversations: updatePackage,
+            })
+            .eq("id", uid);
+          setConvoID(newId);
+        } else {
+          let convoArr = data[0].boondoggle_conversations;
+          for (let i = 0; i < convoArr.length; i++) {
+            if (convoArr[i].id == convoID) {
+              convoArr[i].messages = newMessagesArr;
+            }
+          }
+          updatePackage = convoArr;
+
+          await props.db
+            .from("users")
+            .update({
+              boondoggle_conversations: updatePackage,
+            })
+            .eq("id", uid);
+        }
+      }
     }
   }
   return (

@@ -1,14 +1,12 @@
 import React from "react";
 
-const ConversationItem = ({ conversation, onSelect }) => {
+const ConversationItem = ({ id, title, onSelect }) => {
   return (
     <li
       className="cursor-pointer p-2 bg-white shadow-md rounded-md hover:bg-gray-100"
       onClick={onSelect}
     >
-      <p className="font-medium">
-        {conversation.title || `Conversation ${conversation.id}`}
-      </p>
+      <p className="font-medium">{title ? title : `Conversation ${id}`}</p>
     </li>
   );
 };
@@ -20,8 +18,8 @@ const Sidebar = ({ conversations, onSelectConversation }) => {
       <ul className="space-y-2">
         {conversations.map((conversation) => (
           <ConversationItem
-            key={conversation.id}
-            conversation={conversation}
+            id={conversation.id}
+            title={conversation.title}
             onSelect={() => onSelectConversation(conversation.id)}
           />
         ))}
