@@ -11,6 +11,7 @@ import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
+import SpamModal from "./SpamModal";
 
 let progress = 0;
 
@@ -28,6 +29,13 @@ function Workflows(props) {
   const [selectedEmail, setSelectedEmail] = useState({});
   const [hamEmails, setHamEmails] = useState([]);
   const [spamEmails, setSpamEmails] = useState([]);
+  const [allEmails, setAllEmails] = useState([]);
+  const [showSpamModal, setShowSpamModal] = useState(false);
+  const [fetchingEmails, setFetchingEmails] = useState(false);
+  const [modalStep, setModalStep] = useState(0);
+  const [emailWorkflow, setEmailWorkflow] = useState(false);
+  const [linkedinWorkflow, setLinkedinWorkflow] = useState(false);
+  const [modalArray, setModalArray] = useState([]);
 
   const openai = new OpenAI({
     apiKey: process.env.REACT_APP_OPENAI_KEY,
@@ -119,6 +127,8 @@ function Workflows(props) {
    */
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
+    let allContacts = [];
+    let allCompanies = [];
     let newContacts = [];
     let newEvents = [];
     let newCompanies = [];
@@ -211,24 +221,24 @@ function Workflows(props) {
               );
               console.log("Supabase Contact", supabaseContact);
 
-              if(supabaseContact) {
+              if (supabaseContact) {
                 const uniqueId = generateUniqueId();
-              crmUpdate.push({
-                id: uniqueId,
-                date: update.date,
-                customer: supabaseContact.customer,
-                title: update.title,
-                position: supabaseContact.position,
-                summary: update.summary,
-                company: supabaseContact.company,
-                url: supabaseContact.url,
-                source: source,
-                ...(source === "Email"
-                  ? { email: update.email }
-                  : supabaseContact.email != null
-                  ? { email: supabaseContact.email }
-                  : { email: null }),
-              });
+                crmUpdate.push({
+                  id: uniqueId,
+                  date: update.date,
+                  customer: supabaseContact.customer,
+                  title: update.title,
+                  position: supabaseContact.position,
+                  summary: update.summary,
+                  company: supabaseContact.company,
+                  url: supabaseContact.url,
+                  source: source,
+                  ...(source === "Email"
+                    ? { email: update.email }
+                    : supabaseContact.email != null
+                    ? { email: supabaseContact.email }
+                    : { email: null }),
+                });
               }
 
               const event = {
@@ -247,15 +257,21 @@ function Workflows(props) {
                   body: { connection_id: connection_id, event: event },
                 }
               );
+              data.result.title = update.title;
+              data.result.summary = update.summary;
+              console.log("event data object: ", data);
+              if (
+                !allContacts.some((contact) => contact.id === current_crm.id)
+              ) {
+                allContacts.push(current_crm);
+              }
               newEvents.push(data.result);
             } else {
               //if contact does not exist, creates contact in the CRM
               let contact;
               if (source == "Email") {
-                const enrichObj = await fetchEnrichmentProfile(
-                  update.emailObject,
-                  "Email"
-                );
+                const enrichObj = await fetchEnrichmentProfile(update, "Email");
+                console.log("Enrich obj", enrichObj);
                 if (enrichObj !== null) {
                   contact = {
                     name: enrichObj.name,
@@ -284,7 +300,24 @@ function Workflows(props) {
                     source: source,
                   });
                   if (enrichObj.isNewCompany) {
-                    newCompanies.push(enrichObj.companyData);
+                    if (
+                      allCompanies.length == 0 ||
+                      !allCompanies.some(
+                        (company) => company.name == enrichObj.companyData.name
+                      )
+                    ) {
+                      allCompanies.push(enrichObj.companyData);
+                      newCompanies.push(enrichObj.companyData);
+                    }
+                  } else {
+                    if (
+                      allCompanies.length == 0 ||
+                      !allCompanies.some(
+                        (company) => company.name == enrichObj.companyData.name
+                      )
+                    ) {
+                      allCompanies.push(enrichObj.companyData);
+                    }
                   }
                 } else {
                   contact = null;
@@ -294,6 +327,7 @@ function Workflows(props) {
                   update.messageData,
                   "LinkedIn"
                 );
+                console.log("Enrich OBJ linkedIN", enrichObj);
                 // Updating with 'enrichObj'
                 if (enrichObj != null) {
                   contact = {
@@ -317,7 +351,15 @@ function Workflows(props) {
                     source: source,
                   });
                   if (enrichObj.isNewCompany) {
+                    allCompanies.push(enrichObj.companyData);
                     newCompanies.push(enrichObj.companyData);
+                  } else if (
+                    allCompanies.length == 0 ||
+                    !allCompanies.some(
+                      (company) => company.name == enrichObj.companyData.name
+                    )
+                  ) {
+                    allCompanies.push(enrichObj.companyData);
                   }
                 } else {
                   contact = null;
@@ -337,8 +379,21 @@ function Workflows(props) {
                   }
                 );
                 console.log("NEW CONTACT DATA", data);
-                newContacts.push(data.contact);
-                newEvents.push(data.event);
+                data.event.title = update.title;
+                data.event.summary = update.summary;
+                if (!data.contact.error) {
+                  if (
+                    !allContacts.some(
+                      (contact) => contact.id === data.contact.id
+                    )
+                  ) {
+                    allContacts.push(data.contact);
+                    newContacts.push(data.contact);
+                  }
+                }
+                if (data.event && !data.event.error) {
+                  newEvents.push(data.event);
+                }
               }
             }
           }
@@ -346,7 +401,34 @@ function Workflows(props) {
       })
     );
 
-    console.log("CRM Update", crmUpdate);
+    let tempModalArray = [];
+    for (const contact of allContacts) {
+      let modalObj = {
+        contact: contact,
+        company: null,
+        events: [],
+        contactIsNew: false,
+      };
+      for (const newContact of newContacts) {
+        if (newContact.id == contact.id) {
+          modalObj.contactIsNew = true;
+        }
+      }
+      for (const company of allCompanies) {
+        if (contact.company == company.name) {
+          modalObj.company = company;
+        }
+      }
+      for (const event of newEvents) {
+        for (const id of event.contact_ids) {
+          if (id == contact.id) {
+            modalObj.events.push(event);
+          }
+        }
+      }
+      tempModalArray.push(modalObj);
+    }
+    setModalArray(tempModalArray);
 
     if (crmUpdate.length > 0) {
       admin_crm_update = [...admin_crm_update, ...crmUpdate];
@@ -575,9 +657,11 @@ function Workflows(props) {
    *
    * These objects are then saved in the Supabase db.
    */
-  async function uploadLinkedin() {
+  async function fetchLinkedin() {
     // Extension ID
     setIsLoading(true);
+    setShowSpamModal(false);
+    setFetchingEmails(true);
 
     const extensionId = "lgeokfaihmdoipgmajekijkfppdmcnib";
 
@@ -589,6 +673,8 @@ function Workflows(props) {
     };
 
     try {
+      progress = 0;
+
       //Fetches Linkedin cookie
       window.chrome.runtime.sendMessage(
         extensionId,
@@ -596,82 +682,75 @@ function Workflows(props) {
         async function (response) {
           if (response && response.cookie != null) {
             const cookie = response.cookie;
-            const startTime = Date.now();
-            console.log("start: ", 0);
-            
+
             const { data, error } = await props.db.functions.invoke(
               "linked-scrape",
               {
                 body: { session_cookie: cookie },
               }
             );
-            console.log("time to scrape: ", Date.now()-startTime);
-            progress = 15;
+            progress = 40;
             const messageArray = data.text;
+            console.log(messageArray);
 
-            let new_crm_data = [];
-
-            //Generates title, summary, to-do item, response for each chat history
+            let messageObjects = [];
             for (let i = 0; i < messageArray.length; i++) {
               const messageData = messageArray[i];
-              const customer = messageData.name;
+              //generates title and summary
               const response = await generateLinkedinCRMData(messageData);
+              progress++;
+              //checks if spam based on summary and message data
               const isSpamMessage = await checkLinkedInMessage(
                 response.summary,
                 messageData
               );
+              progress += 2;
 
-              if (!isSpamMessage) {
-                const date = Date.now();
-                const uniqueId = generateUniqueId();
+              //create message obj that is compatible with spam modal
+              const date = Date.now();
+              const uniqueId = generateUniqueId();
 
-                //saves title, summary, todos, and response in data objects
-                var obj = {
-                  id: uniqueId,
-                  customer: customer,
-                  title: response.title,
-                  summary: response.summary,
-                  date: date,
-                  messageData: messageData,
-                  url: messageData.url,
-                  address: {
-                    city: null,
-                    country: null,
-                    country_code: null,
-                    region: null,
+              const messageObj = {
+                id: uniqueId,
+                data: {
+                  author_member: {
+                    name: messageData.name,
                   },
-                  company: null,
-                  emails: [],
-                  telephones: [],
-                  source: "LinkedIn",
-                  status: "Completed",
-                };
+                  subject: response.title,
+                },
+                summary: response.summary,
+                customer: messageData.name,
+                date: date,
+                messageData: messageData,
+                title: response.title,
+                url: messageData.url,
+                address: {
+                  city: null,
+                  country: null,
+                  country_code: null,
+                  region: null,
+                },
+                company: null,
+                emails: [],
+                telephones: [],
+                source: "LinkedIn",
+                status: "Completed",
+              };
 
-                //console.log("Message Data", messageData);
-
-                if (messageData.url != null) {
-                  // Update CRM and ToDo Lists
-                  new_crm_data.push(obj);
-                }
-              }
-              console.log("time for each message: ", Date.now()-startTime);
-              progress++;
+              messageObj.isSpam = isSpamMessage;
+              messageObjects.push(messageObj);
+              console.log("linkedin obj: ", messageObj);
             }
-            
-            progress = 65;
 
-            //updates the CRM
-            await sendToCRM(new_crm_data, "LinkedIn");
+            messageObjects.sort((a, b) => a.isSpam - b.isSpam);
 
-            console.log("time to finish: ", Date.now()-startTime);
+            setAllEmails(messageObjects);
 
             setIsLoading(false);
-            localStorage.setItem("linkedInLinked", true);
-            setOpenCookieModal(false);
+            setShowSpamModal(true);
+            setLinkedinWorkflow(true);
+            setFetchingEmails(false);
             progress = 0;
-            // Clean up URL by removing query parameters
-            var cleanUrl = window.location.href.split("?")[0];
-            window.history.replaceState({}, document.title, cleanUrl);
           } else {
             setCookieError("LoggedIn");
             setIsLoading(false);
@@ -681,7 +760,42 @@ function Workflows(props) {
     } catch (error) {
       setCookieError("Extension");
       setIsLoading(false);
+      progress = 0;
     }
+  }
+
+  async function uploadLinkedin() {
+    setIsLoading(true);
+    setShowSpamModal(false);
+
+    let new_crm_data = [];
+    progress = 0;
+
+    //Generates title, summary, to-do item, response for each chat history
+    for (let i = 0; i < allEmails.length; i++) {
+      if (!allEmails[i].isSpam && allEmails[i].url != null) {
+        // Update CRM and ToDo Lists
+        new_crm_data.push(allEmails[i]);
+      }
+      progress++;
+    }
+
+    progress = 65;
+
+    //updates the CRM
+    await sendToCRM(new_crm_data, "LinkedIn");
+
+    progress = 100;
+
+    setIsLoading(false);
+    localStorage.setItem("linkedInLinked", true);
+    setOpenCookieModal(false);
+    setShowSpamModal(true);
+    setLinkedinWorkflow(false);
+    progress = 0;
+    // Clean up URL by removing query parameters
+    var cleanUrl = window.location.href.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
   }
 
   /**
@@ -776,17 +890,26 @@ function Workflows(props) {
     var companyCRMObject = {
       name: companyName,
       websites: [companyProfile.website, companyLinkedIn],
-      address: {
-        address1:
-          companyProfile.hq.line_1 !== null ? companyProfile.hq.line_1 : " ",
-        city: companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
-        postal_code:
-          companyProfile.hq.postal_code !== null
-            ? companyProfile.hq.postal_code
-            : " ",
-        country:
-          companyProfile.hq.country !== null ? companyProfile.hq.country : " ",
-      },
+      ...(companyProfile.hq !== null
+        ? {
+            address: {
+              address1:
+                companyProfile.hq.line_1 !== null
+                  ? companyProfile.hq.line_1
+                  : " ",
+              city:
+                companyProfile.hq.city !== null ? companyProfile.hq.city : " ",
+              postal_code:
+                companyProfile.hq.postal_code !== null
+                  ? companyProfile.hq.postal_code
+                  : " ",
+              country:
+                companyProfile.hq.country !== null
+                  ? companyProfile.hq.country
+                  : " ",
+            },
+          }
+        : { address: {} }),
       description: companyProfile.description,
       // industry: companyProfile.industry,
       employees: companyProfile.company_size_on_linkedin,
@@ -861,25 +984,17 @@ function Workflows(props) {
       },
     });
 
-    function isAutomatedEmail(email) {
-      const regex = /no[-]?reply|invoice|notifications|support|team/i;
-      return regex.test(email);
-    }
-
     try {
       let userLinkedInUrl;
       let profile = null;
       if (source === "Email") {
-        const isAutomatedEmailResponse = isAutomatedEmail(profileData.email);
-        if (isAutomatedEmailResponse) {
-          return null;
-        }
-
         try {
           const userURLResponse = await axios.request(
             getLinkedInURLByEmail(profileData.email)
           );
           const userURLData = userURLResponse.data;
+
+          console.log("User URL DATA", userURLData, "Email", profileData);
 
           if (userURLData.linkedin_profile_url !== null) {
             const userProfileResponse = await axios.request(
@@ -897,7 +1012,7 @@ function Workflows(props) {
       } else if (source === "LinkedIn") {
         try {
           const userProfileResponse = await axios.request(
-            getLinkedInProfileByURL(profileData.urll)
+            getLinkedInProfileByURL(profileData.url)
           );
           userLinkedInUrl = profileData.url;
           profile = userProfileResponse.data;
@@ -927,6 +1042,8 @@ function Workflows(props) {
           profile.experiences[0]
         );
 
+        console.log("Latest Experience", latestExperience);
+
         if (
           latestExperience.company_linkedin_profile_url !== null &&
           latestExperience.company !== null
@@ -937,6 +1054,8 @@ function Workflows(props) {
             )
           );
           const companyProfile = companyProfileResponse.data;
+
+          console.log("Company Profile", companyProfile, "EMAIL", profileData);
 
           const createCompanyResponse = await createCompanyCRM(
             companyProfile.name,
@@ -999,100 +1118,98 @@ function Workflows(props) {
    *
    * new_emails is iterated through, and for each email, a title, summary, to-do item, and response is generated
    */
-  async function uploadEmails() {
+  async function fetchEmails() {
     setIsLoading(true);
+    setFetchingEmails(true);
+    setShowSpamModal(false);
+    setModalStep(0);
+
     const id = selectedEmail.connection_id;
-    const userEmail = selectedEmail.email
+    const userEmail = selectedEmail.email;
 
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
       body: { user_id: id },
     });
 
-    progress = 15;
+    progress = 50;
 
     let emails = data.emailData;
+    setAllEmails(emails);
 
     localStorage.setItem("user_email", userEmail);
 
+    let new_emails = [];
+
+    // Filters each email
+    for (let i = 0; i < emails.length; i++) {
+      const email = emails[i];
+
+      // Find other emails with the same parent_message_id
+      const children = emails.filter((child, index) => {
+        if (
+          child.parent_message_id === email.parent_message_id &&
+          index !== i
+        ) {
+          return true; // Include child in children list
+        }
+        return false; // Exclude child from children list
+      });
+
+      // Remove children from emails array
+      children.forEach((child) => {
+        const index = emails.indexOf(child);
+        if (index > -1) {
+          emails.splice(index, 1);
+        }
+      });
+
+      console.log("new email to be sent to genCRMData: ", email);
+
+      createNewEmailObj(new_emails, email, userEmail, i);
+
+      const { title, summary } = await generateEmailCRMData(new_emails[i]);
+      new_emails[i].title = title;
+      new_emails[i].summary = summary;
+
+      const isSpamEmail = await checkEmail(new_emails[i]);
+      new_emails[i].isSpam = isSpamEmail;
+      progress++;
+    }
+
+    new_emails.sort((a, b) => a.isSpam - b.isSpam);
+
+    setAllEmails(new_emails);
+
+    setIsLoading(false);
+    setFetchingEmails(false);
+    setShowSpamModal(true);
+    setEmailWorkflow(true);
+
+    progress = 0;
+  }
+
+  async function uploadEmails() {
+    setModalArray([]);
+
+    const id = selectedEmail.connection_id;
+    const userEmail = selectedEmail.email;
+    progress = 0;
+
+    console.log("allEmails after: ", allEmails);
+
     let new_crm_data = [];
 
-    //Filters each email
-    for (const email of emails) {
-      const isSpamEmail = await checkEmail(email);
-      if(isSpamEmail) {
-        let temp = spamEmails;
-        temp.push(email);
-        setSpamEmails(temp);
+    allEmails.map(async (email) => {
+      if (email.customer && email.email && !email.isSpam) {
+        new_crm_data.push(email);
       }
-      else {
-        let temp = hamEmails;
-        temp.push(email);
-        setHamEmails(temp);
-      }
-    }
+      progress++;
+    });
 
-    let new_emails = [];
-    //processes all real emails
-    for (const email of hamEmails) {
-      {
-        const fromIndex = new_emails.findIndex(
-          (item) => item.customer === email.author_member.name
-        );
-        const toIndex = new_emails.findIndex(
-          (item) => item.customer === email.destination_members[0].name
-        );
-  
-        if (fromIndex !== -1 || toIndex !== -1) {
-          updateExistingEmail(new_emails, fromIndex, toIndex, email);
-        } else {
-          createNewEmail(new_emails, email, userEmail);
-        }
-      }
-    }
+    progress = 67;
 
-    progress = 39;;
-
-    // Generate CRM entries for new emails
-    await Promise.all(
-      new_emails.map(async (email) => {
-        if (email.customer) {
-          const { title, summary } = await generateEmailCRMData(
-            email,
-            userEmail
-          );
-          const date = Date.now();
-
-          var obj = {
-            id: email.id,
-            customer: email.customer,
-            email: email.email,
-            emailObject: email,
-            title: title,
-            summary: summary,
-            date: date,
-            url: null,
-            address: {
-              city: null,
-              country: null,
-              country_code: null,
-              region: null,
-            },
-            company: null,
-            emails: [],
-            telephones: [],
-            source: "Email",
-            status: email.status,
-          };
-          if (email.email != null) {
-            new_crm_data.push(obj);
-          }
-        }
-        progress++;
-      })
-    );
-
-    progress = 80;
+    console.log("NEW CRM DATA", new_crm_data);
 
     await sendToCRM(new_crm_data, "Email");
 
@@ -1100,13 +1217,15 @@ function Workflows(props) {
 
     // End loading indicator
     setIsLoading(false);
-    setOpenCookieModal(false);
+    setShowSpamModal(true);
+    setEmailWorkflow(false);
     progress = 0;
 
     // Clean up URL by removing query parameters
     var cleanUrl = window.location.href.split("?")[0];
     window.history.replaceState({}, document.title, cleanUrl);
   }
+
   /**
    * Checks if an email is spam based on certain criteria.
    * @param {Object} email - The email to check.
@@ -1118,14 +1237,31 @@ function Workflows(props) {
     const SPAM_EMAIL_COMPARISIONS = 50;
     const MAX_TOKEN_SIZE = 8191; // Define your maximum token size here
 
-    const subject = email.subject.toLowerCase();
-    let body = email.message.replace(/<[^>]+>/g, ""); // Remove HTML content
+    const subject = email.data.subject.toLowerCase();
+    let body = email.data.message.replace(/<[^>]+>/g, ""); // Remove HTML content
     body = body.substring(0, MAX_TOKEN_SIZE); //Adjusting for additional characters
 
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
 
+    function isAutomatedEmail(customerEmail) {
+      const regex = /no[-]?reply|invoice|notifications|support|team/i;
+      return regex.test(customerEmail);
+    }
+
     try {
+      const customerEmail = email.email;
+      const customerName = email.customer;
+
+      if (customerEmail === "" || customerName === "") {
+        return true;
+      } else {
+        const isAutomatedEmailResponse = isAutomatedEmail(customerEmail);
+        if (isAutomatedEmailResponse) {
+          return true;
+        }
+      }
+
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: `Subject: ${subject} \n ${body}`,
@@ -1224,6 +1360,7 @@ function Workflows(props) {
    * @param email - The email data to update.
    */
   function updateExistingEmail(new_emails, fromIndex, toIndex, email) {
+    console.log("Update existing Email", email);
     const sender = email.author_member.name
       ? email.author_member.name
       : email.author_member.email;
@@ -1241,82 +1378,98 @@ function Workflows(props) {
    * @param email - The email data to add.
    * @param userEmail - The user's email address.
    */
-  function createNewEmail(new_emails, email, userEmail) {
+  function createNewEmailObj(new_emails, email, userEmail, index) {
     const sender = email.author_member.name
       ? email.author_member.name
       : email.author_member.email;
+
+    const date = Date.now();
 
     if (email.author_member.email == userEmail) {
       var obj = {
         id: email.id,
         customer: email.destination_members[0].name
           ? email.destination_members[0].name
-          : email.destination_members[0].email,
-        email: email.destination_members[0].email,
+          : "",
+        email: email.destination_members[0].email
+          ? email.destination_members[0].email
+          : "",
         data: email,
-        snippet: [
-          {
-            message: email.message,
-            sender: sender,
-          },
-        ],
+        emailObject: email,
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
           email.author_member,
         ],
+        date: date,
+        url: null,
+        address: {
+          city: null,
+          country: null,
+          country_code: null,
+          region: null,
+        },
         type: "OUTBOUND",
+        company: null,
+        emails: [],
+        telephones: [],
+        source: "Email",
         status: "Completed",
       };
 
-      new_emails.push(obj);
+      new_emails.splice(index, 0, obj);
     } else {
       var obj = {
         id: email.id,
-        customer: email.author_member.name
-          ? email.author_member.name
-          : email.author_member.email,
-        email: email.author_member.email,
+        customer: email.author_member.name ? email.author_member.name : "",
+        email: email.author_member.email ? email.author_member.email : "",
         data: email,
-        snippet: [
-          {
-            message: email.message,
-            sender: sender,
-          },
-        ],
+        emailObject: email,
         participants: [
           ...(email.mentioned_members || []),
           ...(email.hidden_members || []),
           ...(email.destination_members || []),
           email.author_member,
         ],
+        date: date,
+        url: null,
+        address: {
+          city: null,
+          country: null,
+          country_code: null,
+          region: null,
+        },
         type: "INBOUND",
+        company: null,
+        emails: [],
+        telephones: [],
+        source: "Email",
         status: "Completed",
       };
 
-      new_emails.push(obj);
+      new_emails.splice(index, 0, obj);
     }
   }
 
   /**
    * Generates title, summary, to-do item, and response for an email.
    * @param {Object} email - The email data.
-   * @param {string} userEmail - The user's email address.
+   * @param {string} concatString - A string of the email chain, if there is a chain
    * @returns An object containing title, summary, toDoTitle, and toDoResponse.
    */
-  async function generateEmailCRMData(email, userEmail) {
+  async function generateEmailCRMData(email) {
     const from = `${email.data.author_member.name} (${email.data.author_member.email})`;
+    const to = email.data.destination_members
+      ? `${email.data.destination_members[0].name} (${email.data.destination_members[0].email})`
+      : `${selectedEmail.name}`;
     const subject = email.data.subject;
     const MAX_SNIPPET_SIZE = 5000;
 
-    const snippetString = email.snippet
-      .map((message) => `${message.sender}: ${message.message}`)
-      .join("\n");
+    console.log(email);
 
-    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${
-      selectedEmail.name
-    }. This is an array containing the content of the conversation: ${snippetString.substring(
+    const emailContext = `You are an automated CRM entry assistant for businesses and have a conversation sent from ${from} to ${to}. 
+    This is a string containing the content of the conversation: ${email.data.message.substring(
       0,
       MAX_SNIPPET_SIZE
     )} under the subject: ${subject}. This is a ${
@@ -1365,16 +1518,26 @@ function Workflows(props) {
 
   return (
     <div>
-      {isLoading && <LoadingBar 
-      messages={[
-        "Fetching messages...",
-        "Filtering spam...",
-        "Analyzing content...",
-        "Generating summaries...",
-        "Uploading data to CRM...",
-        ""
-      ]} 
-      isLoading={isLoading} screen={"workflows"} />}
+      {isLoading && !fetchingEmails && (
+        <LoadingBar
+          messages={["Analyzing content...", "Uploading data to CRM..."]}
+          isLoading={isLoading}
+          screen={"workflows"}
+        />
+      )}
+
+      {isLoading && fetchingEmails && (
+        <LoadingBar
+          messages={[
+            "Fetching messages...",
+            "Filtering spam...",
+            "Generating summaries...",
+          ]}
+          isLoading={isLoading}
+          screen={"workflows"}
+        />
+      )}
+
       {!isLoading && (
         <div>
           <Dialog
@@ -1385,7 +1548,7 @@ function Workflows(props) {
               }
             }}
             static={true}
-            >
+          >
             <DialogPanel>
               <div
                 className="modal-content"
@@ -1451,9 +1614,10 @@ function Workflows(props) {
                   variant="primary"
                   onClick={async () => {
                     if (source == "Email") {
-                      await uploadEmails();
+                      setOpenCookieModal(false);
+                      await fetchEmails();
                     } else if (source == "LinkedIn") {
-                      await uploadLinkedin();
+                      await fetchLinkedin();
                     }
                   }}
                 >
@@ -1462,6 +1626,100 @@ function Workflows(props) {
               </div>
             </DialogPanel>
           </Dialog>
+
+          <Dialog
+            open={showSpamModal}
+            onClose={(val) => {
+              if (!isLoading) {
+                setShowSpamModal(val);
+              }
+            }}
+            static={true}
+          >
+            <DialogPanel
+              style={{
+                width: "100%",
+                maxWidth: "75vw",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <div class="text-gray-700 text-lg font-bold font-['Inter'] leading-7 mb-[2vh]">
+                {modalStep == 0
+                  ? "Adjust Messages"
+                  : modalStep == 1
+                  ? "Review Messages"
+                  : "Review Updates"}
+              </div>
+              {modalStep == 0 && (
+                <SpamModal
+                  allEmails={allEmails}
+                  setAllEmails={setAllEmails}
+                  step={modalStep}
+                />
+              )}
+              {modalStep == 1 && (
+                <SpamModal allEmails={hamEmails} step={modalStep} />
+              )}
+              {modalStep == 2 && (
+                <SpamModal allEmails={modalArray} step={modalStep} />
+              )}
+              <div className="flex flex-col space-y-2 mt-4 items-center">
+                <Button
+                  variant="primary"
+                  color="blue"
+                  style={{
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    width: "30%",
+                  }}
+                  onClick={async () => {
+                    if (modalStep == 1) {
+                      setIsLoading(true);
+                      setModalStep(2);
+                      setShowSpamModal(false);
+                      if (emailWorkflow) {
+                        await uploadEmails();
+                      } else if (linkedinWorkflow) {
+                        await uploadLinkedin();
+                      }
+                    } else if (modalStep == 0) {
+                      let tempHamEmails = [];
+                      for (const email of allEmails) {
+                        if (!email.isSpam) {
+                          tempHamEmails.push(email);
+                        }
+                      }
+                      setHamEmails(tempHamEmails);
+                      setModalStep(1);
+                    } else {
+                      setShowSpamModal(false);
+                    }
+                  }}
+                >
+                  {modalStep === 0
+                    ? "Continue"
+                    : modalStep == 1
+                    ? "Finish"
+                    : "Done"}
+                </Button>
+                {modalStep === 1 && (
+                  <Button
+                    variant="secondary"
+                    style={{
+                      borderRadius: "8px",
+                      padding: "8px 16px",
+                      width: "30%",
+                    }}
+                    onClick={() => setModalStep(0)}
+                  >
+                    Back
+                  </Button>
+                )}
+              </div>
+            </DialogPanel>
+          </Dialog>
+
           <Header db={props.db} selectedTab={1} />
           <div class="w-[100vw] h-[auto] min-h-[92vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] inline-flex">
             <WorkflowSidebar
@@ -1514,7 +1772,6 @@ function Workflows(props) {
           </div>
         </div>
       )}
-      
     </div>
   );
 }

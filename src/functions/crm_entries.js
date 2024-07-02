@@ -187,19 +187,14 @@ export async function createPineconeIndexes(connection_id) {
       }
     };
 
-    console.log("elapsed time before fetching data: ", Date.now()-startTime);
     const contactData = await fetchData("contact");
-    console.log("elapsed time after contacts: ", Date.now()-startTime);
     progress += 2;
     const dealData = await fetchData("deal");
-    console.log("elapsed time after deals: ", Date.now()-startTime);
     progress += 1;
     const companyData = await fetchData("company");
-    console.log("elapsed time after companies: ", Date.now()-startTime);
     progress += 1;
     const eventData = await fetchData("event");
     progress += 5;
-    console.log("elapsed time after events: ", Date.now()-startTime);
 
     // Handle embedding generation and upsert operations for each type
     const generateEmbeddings = async (data, type) => {
@@ -293,19 +288,14 @@ export async function createPineconeIndexes(connection_id) {
 
       return allResults;
     };
-    console.log("elapsed time before embeddings: ", Date.now()-startTime);
     // Fetch all data types and process embeddings
     const contacts = await generateEmbeddings(contactData, "Contact");
-    console.log("elapsed time after contact embeddings: ", Date.now()-startTime);
     progress += 1;
     const deals = await generateEmbeddings(dealData, "Deal");
-    console.log("elapsed time after deal embeddings: ", Date.now()-startTime);
     progress += 1;
     const companies = await generateEmbeddings(companyData, "Company");
-    console.log("elapsed time after company embeddings: ", Date.now()-startTime);
     progress += 1;
     const events = await generateEmbeddings(eventData, "Event");
-    console.log("elapsed time after event embeddings: ", Date.now()-startTime);
     progress += 8; // == 32 now
 
     const allEmbeddings = {
@@ -346,7 +336,6 @@ export async function createPineconeIndexes(connection_id) {
       }
     };
 
-    console.log("elapsed time before upserting: ", Date.now()-startTime);
     for (const [type, embeddings] of Object.entries(allEmbeddings)) {
       let retries = 3;
       while (retries > 0) {
