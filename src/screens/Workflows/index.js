@@ -128,6 +128,7 @@ function Workflows(props) {
   async function sendToCRM(new_crm_data, source) {
     const connection_id = localStorage.getItem("connection_id");
     let allContacts = [];
+    let allCompanies = [];
     let newContacts = [];
     let newEvents = [];
     let newCompanies = [];
@@ -299,7 +300,24 @@ function Workflows(props) {
                     source: source,
                   });
                   if (enrichObj.isNewCompany) {
-                    newCompanies.push(enrichObj.companyData);
+                    if (
+                      allCompanies.length == 0 ||
+                      !allCompanies.some(
+                        (company) => company.name == enrichObj.companyData.name
+                      )
+                    ) {
+                      allCompanies.push(enrichObj.companyData);
+                      newCompanies.push(enrichObj.companyData);
+                    }
+                  } else {
+                    if (
+                      allCompanies.length == 0 ||
+                      !allCompanies.some(
+                        (company) => company.name == enrichObj.companyData.name
+                      )
+                    ) {
+                      allCompanies.push(enrichObj.companyData);
+                    }
                   }
                 } else {
                   contact = null;
@@ -333,7 +351,15 @@ function Workflows(props) {
                     source: source,
                   });
                   if (enrichObj.isNewCompany) {
+                    allCompanies.push(enrichObj.companyData);
                     newCompanies.push(enrichObj.companyData);
+                  } else if (
+                    allCompanies.length == 0 ||
+                    !allCompanies.some(
+                      (company) => company.name == enrichObj.companyData.name
+                    )
+                  ) {
+                    allCompanies.push(enrichObj.companyData);
                   }
                 } else {
                   contact = null;
@@ -383,12 +409,12 @@ function Workflows(props) {
         events: [],
         contactIsNew: false,
       };
-      for(const newContact of newContacts) {
-        if(newContact.id == contact.id) {
+      for (const newContact of newContacts) {
+        if (newContact.id == contact.id) {
           modalObj.contactIsNew = true;
         }
       }
-      for (const company of newCompanies) {
+      for (const company of allCompanies) {
         if (contact.company == company.name) {
           modalObj.company = company;
         }
