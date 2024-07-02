@@ -773,7 +773,7 @@ function Workflows(props) {
 
     //Generates title, summary, to-do item, response for each chat history
     for (let i = 0; i < allEmails.length; i++) {
-      if (!allEmails[i].isSpan && allEmails[i].url != null) {
+      if (!allEmails[i].isSpam && allEmails[i].url != null) {
         // Update CRM and ToDo Lists
         new_crm_data.push(allEmails[i]);
       }
