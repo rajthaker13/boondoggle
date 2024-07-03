@@ -47,9 +47,48 @@ Deno.serve(async (req) => {
     contactResults = await fetch(url, options);
 
   }
-  const contactResponse = await contactResults.json()
+  let contactResponse = await contactResults.json()
   console.log("contactRES", contactResponse);
   
+  if(contactResponse.error) {
+    console.log("there was an error");
+    console.log(contactResponse.error);
+    const message = contactResponse.message;
+    let fetchResults;
+
+    // Using a regular expression to capture the ID
+    const regex = /Existing ID: (\d+):/;
+    const match = message.match(regex);
+
+    if (match) {
+      //fetch the exist contact
+      const id = match[1];
+      const fetchURL = `https://api.unified.to/crm/${connection_id}/contact/${id}`;
+      const fetchOptions = {
+        method: "GET",
+        headers: {
+          'Authorization':
+          "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
+          "Content-Type": "application/json", // Set Content-Type header
+        },
+      }
+
+      try {
+        fetchResults = await fetch(fetchURL, fetchOptions);
+      }
+      catch {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        fetchResults = await fetch(fetchURL, fetchOptions);
+        console.log("caught error");
+      }
+
+      contactResponse = await fetchResults.json();
+      console.log("fetch results: ", contactResponse);
+    } else {
+      console.log("No ID found");
+    }
+  }
+
   const event = {
     id: contactResponse.id,
     type: "NOTE",
@@ -89,7 +128,7 @@ Deno.serve(async (req) => {
 
   const updateResponse = await updateResults.json()
 
-  console.log(updateResponse)
+  console.log("updateRES ", updateResponse)
 
   const data = {
     contact: contactResponse,

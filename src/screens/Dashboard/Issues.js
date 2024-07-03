@@ -105,7 +105,7 @@ function Issues(props) {
             </div>
           </div>
           <div class="text-gray-400 text-sm font-normal font-['Inter'] leading-tight">
-            Reccomended automations for your CRM
+            Recomended automations for your CRM
           </div>
         </div>
         <Button
