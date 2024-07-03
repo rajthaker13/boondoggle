@@ -77,6 +77,18 @@ function BoondogggleAI(props) {
     return uniqueId; // Extract first 10 characters to ensure 10-digit length
   }
 
+  function extractUserQuery(inputString) {
+    const regex = /User query:\s*(.*?),\s*Edited Query:/;
+    const match = inputString.match(regex);
+
+    // If a match is found, return the captured group
+    if (match && match[1]) {
+      return match[1].trim();
+    } else {
+      return ""; // or handle the case where no match is found
+    }
+  }
+
   function formatText(text) {
     const formattedAnswer = text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
@@ -303,7 +315,7 @@ function BoondogggleAI(props) {
               results = await axios.request(options);
               queryArray.push(results.data);
             } catch (err) {
-              if (err.response.status === 429) {
+              if (err.response && err.response.status === 429) {
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 results = await axios.request(options);
                 queryArray.push(results.data);
@@ -484,7 +496,12 @@ function BoondogggleAI(props) {
       console.log("messages array", temp_langchain);
       let newMessagesArr = [];
       for (const obj of temp_langchain) {
-        newMessagesArr.push(obj.content);
+        if (obj.constructor.name == "HumanMessage") {
+          newMessagesArr.push(extractUserQuery(obj.content));
+        }
+        else {
+          newMessagesArr.push(obj.content);
+        }
       }
 
       const uid = localStorage.getItem("uid");
