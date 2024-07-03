@@ -50,6 +50,7 @@ function BoondogggleAI(props) {
   ]);
   const [conversations, setConversations] = useState([]);
   const [convoID, setConvoID] = useState("");
+  const [firstLoad, setFirstLoad] = useState(true);
 
   useEffect(() => {
     // Scroll chat window
@@ -61,6 +62,13 @@ function BoondogggleAI(props) {
   useEffect(() => {
     loadConversation(convoID);
   }, [convoID]);
+
+  useEffect(() => {
+    if (firstLoad) {
+      fetchConversations();
+      setFirstLoad(false);
+    }
+  });
 
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
@@ -77,6 +85,15 @@ function BoondogggleAI(props) {
       .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
     return formattedAnswer;
   }
+
+  const fetchConversations = async () => {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    if (data && data[0]) {
+      setConversations(data[0].boondoggle_conversations);
+    }
+    setFirstLoad(false);
+  };
 
   //get past conversation
   async function loadConversation(conversationId) {
@@ -480,7 +497,6 @@ function BoondogggleAI(props) {
 
       if (data && data[0]) {
         if (convoID == "") {
-          let titleCompletion = "";
           //generate title for query
           const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${searchQuery}. You should not respond as if you are an AI.`;
           let completionMessages = [
@@ -491,20 +507,23 @@ function BoondogggleAI(props) {
             },
           ];
 
-          titleCompletion = await openai.chat.completions
-            .create({
-              messages: completionMessages,
-              model: "gpt-4",
-            })
-            .choices[0].message.content.replace(/^"(.*)"$/, "$1");
+          const titleCompletion = await openai.chat.completions.create({
+            messages: completionMessages,
+            model: "gpt-4",
+          });
 
-          console.log(titleCompletion);
+          let title = titleCompletion.choices[0].message.content.replace(
+            /^"(.*)"$/,
+            "$1"
+          );
+
+          console.log(title);
 
           const newId = generateUniqueId();
           let newConvoObj = {
             messages: newMessagesArr,
             id: newId,
-            title: titleCompletion,
+            title: title,
           };
 
           updatePackage = [...data[0].boondoggle_conversations, newConvoObj];
@@ -542,6 +561,14 @@ function BoondogggleAI(props) {
           <Sidebar
             conversations={conversations}
             onSelectConversation={loadConversation}
+            selectedConversationId={convoID}
+            onNewConversation={() => {
+              const chatContent = document.getElementById(
+                "boondoggle-ai-chat-content"
+              );
+              chatContent.innerHTML = ""; // Clear current chat
+              setConvoID("");
+            }}
           />
           <div className="boondoggle-ai-main">
             <div
