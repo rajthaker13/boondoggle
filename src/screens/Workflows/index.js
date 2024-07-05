@@ -11,6 +11,7 @@ import { loadQAMapReduceChain } from "langchain/chains";
 import { Document } from "@langchain/core/documents";
 import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
+import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
 import { CRITERIA_WEIGHTS } from "../../functions/schemas/criteria_weights";
 import SpamModal from "./SpamModal";
 

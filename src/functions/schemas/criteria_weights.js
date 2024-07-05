@@ -23,7 +23,6 @@ export const CRITERIA_WEIGHTS = {
       name: 30,
       websites: 15,
       description: 10,
-      employees: 5,
     },
   },
 };

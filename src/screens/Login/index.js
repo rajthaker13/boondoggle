@@ -20,11 +20,11 @@ export default function Login(props) {
     localStorage.setItem("email_grant_id", data[0].email_grant_id);
   }
 
-  useEffect(() => {
-    if (isMobile) {
-      navigation("/");
-    }
-  });
+  // useEffect(() => {
+  //   if (isMobile) {
+  //     navigation("/");
+  //   }
+  // });
 
   async function signIn() {
     const { data, error } = await props.db.auth.signInWithPassword({
