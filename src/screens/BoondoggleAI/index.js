@@ -20,6 +20,8 @@ import {
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import Sidebar from "./Sidebar";
+import "./index.css";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -46,7 +48,9 @@ function BoondogggleAI(props) {
       content: `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions.`,
     },
   ]);
-  const [langchainMessages, setLangChainMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [convoID, setConvoID] = useState("");
+  const [firstLoad, setFirstLoad] = useState(true);
 
   useEffect(() => {
     // Scroll chat window
@@ -54,6 +58,80 @@ function BoondogggleAI(props) {
       chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
     }
   }, [answer]);
+
+  useEffect(() => {
+    loadConversation(convoID);
+  }, [convoID]);
+
+  useEffect(() => {
+    if (firstLoad) {
+      fetchConversations();
+      setFirstLoad(false);
+    }
+  });
+
+  function generateUniqueId() {
+    const timestamp = Date.now().toString(); // Get current timestamp as string
+    const randomString = Math.random().toString(36).substr(2, 5); // Generate random string
+    const uniqueId = timestamp + randomString; // Concatenate timestamp and random string
+    return uniqueId; // Extract first 10 characters to ensure 10-digit length
+  }
+
+  function extractUserQuery(inputString) {
+    const regex = /User query:\s*(.*?),\s*Edited Query:/;
+    const match = inputString.match(regex);
+
+    // If a match is found, return the captured group
+    if (match && match[1]) {
+      return match[1].trim();
+    } else {
+      return ""; // or handle the case where no match is found
+    }
+  }
+
+  function formatText(text) {
+    const formattedAnswer = text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
+      .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
+      .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
+      .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
+    return formattedAnswer;
+  }
+
+  const fetchConversations = async () => {
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    if (data && data[0]) {
+      setConversations(data[0].boondoggle_conversations);
+    }
+    setFirstLoad(false);
+  };
+
+  //get past conversation
+  async function loadConversation(conversationId) {
+    setConvoID(conversationId);
+
+    const uid = localStorage.getItem("uid");
+    const { data, error } = await props.db.from("users").select().eq("id", uid);
+    const supaConversations = data[0].boondoggle_conversations;
+    setConversations(supaConversations);
+
+    const selectedConversation = supaConversations.find(
+      (c) => c.id === conversationId
+    );
+    if (selectedConversation) {
+      // Simulate loading chat history
+      const chatContent = document.getElementById("boondoggle-ai-chat-content");
+      chatContent.innerHTML = ""; // Clear current chat
+      selectedConversation.messages.forEach((msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.className = "boondoggle-ai-chat";
+        messageElement.innerHTML = formatText(msg);
+        chatContent.appendChild(messageElement);
+      });
+    }
+  }
+
   // Handle user submits a query
   async function onBoondoggleQuery(event) {
     if (event.key == "Enter") {
@@ -72,7 +150,19 @@ function BoondogggleAI(props) {
       userQueryContainer.appendChild(userQueryText);
       boondoggleAiChatContent.appendChild(userQueryContainer);
 
-      let temp_langchain = langchainMessages;
+      let temp_langchain = [];
+      const selectedConversation = conversations.find((c) => c.id === convoID);
+      let messages = selectedConversation ? selectedConversation.messages : [];
+      for (let i = 0; messages != null && i < messages.length; i++) {
+        if (i % 2 == 0) {
+          const userMess = new HumanMessage(messages[i]);
+          temp_langchain.push(userMess);
+        } else {
+          const aiMess = new AIMessage(messages[i]);
+          temp_langchain.push(aiMess);
+        }
+      }
+
       // System Prompt here
       const SYSTEM_TEMPLATE = `You are an assistant that helps automatically analyze data from CRMs that are fed to you by Boondoggle AI. With the data I provide you, your job is to assign any question the user may ask related to data in their CRM. Type out your answers in plain English, and leave our any irrelevent data that is inputted. Be as detailed as possible, and provide any patterns/insights you may see to help the user answer questions
 
@@ -225,7 +315,7 @@ function BoondogggleAI(props) {
               results = await axios.request(options);
               queryArray.push(results.data);
             } catch (err) {
-              if (err.response.status === 429) {
+              if (err.response && err.response.status === 429) {
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 results = await axios.request(options);
                 queryArray.push(results.data);
@@ -334,14 +424,6 @@ function BoondogggleAI(props) {
         answer: documentChain,
       });
 
-      function formatText(text) {
-        const formattedAnswer = text
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
-          .replace(/#### (.*?)(?=\n|$)/g, "<h4>$1</h4>") // Convert #### to <h4> tags
-          .replace(/### (.*?)(?=\n|$)/g, "<h3>$1</h3>") // Convert ### to <h3> tags
-          .replace(/\n/g, "<br>"); // Convert newlines to <br> tags
-        return formattedAnswer;
-      }
       // Add Ai response frontend container
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
@@ -411,28 +493,115 @@ function BoondogggleAI(props) {
         new AIMessage(finalAnswer)
       );
 
-      setLangChainMessages(temp_langchain);
+      console.log("messages array", temp_langchain);
+      let newMessagesArr = [];
+      for (const obj of temp_langchain) {
+        if (obj.constructor.name == "HumanMessage") {
+          newMessagesArr.push(extractUserQuery(obj.content));
+        }
+        else {
+          newMessagesArr.push(obj.content);
+        }
+      }
+
+      const uid = localStorage.getItem("uid");
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      let updatePackage = [];
+
+      if (data && data[0]) {
+        if (convoID == "") {
+          //generate title for query
+          const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${searchQuery}. You should not respond as if you are an AI.`;
+          let completionMessages = [
+            { role: "system", content: titleContext },
+            {
+              role: "user",
+              content: `Generate one sentence title that captures what this query is about. Do not return a response longer than a few words.`,
+            },
+          ];
+
+          const titleCompletion = await openai.chat.completions.create({
+            messages: completionMessages,
+            model: "gpt-4",
+          });
+
+          let title = titleCompletion.choices[0].message.content.replace(
+            /^"(.*)"$/,
+            "$1"
+          );
+
+          console.log(title);
+
+          const newId = generateUniqueId();
+          let newConvoObj = {
+            messages: newMessagesArr,
+            id: newId,
+            title: title,
+          };
+
+          updatePackage = [...data[0].boondoggle_conversations, newConvoObj];
+          await props.db
+            .from("users")
+            .update({
+              boondoggle_conversations: updatePackage,
+            })
+            .eq("id", uid);
+          setConvoID(newId);
+        } else {
+          let convoArr = data[0].boondoggle_conversations;
+          for (let i = 0; i < convoArr.length; i++) {
+            if (convoArr[i].id == convoID) {
+              convoArr[i].messages = newMessagesArr;
+            }
+          }
+          updatePackage = convoArr;
+
+          await props.db
+            .from("users")
+            .update({
+              boondoggle_conversations: updatePackage,
+            })
+            .eq("id", uid);
+        }
+      }
     }
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="w-[100vw] h-[100vh] overflow-y-scroll">
-        <div>
-          <Header db={props.db} selectedTab={3} />
-          <div class="ml-[2vw] flex-col">
+      <div className="boondoggle-ai-container">
+        <Header db={props.db} selectedTab={3} />
+        <div className="boondoggle-ai-content">
+          <Sidebar
+            conversations={conversations}
+            onSelectConversation={loadConversation}
+            selectedConversationId={convoID}
+            onNewConversation={() => {
+              const chatContent = document.getElementById(
+                "boondoggle-ai-chat-content"
+              );
+              chatContent.innerHTML = ""; // Clear current chat
+              setConvoID("");
+            }}
+          />
+          <div className="boondoggle-ai-main">
             <div
-              class="flex flex-col items-start gap-[35px] self-stretch overflow-y-auto h-[80vh] mb-[2vh] mt-[2vh]"
+              className="boondoggle-ai-chat-content"
               id="boondoggle-ai-chat-content"
               ref={chatContentRef}
-            />
-
-            <input
-              onKeyDown={async (event) => await onBoondoggleQuery(event)}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="flex w-[95vw] mb-[1vh] p-4 flex-col justify-center items-start gap-2 relative rounded-[24px] border border-brand-light bg-gradient-to-r from-[rgba(128,84,255,0.05)] to-[rgba(1,131,251,0.05)] bg-white bg-opacity-80 backdrop-blur-[50px]"
-            ></input>
-            <p>Press Enter to Query</p>
+            ></div>
+            <div className="boondoggle-ai-input">
+              <input
+                onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Press Enter to Query"
+              />
+            </div>
           </div>
         </div>
       </div>

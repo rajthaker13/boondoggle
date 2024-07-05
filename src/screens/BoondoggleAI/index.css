@@ -1,0 +1,40 @@
+.boondoggle-ai-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Ensure full height to use flex properly */
+}
+
+.boondoggle-ai-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.boondoggle-ai-main {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  margin-left: 2%; /* Ensure content starts to the right of the sidebar */
+  flex: 1;
+  height: 100%;
+  position: relative;
+}
+
+.boondoggle-ai-chat-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 60px; /* Space for the input bar */
+  box-sizing: border-box; /* Include padding in height calculations */
+}
+
+.boondoggle-ai-input {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  background: white;
+  border-top: 1px solid #ddd;
+  box-sizing: border-box;
+}
