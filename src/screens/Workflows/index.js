@@ -209,6 +209,8 @@ function Workflows(props) {
     let newCompanies = [];
     let crmUpdate = [];
 
+    console.log("NEW CRM DATA", new_crm_data);
+
     //fetches and saves current CRM data from Supabase
     const fetch_crm = await getCRMData();
     let admin_crm_update = fetch_crm.admin_crm_data;
@@ -295,8 +297,11 @@ function Workflows(props) {
                 (contact) => contact["customer"] === current_crm.name
               );
 
+              console.log("EXIST CONTACT", update);
+
+              const uniqueId = generateUniqueId();
+
               if (supabaseContact) {
-                const uniqueId = generateUniqueId();
                 crmUpdate.push({
                   id: uniqueId,
                   date: update.date,
@@ -313,6 +318,34 @@ function Workflows(props) {
                     ? { email: supabaseContact.email }
                     : { email: null }),
                 });
+              } else {
+                let userURL = null;
+                if (source === "LinkedIn") {
+                  userURL = update.url;
+                } else if (source === "Email") {
+                  userURL = await fetchEnrichmentProfile(update, "EmailURL");
+                }
+
+                console.log("USER URL", userURL);
+
+                if (userURL !== null) {
+                  crmUpdate.push({
+                    id: uniqueId,
+                    date: update.date,
+                    customer: current_crm.name,
+                    title: update.title,
+                    position: current_crm.title,
+                    summary: update.summary,
+                    company: current_crm.company,
+                    url: userURL,
+                    source: source,
+                    ...(source === "Email"
+                      ? { email: update.email }
+                      : update.email != null
+                      ? { email: update.email }
+                      : { email: null }),
+                  });
+                }
               }
 
               const event = {
@@ -1106,6 +1139,17 @@ function Workflows(props) {
           console.error("LinkedIn url error", error);
           return null;
         }
+      } else if (source === "EmailURL") {
+        const userURLResponse = await axios.request(
+          getLinkedInURLByEmail(profileData.email)
+        );
+        const userURLData = userURLResponse.data;
+
+        if (userURLData.linkedin_profile_url !== null) {
+          return userURLData.linkedin_profile_url;
+        } else {
+          return null;
+        }
       }
 
       if (profile !== null) {
@@ -1709,7 +1753,7 @@ function Workflows(props) {
           <Dialog
             open={showSpamModal}
             onClose={(val) => {
-              if (!isLoading) {
+              if (!isLoading && !showSpamModal) {
                 setShowSpamModal(val);
               }
             }}

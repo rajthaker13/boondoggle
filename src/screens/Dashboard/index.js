@@ -141,6 +141,15 @@ function Dashboard(props) {
           localStorage.setItem("connection_id", connection_id);
           localStorage.setItem("score", newScore);
           localStorage.setItem("numIssues", issuesArray.length);
+          const contactIssuesTemp = issuesArray.filter(
+            (item) => item.type === "Contact"
+          );
+          const companyIssuesTemp = issuesArray.filter(
+            (item) => item.type === "Company"
+          );
+          setAllIssues(issuesArray);
+          setContactIssues(contactIssuesTemp);
+          setCompanyIssues(companyIssuesTemp);
           setNumIssues(issuesArray.length);
           setCRMScore(newScore);
           var cleanUrl = window.location.href.split("?")[0];
