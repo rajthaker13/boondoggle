@@ -60,7 +60,7 @@ const renderCategory = (
 
   return (
     <div key={title}>
-      <h3 className="text-sm text-gray-500 font-semibold mb-2">{title}</h3>
+      <h3 className="text-sm text-gray-500 font-semibold">{title}</h3>
       <ul className="space-y-2">
         {conversations.map((conversation) => (
           <ConversationItem
