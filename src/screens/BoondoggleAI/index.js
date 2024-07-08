@@ -496,12 +496,12 @@ function BoondogggleAI(props) {
       console.log("messages array", temp_langchain);
       let newMessagesArr = [];
       for (const obj of temp_langchain) {
-        if (obj.constructor.name == "HumanMessage") {
+        /*if (obj.constructor.name == "HumanMessage") {
           newMessagesArr.push(extractUserQuery(obj.content));
-        }
-        else {
+        } else {
           newMessagesArr.push(obj.content);
-        }
+        }*/
+        newMessagesArr.push(obj.content);
       }
 
       const uid = localStorage.getItem("uid");
@@ -513,6 +513,8 @@ function BoondogggleAI(props) {
       let updatePackage = [];
 
       if (data && data[0]) {
+        const date = Date.now();
+
         if (convoID == "") {
           //generate title for query
           const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${searchQuery}. You should not respond as if you are an AI.`;
@@ -541,6 +543,7 @@ function BoondogggleAI(props) {
             messages: newMessagesArr,
             id: newId,
             title: title,
+            date: date,
           };
 
           updatePackage = [...data[0].boondoggle_conversations, newConvoObj];
@@ -551,13 +554,16 @@ function BoondogggleAI(props) {
             })
             .eq("id", uid);
           setConvoID(newId);
+          console.log("date var: ", date);
         } else {
           let convoArr = data[0].boondoggle_conversations;
           for (let i = 0; i < convoArr.length; i++) {
             if (convoArr[i].id == convoID) {
               convoArr[i].messages = newMessagesArr;
+              convoArr[i].date = date;
             }
           }
+
           updatePackage = convoArr;
 
           await props.db
