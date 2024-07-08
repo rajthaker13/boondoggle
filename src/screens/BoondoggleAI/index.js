@@ -22,6 +22,8 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import Sidebar from "./Sidebar";
 import "./index.css";
+import boondoggleaiPic from "../../assets/boondoggleAI.png";
+import userPic from "../../assets/user.png";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -123,12 +125,52 @@ function BoondogggleAI(props) {
       // Simulate loading chat history
       const chatContent = document.getElementById("boondoggle-ai-chat-content");
       chatContent.innerHTML = ""; // Clear current chat
-      selectedConversation.messages.forEach((msg) => {
+
+      for (let i = 0; i < selectedConversation.messages.length; i++) {
+        let msg = selectedConversation.messages[i];
+
         const messageElement = document.createElement("div");
-        messageElement.className = "boondoggle-ai-chat";
+        const imgElement = document.createElement("img");
+
+        imgElement.style.width = "35px"; // Adjust the size as needed
+        imgElement.style.height = "35px"; // Adjust the size as needed
+        imgElement.style.borderRadius = "50%"; // Make it a circle
+        imgElement.style.marginRight = "10px"; // Adjust spacing as needed
+
+        const nameElement = document.createElement("span");
+        nameElement.style.fontWeight = "bold";
+
+        const profileWrapper = document.createElement("div");
+        profileWrapper.className = "profile-wrapper";
+        profileWrapper.style.display = "flex";
+        profileWrapper.style.alignItems = "center";
+
+        if (i % 2 == 0) {
+          imgElement.src = userPic;
+          nameElement.textContent = "User";
+          profileWrapper.style.marginBottom = "10px"; // Add some spacing between the profile and the message
+        } else {
+          imgElement.src = boondoggleaiPic;
+          nameElement.textContent = "Boondoggle AI";
+          profileWrapper.style.marginBottom = "5px"; // Add some spacing between the profile and the message
+        }
+
+        profileWrapper.appendChild(imgElement);
+        profileWrapper.appendChild(nameElement);
+
         messageElement.innerHTML = formatText(msg);
-        chatContent.appendChild(messageElement);
-      });
+
+        const messageWrapper = document.createElement("div");
+        messageWrapper.className = "message-wrapper";
+        messageWrapper.style.display = "flex";
+        messageWrapper.style.flexDirection = "column";
+        messageWrapper.style.marginBottom = "40px"; // Add two lines of spacing between messages
+
+        messageWrapper.appendChild(profileWrapper);
+        messageWrapper.appendChild(messageElement);
+
+        chatContent.appendChild(messageWrapper);
+      }
     }
   }
 
