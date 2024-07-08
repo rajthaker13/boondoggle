@@ -161,7 +161,6 @@ function BoondogggleAI(props) {
         messageElement.innerHTML = formatText(msg);
 
         const messageWrapper = document.createElement("div");
-        messageWrapper.className = "message-wrapper";
         messageWrapper.style.display = "flex";
         messageWrapper.style.flexDirection = "column";
         messageWrapper.style.marginBottom = "40px"; // Add two lines of spacing between messages
@@ -184,13 +183,41 @@ function BoondogggleAI(props) {
       const boondoggleAiChatContent = document.getElementById(
         "boondoggle-ai-chat-content"
       );
-      const userQueryContainer = document.createElement("div");
-      userQueryContainer.className = "boondoggle-ai-chat";
-      const userQueryText = document.createElement("strong");
-      // userQueryText.className = "boondoggle-ai-chat-text-query";
-      userQueryText.textContent = userQuery;
-      userQueryContainer.appendChild(userQueryText);
-      boondoggleAiChatContent.appendChild(userQueryContainer);
+
+      const messageElement = document.createElement("div");
+      const imgElement = document.createElement("img");
+
+      imgElement.style.width = "35px"; // Adjust the size as needed
+      imgElement.style.height = "35px"; // Adjust the size as needed
+      imgElement.style.borderRadius = "50%"; // Make it a circle
+      imgElement.style.marginRight = "10px"; // Adjust spacing as needed
+
+      const nameElement = document.createElement("span");
+      nameElement.style.fontWeight = "bold";
+
+      const profileWrapper = document.createElement("div");
+      profileWrapper.className = "profile-wrapper";
+      profileWrapper.style.display = "flex";
+      profileWrapper.style.alignItems = "center";
+
+      imgElement.src = userPic;
+      nameElement.textContent = "User";
+      profileWrapper.style.marginBottom = "10px"; // Add some spacing between the profile and the message
+
+      profileWrapper.appendChild(imgElement);
+      profileWrapper.appendChild(nameElement);
+
+      messageElement.innerHTML = userQuery;
+
+      const messageWrapper = document.createElement("div");
+      messageWrapper.style.display = "flex";
+      messageWrapper.style.flexDirection = "column";
+      messageWrapper.style.marginBottom = "40px"; // Add two lines of spacing between messages
+
+      messageWrapper.appendChild(profileWrapper);
+      messageWrapper.appendChild(messageElement);
+
+      boondoggleAiChatContent.appendChild(messageWrapper);
 
       let temp_langchain = [];
       const selectedConversation = conversations.find((c) => c.id === convoID);
@@ -470,11 +497,38 @@ function BoondogggleAI(props) {
       const aiAnswerContainer = document.createElement("div");
       aiAnswerContainer.className = "boondoggle-ai-chat";
 
-      const aiAnswerText = document.createElement("p");
-      aiAnswerText.className = "boondoggle-ai-chat-text";
-      aiAnswerContainer.appendChild(aiAnswerText);
+      const messageElement2 = document.createElement("div");
+      const imgElement2 = document.createElement("img");
 
-      boondoggleAiChatContent.appendChild(aiAnswerContainer);
+      imgElement2.style.width = "35px"; // Adjust the size as needed
+      imgElement2.style.height = "35px"; // Adjust the size as needed
+      imgElement2.style.borderRadius = "50%"; // Make it a circle
+      imgElement2.style.marginRight = "10px"; // Adjust spacing as needed
+
+      const nameElement2 = document.createElement("span");
+      nameElement2.style.fontWeight = "bold";
+
+      const profileWrapper2 = document.createElement("div");
+      profileWrapper2.className = "profile-wrapper";
+      profileWrapper2.style.display = "flex";
+      profileWrapper2.style.alignItems = "center";
+
+      imgElement2.src = boondoggleaiPic;
+      nameElement2.textContent = "Boondoggle AI";
+      profileWrapper2.style.marginBottom = "5px"; // Add some spacing between the profile and the message
+
+      profileWrapper2.appendChild(imgElement2);
+      profileWrapper2.appendChild(nameElement2);
+
+      const messageWrapper2 = document.createElement("div");
+      messageWrapper2.style.display = "flex";
+      messageWrapper2.style.flexDirection = "column";
+      messageWrapper2.style.marginBottom = "40px"; // Add two lines of spacing between messages
+
+      messageWrapper2.appendChild(profileWrapper2);
+      messageWrapper2.appendChild(messageElement2);
+
+      boondoggleAiChatContent.appendChild(messageWrapper2);
 
       setIsLoading(false);
 
@@ -519,7 +573,7 @@ function BoondogggleAI(props) {
               const formattedChunk = formatText(
                 accumulatedText.substring(0, endIndex)
               );
-              aiAnswerText.innerHTML += formattedChunk;
+              messageElement2.innerHTML += formattedChunk;
               setAnswer(formattedChunk);
 
               // Remove the processed part from accumulatedText
