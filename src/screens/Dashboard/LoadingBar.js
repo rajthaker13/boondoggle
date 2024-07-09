@@ -19,13 +19,9 @@ function LoadingBar({ messages, isLoading, screen }) {
         progressValue = getCrmEntriesProgress();
       }
       if (screen == "workflows") {
-        console.log("progress: ", getWorkflowsProgress());
         progressValue = getWorkflowsProgress();
       }
       setProgress(progressValue);
-      /*console.log("progress value: ", progressValue);
-            console.log("progress marker: ", progressMarker*progressMarkerIdx);
-            console.log("message index: ", mi);*/
       if (progressValue > progressMarker * progressMarkerIdx) {
         mi++;
         setMessageIndex(mi);

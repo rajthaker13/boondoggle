@@ -61,53 +61,59 @@ const SpamModal = ({ allEmails, setAllEmails, step }) => {
           </TableHead>
           <TableBody>
             {allEmails.map((email, index) => {
-              const isExpanded = expandedRows[index];
-              return (
-                <TableRow
-                  key={index}
-                  className="hover:cursor-pointer hover:bg-gray-100"
-                  title={isExpanded ? "Click to minimize" : "Click to enlarge"}
-                  onClick={() => toggleRowExpansion(index)}
-                >
-                  <TableCell className="w-[20%] whitespace-normal">
-                    {email.customer ? email.customer : email.email}
-                  </TableCell>
-                  <TableCell className="w-[20%] whitespace-normal">
-                    {isExpanded
-                      ? email.title
-                      : email.title.length > 80
-                      ? email.title.slice(0, 60) + "..."
-                      : email.title}
-                  </TableCell>
-                  <TableCell className="w-[40%] whitespace-normal">
-                    {isExpanded
-                      ? email.summary
-                      : email.summary.length > 145
-                      ? email.summary.slice(0, 135) + "..."
-                      : email.summary}
-                  </TableCell>
-                  {step === 0 && (
-                    <TableCell className="w-[10%] whitespace-normal text-center">
-                      <button
-                        style={{
-                          backgroundColor: email.isSpam ? "#FF4D4D" : "#3B81F5",
-                          color: "white",
-                          borderRadius: "8px",
-                          padding: "6px 12px",
-                          border: "none",
-                          fontSize: "13px",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent the row click from toggling the expansion
-                          switchEmail(email);
-                        }}
-                      >
-                        {email.isSpam ? "Spam" : "Important"}
-                      </button>
+              if (email.customer) {
+                const isExpanded = expandedRows[index];
+                return (
+                  <TableRow
+                    key={index}
+                    className="hover:cursor-pointer hover:bg-gray-100"
+                    title={
+                      isExpanded ? "Click to minimize" : "Click to enlarge"
+                    }
+                    onClick={() => toggleRowExpansion(index)}
+                  >
+                    <TableCell className="w-[20%] whitespace-normal">
+                      {email.customer}
                     </TableCell>
-                  )}
-                </TableRow>
-              );
+                    <TableCell className="w-[20%] whitespace-normal">
+                      {isExpanded
+                        ? email.title
+                        : email.title.length > 80
+                        ? email.title.slice(0, 60) + "..."
+                        : email.title}
+                    </TableCell>
+                    <TableCell className="w-[40%] whitespace-normal">
+                      {isExpanded
+                        ? email.summary
+                        : email.summary.length > 145
+                        ? email.summary.slice(0, 135) + "..."
+                        : email.summary}
+                    </TableCell>
+                    {step === 0 && (
+                      <TableCell className="w-[10%] whitespace-normal text-center">
+                        <button
+                          style={{
+                            backgroundColor: email.isSpam
+                              ? "#FF4D4D"
+                              : "#3B81F5",
+                            color: "white",
+                            borderRadius: "8px",
+                            padding: "6px 12px",
+                            border: "none",
+                            fontSize: "13px",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent the row click from toggling the expansion
+                            switchEmail(email);
+                          }}
+                        >
+                          {email.isSpam ? "Spam" : "Important"}
+                        </button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              }
             })}
           </TableBody>
         </Table>

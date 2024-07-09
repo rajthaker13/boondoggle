@@ -4,9 +4,9 @@ export const CRITERIA_WEIGHTS = {
       name: 30,
       title: 5,
       company: 25,
-      emails: {
-        email: 20,
-      },
+      // emails: {
+      //   email: 20,
+      // },
     },
   },
   deal: {
