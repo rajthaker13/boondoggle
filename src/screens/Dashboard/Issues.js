@@ -6,23 +6,18 @@ import { useNavigate } from "react-router-dom";
 function Issues(props) {
   const navigation = useNavigate();
   return (
-    <div class="w-[96vw] h-[400px] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
+    <div class="w-[96vw] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
       <div class="self-stretch justify-between items-center inline-flex">
         <div class="text-gray-400 text-sm font-normal font-['Inter'] leading-tight">
-          Resolve the following data issues to improve CRM health
+          Resolve issues and run workflows to improve CRM health
         </div>
-        {!props.issuesResolved && (
-          <Button
-            class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400"
-            onClick={() => {
-              props.setIsOpen(true);
-            }}
-          >
+        {/* {!props.issuesResolved && (
+          <Button class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400">
             <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
               Resolve All Issues
             </span>
           </Button>
-        )}
+        )} */}
       </div>
 
       {!props.issuesResolved && (
@@ -49,13 +44,18 @@ function Issues(props) {
                 </div>
               </div>
             </div>
-            <Button class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400">
+            <Button
+              class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400"
+              onClick={() => {
+                props.setIsOpen(true);
+              }}
+            >
               <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
-                View 8 Issues
+                Resolve {props.issues.length} Issues
               </span>
             </Button>
           </div>
-          <div class="w-[1479px] h-px justify-center items-center inline-flex">
+          {/* <div class="w-[1479px] h-px justify-center items-center inline-flex">
             <div class="w-[1479px] h-px bg-gray-100 rounded-sm"></div>
           </div>
           <div class="self-stretch justify-between items-center inline-flex">
@@ -85,13 +85,13 @@ function Issues(props) {
                 View 3 Issues
               </span>
             </Button>
-          </div>
+          </div> */}
         </>
       )}
 
-      <div class="w-[1479px] h-px justify-center items-center inline-flex">
+      {/* <div class="w-[1479px] h-px justify-center items-center inline-flex">
         <div class="w-[1479px] h-px bg-gray-100 rounded-sm"></div>
-      </div>
+      </div> */}
       <div class="self-stretch justify-between items-center inline-flex">
         <div class="pl-3 pr-2.5 py-2 bg-white rounded-md shadow border border-gray-200 justify-start items-center gap-2.5 flex">
           <div class="pl-3 pr-2.5 py-2 bg-gray-100 rounded-md shadow border border-gray-200 justify-start items-center gap-2.5 flex">
