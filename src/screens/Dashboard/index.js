@@ -171,7 +171,7 @@ function Dashboard(props) {
 
           const connectionOptions = {
             method: "GET",
-            url: `https://api.unified.to/unified/connection/${emailConnectionID}`,
+            url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/connection/${emailConnectionID}`,
             headers: {
               authorization:
                 "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
