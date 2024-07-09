@@ -79,18 +79,6 @@ function BoondogggleAI(props) {
     return uniqueId; // Extract first 10 characters to ensure 10-digit length
   }
 
-  function extractUserQuery(inputString) {
-    const regex = /User query:\s*(.*?),\s*Edited Query:/;
-    const match = inputString.match(regex);
-
-    // If a match is found, return the captured group
-    if (match && match[1]) {
-      return match[1].trim();
-    } else {
-      return ""; // or handle the case where no match is found
-    }
-  }
-
   function formatText(text) {
     const formattedAnswer = text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **bold** to <strong>bold</strong>
