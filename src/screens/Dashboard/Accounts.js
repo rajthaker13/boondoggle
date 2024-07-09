@@ -26,12 +26,18 @@ function Accounts(props) {
      */
     async function getEmailIntegrations() {
       const workspace_id = "65c02dbec9810ed1f215c33b";
-      //fetch integrations
-      const integrations = await (
-        await fetch(
-          `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
-        )
-      ).json();
+
+      let integrations = [];
+      try {
+        //fetch integrations
+        integrations = await (
+          await fetch(
+            `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
+          )
+        ).json();
+      } catch (error) {
+        integrations = [];
+      }
 
       let integrationData = [];
       //iterates over all integrations

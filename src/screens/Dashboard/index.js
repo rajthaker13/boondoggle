@@ -192,11 +192,15 @@ function Dashboard(props) {
             .eq("id", uid);
 
           // Check if emailIDObj's email already exists in data[0].email_data
-          const emailExists = data[0].email_data.some(
-            (item) => item.email === emailIDObj.email
-          );
+          let emailExists = false;
+          let update_package = [];
 
-          let update_package = [...data[0].email_data];
+          if (data && data[0]) {
+            emailExists = data[0].email_data.some(
+              (item) => item.email === emailIDObj.email
+            );
+            update_package = [...data[0].email_data];
+          }
 
           // Include emailIDObj in update_package only if its email doesn't exist already
           if (!emailExists) {
