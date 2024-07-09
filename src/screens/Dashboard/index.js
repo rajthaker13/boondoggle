@@ -9,6 +9,7 @@ import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
 import IssuesModal from "./IssuesModal";
 import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
+import * as Frigade from "@frigade/react";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -371,32 +372,39 @@ function Dashboard(props) {
     localStorage.setItem("resolvedIssues", true);
   };
 
+  const FRIGADE_API_KEY =
+    "api_public_p64HUD7ajq3mcgQGzz0R0B44StuQu6r30NpmWSDY9SdLCY8bs0gAdeQMUjDrqmvH";
+  const uid = localStorage.getItem("uid");
+
+  console.log("uid: ", uid);
+
   return (
-    <div>
-      {isLoading && (
-        <LoadingBar
-          messages={[
-            "Fetching CRM data...",
-            "Scanning contacts...",
-            "Analyzing deals...",
-            "Surveying events...",
-            "Generating embeddings...",
-            "Finalizing insights and storing findings...",
-          ]}
-          isLoading={isLoading}
-          screen={"dashboard"}
-        />
-      )}
-      <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
-        <DialogPanel>
-          {modalStep == 0 && (
-            <IssuesModal
-              issues={contactIssues}
-              allIssues={allIssues}
-              type="Contact"
-            />
-          )}
-          {/* {modalStep == 1 && (
+    <Frigade.Provider apiKey={FRIGADE_API_KEY} userID={uid}>
+      <div>
+        {isLoading && (
+          <LoadingBar
+            messages={[
+              "Fetching CRM data...",
+              "Scanning contacts...",
+              "Analyzing deals...",
+              "Surveying events...",
+              "Generating embeddings...",
+              "Finalizing insights and storing findings...",
+            ]}
+            isLoading={isLoading}
+            screen={"dashboard"}
+          />
+        )}
+        <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
+          <DialogPanel>
+            {modalStep == 0 && (
+              <IssuesModal
+                issues={contactIssues}
+                allIssues={allIssues}
+                type="Contact"
+              />
+            )}
+            {/* {modalStep == 1 && (
             <IssuesModal
               issues={companyIssues}
               allIssues={allIssues}
@@ -413,52 +421,53 @@ function Dashboard(props) {
             </>
           )} */}
 
-          <Button
-            className={
-              modalStep === 0
-                ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
-                : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
-            }
-            onClick={async () => {
-              await handleUpdate();
-            }}
-          >
-            <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
-              Resolve
-            </div>
-          </Button>
-        </DialogPanel>
-      </Dialog>
+            <Button
+              className={
+                modalStep === 0
+                  ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
+                  : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
+              }
+              onClick={async () => {
+                await handleUpdate();
+              }}
+            >
+              <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
+                Resolve
+              </div>
+            </Button>
+          </DialogPanel>
+        </Dialog>
 
-      {!isLoading && (
-        <div className="justify-center items-center w-full h-full">
-          <Header selectedTab={0} db={props.db} />
-          <Score
-            crmConnected={crmConnected}
-            setCRMConnected={setCRMConnected}
-            crmScore={crmScore}
-            numIssues={numIssues}
-            issuesResolved={issuesResolved}
-          />
-
-          <Accounts
-            crmConnected={crmConnected}
-            linkedInLinked={linkedInLinked}
-            db={props.db}
-            emailLinked={emailLinked}
-          />
-          {crmConnected && (
-            <Issues
+        {!isLoading && (
+          <div className="justify-center items-center w-full h-full">
+            <Header selectedTab={0} db={props.db} />
+            <Score
               crmConnected={crmConnected}
-              setIsOpen={setIsOpen}
+              setCRMConnected={setCRMConnected}
+              crmScore={crmScore}
+              numIssues={numIssues}
               issuesResolved={issuesResolved}
-              linkedInLinked={linkedInLinked}
-              issues={contactIssues}
             />
-          )}
-        </div>
-      )}
-    </div>
+
+            <Accounts
+              crmConnected={crmConnected}
+              linkedInLinked={linkedInLinked}
+              db={props.db}
+              emailLinked={emailLinked}
+            />
+            {crmConnected && (
+              <Issues
+                crmConnected={crmConnected}
+                setIsOpen={setIsOpen}
+                issuesResolved={issuesResolved}
+                linkedInLinked={linkedInLinked}
+                issues={contactIssues}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </Frigade.Provider>
   );
 }
 

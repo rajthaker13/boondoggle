@@ -1,5 +1,6 @@
 import { RiLinkedinBoxFill, RiUserAddLine } from "@remixicon/react";
-
+import * as Frigade from "@frigade/react";
+import { useFlow } from "@frigade/react";
 import React, { useEffect, useState } from "react";
 
 import {
@@ -32,7 +33,7 @@ function Accounts(props) {
         //fetch integrations
         integrations = await (
           await fetch(
-            `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
+            `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=messaging`
           )
         ).json();
       } catch (error) {
@@ -43,7 +44,7 @@ function Accounts(props) {
       //iterates over all integrations
       await Promise.all(
         integrations.map(async (integration) => {
-          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
+          const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
           const urlResponse = await axios.get(url);
           //constructs and saves obj containing integration data + auth URL
           integrationData.push({
@@ -84,10 +85,27 @@ function Accounts(props) {
     getEmailIntegrations();
   }, [props]);
 
+  const flowId = "flow_bsW0zsdX";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if (
+      flow &&
+      flow.getCurrentStep().id == "email-tooltip" &&
+      emailConnected
+    ) {
+      flow.complete();
+    }
+  }, [flow, emailConnected]);
+
   return (
     <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
+      <Frigade.Tour flowId="flow_bsW0zsdX" />
       <Accordion class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 flex">
-        <AccordionHeader class="self-stretch justify-between items-center inline-flex">
+        <AccordionHeader
+          class="self-stretch justify-between items-center inline-flex"
+          id="onboarding2"
+        >
           <div class="justify-start items-center  flex-1">
             <div className="flex gap-1.5 items-center">
               <RiUserAddLine />

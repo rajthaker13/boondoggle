@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { ProgressCircle, Select, SelectItem } from "@tremor/react";
 import { RiUserLine, RiFireLine, RiTableLine } from "@remixicon/react";
 import axios from "axios";
+import * as Frigade from "@frigade/react";
+import { useFlow } from "@frigade/react";
 
 function Score(props) {
   const [availableIntegrations, setAvailableIntegrations] = useState([]);
@@ -20,7 +22,7 @@ function Score(props) {
       // Fetch CRM integrations from the Unified API
       const integrations = await (
         await fetch(
-          `https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=crm`
+          `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/integration/workspace/${workspace_id}?summary=true&active=true&categories=crm`
         )
       ).json();
 
@@ -29,7 +31,7 @@ function Score(props) {
       // Retrieve authentication URLs for each integration
       await Promise.all(
         integrations.map(async (integration) => {
-          const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
+          const url = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
           const urlResponse = await axios.get(url);
 
           // Push integration data (integration object and authentication URL) to integrationData array
@@ -51,7 +53,7 @@ function Score(props) {
 
         const connectionOptions = {
           method: "GET",
-          url: `https://api.unified.to/unified/connection/${id}`,
+          url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/unified/connection/${id}`,
           headers: {
             authorization:
               "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
@@ -66,10 +68,26 @@ function Score(props) {
 
     getCRMIntegrations();
   }, []);
+
+  const flowId = "flow_bsW0zsdX";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if (
+      flow &&
+      flow.getCurrentStep().id == "crm-tooltip" &&
+      props.crmConnected
+    ) {
+      flow.getCurrentStep().complete();
+      flow.forward();
+    }
+  }, [flow, props.crmConnected]);
+
   return (
     <>
       {props.crmConnected && (
         <div class="w-[96vw] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
+          <Frigade.Tour flowId="flow_bsW0zsdX" />
           <div class="flex-col justify-start items-start gap-[15px] inline-flex">
             <div class="flex-col justify-start items-start flex">
               <div class="self-stretch">
@@ -102,6 +120,7 @@ function Score(props) {
       )}
       {!props.crmConnected && (
         <div class="w-[96vw] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
+          <Frigade.Tour flowId="flow_bsW0zsdX" />
           <div class="flex-col justify-start items-start gap-[15px] inline-flex">
             <div class="flex-col justify-start items-start flex">
               <div class="self-stretch">
@@ -116,7 +135,7 @@ function Score(props) {
                 Connect your CRM below to view health status.
               </div>
             </div>
-            <Select>
+            <Select id="onboarding1">
               {availableIntegrations.map((integration) => {
                 const imageElement = (
                   <img
