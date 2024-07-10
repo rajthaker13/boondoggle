@@ -120,7 +120,7 @@ function Score(props) {
       )}
       {!props.crmConnected && (
         <div class="w-[96vw] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
-          <Frigade.Tour flowId="flow_bsW0zsdX" />
+          <Frigade.Tour flowId="flow_bsW0zsdX" align={flow && flow.getCurrentStep().id == "linkedin-tooltip" ? "before" : "after"}/>
           <div class="flex-col justify-start items-start gap-[15px] inline-flex">
             <div class="flex-col justify-start items-start flex">
               <div class="self-stretch">

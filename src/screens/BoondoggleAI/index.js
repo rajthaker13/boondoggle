@@ -103,60 +103,62 @@ function BoondogggleAI(props) {
 
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db.from("users").select().eq("id", uid);
-    const supaConversations = data[0].boondoggle_conversations;
-    setConversations(supaConversations);
+    if(data && data[0]) {
+      const supaConversations = data[0].boondoggle_conversations;
+      setConversations(supaConversations);
 
-    const selectedConversation = supaConversations.find(
-      (c) => c.id === conversationId
-    );
-    if (selectedConversation) {
-      // Simulate loading chat history
-      const chatContent = document.getElementById("boondoggle-ai-chat-content");
-      chatContent.innerHTML = ""; // Clear current chat
+      const selectedConversation = supaConversations.find(
+        (c) => c.id === conversationId
+      );
+      if (selectedConversation) {
+        // Simulate loading chat history
+        const chatContent = document.getElementById("boondoggle-ai-chat-content");
+        chatContent.innerHTML = ""; // Clear current chat
 
-      for (let i = 0; i < selectedConversation.messages.length; i++) {
-        let msg = selectedConversation.messages[i];
+        for (let i = 0; i < selectedConversation.messages.length; i++) {
+          let msg = selectedConversation.messages[i];
 
-        const messageElement = document.createElement("div");
-        const imgElement = document.createElement("img");
+          const messageElement = document.createElement("div");
+          const imgElement = document.createElement("img");
 
-        imgElement.style.width = "35px"; // Adjust the size as needed
-        imgElement.style.height = "35px"; // Adjust the size as needed
-        imgElement.style.borderRadius = "50%"; // Make it a circle
-        imgElement.style.marginRight = "10px"; // Adjust spacing as needed
+          imgElement.style.width = "35px"; // Adjust the size as needed
+          imgElement.style.height = "35px"; // Adjust the size as needed
+          imgElement.style.borderRadius = "50%"; // Make it a circle
+          imgElement.style.marginRight = "10px"; // Adjust spacing as needed
 
-        const nameElement = document.createElement("span");
-        nameElement.style.fontWeight = "bold";
+          const nameElement = document.createElement("span");
+          nameElement.style.fontWeight = "bold";
 
-        const profileWrapper = document.createElement("div");
-        profileWrapper.className = "profile-wrapper";
-        profileWrapper.style.display = "flex";
-        profileWrapper.style.alignItems = "center";
+          const profileWrapper = document.createElement("div");
+          profileWrapper.className = "profile-wrapper";
+          profileWrapper.style.display = "flex";
+          profileWrapper.style.alignItems = "center";
 
-        if (i % 2 == 0) {
-          imgElement.src = userPic;
-          nameElement.textContent = "User";
-          profileWrapper.style.marginBottom = "10px"; // Add some spacing between the profile and the message
-        } else {
-          imgElement.src = boondoggleaiPic;
-          nameElement.textContent = "Boondoggle AI";
-          profileWrapper.style.marginBottom = "5px"; // Add some spacing between the profile and the message
+          if (i % 2 == 0) {
+            imgElement.src = userPic;
+            nameElement.textContent = "User";
+            profileWrapper.style.marginBottom = "10px"; // Add some spacing between the profile and the message
+          } else {
+            imgElement.src = boondoggleaiPic;
+            nameElement.textContent = "Boondoggle AI";
+            profileWrapper.style.marginBottom = "5px"; // Add some spacing between the profile and the message
+          }
+
+          profileWrapper.appendChild(imgElement);
+          profileWrapper.appendChild(nameElement);
+
+          messageElement.innerHTML = formatText(msg);
+
+          const messageWrapper = document.createElement("div");
+          messageWrapper.style.display = "flex";
+          messageWrapper.style.flexDirection = "column";
+          messageWrapper.style.marginBottom = "40px"; // Add two lines of spacing between messages
+
+          messageWrapper.appendChild(profileWrapper);
+          messageWrapper.appendChild(messageElement);
+
+          chatContent.appendChild(messageWrapper);
         }
-
-        profileWrapper.appendChild(imgElement);
-        profileWrapper.appendChild(nameElement);
-
-        messageElement.innerHTML = formatText(msg);
-
-        const messageWrapper = document.createElement("div");
-        messageWrapper.style.display = "flex";
-        messageWrapper.style.flexDirection = "column";
-        messageWrapper.style.marginBottom = "40px"; // Add two lines of spacing between messages
-
-        messageWrapper.appendChild(profileWrapper);
-        messageWrapper.appendChild(messageElement);
-
-        chatContent.appendChild(messageWrapper);
       }
     }
   }

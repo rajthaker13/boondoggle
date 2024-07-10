@@ -94,13 +94,21 @@ function Accounts(props) {
       flow.getCurrentStep().id == "email-tooltip" &&
       emailConnected
     ) {
-      flow.complete();
+      flow.getCurrentStep().complete();
+      flow.forward();
     }
-  }, [flow, emailConnected]);
+    if (
+      flow &&
+      flow.getCurrentStep().id == "linkedin-tooltip" &&
+      props.linkedInLinked
+    ) {
+      flow.getCurrentStep().complete();
+      flow.forward();
+    }
+  }, [flow, emailConnected, props.linkedInLinked]);
 
   return (
     <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
-      <Frigade.Tour flowId="flow_bsW0zsdX" />
       <Accordion class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 flex">
         <AccordionHeader
           class="self-stretch justify-between items-center inline-flex"
@@ -173,7 +181,7 @@ function Accounts(props) {
       </Accordion>
 
       <Accordion class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 inline-flex">
-        <AccordionHeader class="self-stretch justify-between items-center inline-flex">
+        <AccordionHeader class="self-stretch justify-between items-center inline-flex" id="onboarding3">
           <div class="justify-start items-center gap-2.5 flex-1">
             <div className="flex gap-1.5 items-center">
               <RiLinkedinBoxFill color="#0077B5" />
