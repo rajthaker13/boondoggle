@@ -1021,7 +1021,7 @@ function Workflows(props) {
     } else {
       const createCompanyOptions = {
         method: "POST",
-        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/company`,
+        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/api.unified.to/crm/${connection_id}/company`,
         headers: {
           authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
         },
@@ -1205,6 +1205,39 @@ function Workflows(props) {
     }
   }
 
+  // Function related to the latest email fetch data stored in supabase
+  async function fetchEmailFetchDate() {
+    const connection_id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("data")
+      .select()
+      .eq("connection_id", connection_id);
+  
+    if (error) {
+      console.error('Error fetching last fetch date:', error);
+      return null;
+    }
+    if (data && data[0].email_fetch_date){
+      const fetch_date = new Date(data[0].email_fetch_date).toISOString();
+      console.log(fetch_date);
+      return fetch_date;
+    }else{
+      return null;
+    }
+    
+  }
+  
+  async function updateEmailFetchDate() {
+    const connection_id = localStorage.getItem("connection_id");
+    const { data, error } = await props.db
+      .from("data")
+      .update({ email_fetch_date: new Date().toISOString() })
+      .eq("connection_id", connection_id);
+    if (error) {
+      console.error('Error updating fetch date:', error);
+    }
+  }
+
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
    *
@@ -1219,13 +1252,17 @@ function Workflows(props) {
     setShowSpamModal(false);
     setModalStep(0);
 
+
     const id = selectedEmail.connection_id;
     const userEmail = selectedEmail.email;
 
+    const email_fetch_date = await fetchEmailFetchDate();
     //fetches emails
     const { data, error } = await props.db.functions.invoke("get-emails", {
-      body: { user_id: id },
+      body: { user_id: id, email_fetch_date: email_fetch_date},
     });
+    console.log(data.emailData);
+    await updateEmailFetchDate();
 
     progress = 50;
 

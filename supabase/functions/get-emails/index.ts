@@ -7,16 +7,19 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const { user_id } = await req.json()
+  const { user_id, email_fetch_date} = await req.json();
 
-  const emailUrl = `https://api.unified.to/messaging/${user_id}/message?limit=50`;
+
+  var emailUrl = `https://vast-waters-56699-3595bd537b3a.herokuapp.com/api.unified.to/messaging/${user_id}/message?limit=50`;
+  
+
   const emailOptions = {
     method: "GET",
     headers: {
       authorization: "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
     }
   }
-
+  console.log(emailOptions);
   let emailResults;
 
   try {
@@ -26,8 +29,10 @@ Deno.serve(async (req) => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     emailResults = await fetch(emailUrl, emailOptions);
   }
-
-  const emailResponse = await emailResults.json()
+  console.log("emailResults", emailResults);
+  
+  emailResponse = await emailResults.json();
+  
   console.log(emailResponse)
   
   const data = {
