@@ -9,9 +9,11 @@ import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
 import IssuesModal from "./IssuesModal";
 import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
+import { useFlow } from "@frigade/react";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
+  const [emailConnected, setEmailConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +27,7 @@ function Dashboard(props) {
   const [allIssues, setAllIssues] = useState([]);
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
+  const [showLongTimeMess, setShowLongTimeMess] = useState(false);
 
   useEffect(() => {
     /**
@@ -79,7 +82,7 @@ function Dashboard(props) {
             }
           }
         );
-      } catch (erorr) {
+      } catch (error) {
         setLinkedInLinked(false);
         setIsLoading(false); //loading state is reset on error
       }
@@ -98,6 +101,7 @@ function Dashboard(props) {
         const connection_id = urlParams.get("id");
 
         setIsLoading(true);
+        setShowLongTimeMess(true);
 
         //retrieve the CRM scan score and the array of issues
         let scanResult;
@@ -152,6 +156,7 @@ function Dashboard(props) {
           setCompanyIssues(companyIssuesTemp);
           setNumIssues(issuesArray.length);
           setCRMScore(newScore);
+          setShowLongTimeMess(false);
           var cleanUrl = window.location.href.split("?")[0];
           window.history.replaceState({}, document.title, cleanUrl);
           setCRMConnected(true);
@@ -367,6 +372,47 @@ function Dashboard(props) {
     localStorage.setItem("resolvedIssues", true);
   };
 
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if(flow) {
+      console.log("flow is active");
+    }
+    if (
+      flow && crmConnected
+    ) {
+      flow.steps.get("crm-checklist").complete();
+    }
+
+    if(!crmConnected && flow && flow.isSkipped) {
+      flow.restart();
+    }
+
+    if (
+      flow && emailConnected
+    ) {
+      flow.steps.get("email-checklist").complete();
+    }
+    if (
+      flow && linkedInLinked
+    ) {
+      flow.steps.get("linkedin-checklist").complete();
+    }
+
+    if (flow) {
+      const stepsArr = Array.from(flow.steps.values());
+      const allStepsCompleted = Array.from(flow.steps.values()).every(
+        (step) => step.$state.complete === true
+      );
+  
+      if (allStepsCompleted) {
+        console.log("All steps are completed");
+        // Perform desired action when all steps are completed
+      }
+    }
+  }, [flow, crmConnected, linkedInLinked, emailConnected]);
+
   return (
     <div>
       {isLoading && (
@@ -381,6 +427,7 @@ function Dashboard(props) {
           ]}
           isLoading={isLoading}
           screen={"dashboard"}
+          showMessage={showLongTimeMess}
         />
       )}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
@@ -416,6 +463,7 @@ function Dashboard(props) {
                 : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
             onClick={async () => {
+              setIsOpen(false);
               await handleUpdate();
             }}
           >
@@ -441,7 +489,8 @@ function Dashboard(props) {
             crmConnected={crmConnected}
             linkedInLinked={linkedInLinked}
             db={props.db}
-            emailLinked={emailLinked}
+            emailConnected={emailConnected}
+            setEmailConnected={setEmailConnected}
           />
           {crmConnected && (
             <Issues
