@@ -44,9 +44,6 @@ export default function Header(props) {
           </div>
         </div>
       </div>
-      <div className="px-7 mt-4">
-        <Frigade.Checklist.Carousel flowId="flow_YBmeka6n" />
-      </div>
     </div>
   );
 }

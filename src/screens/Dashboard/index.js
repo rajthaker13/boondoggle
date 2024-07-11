@@ -10,6 +10,7 @@ import axios from "axios";
 import IssuesModal from "./IssuesModal";
 import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
 import { useFlow } from "@frigade/react";
+import * as Frigade from "@frigade/react";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
@@ -475,32 +476,50 @@ function Dashboard(props) {
       </Dialog>
 
       {!isLoading && (
-        <div className="justify-center items-center w-full h-full">
+        <div className="flex-col">
+          {/* Header at the top, full width */}
           <Header selectedTab={0} db={props.db} />
-          <Score
-            crmConnected={crmConnected}
-            setCRMConnected={setCRMConnected}
-            crmScore={crmScore}
-            numIssues={numIssues}
-            issuesResolved={issuesResolved}
-          />
-
-          <Accounts
-            crmConnected={crmConnected}
-            linkedInLinked={linkedInLinked}
-            db={props.db}
-            emailConnected={emailConnected}
-            setEmailConnected={setEmailConnected}
-          />
-          {crmConnected && (
-            <Issues
-              crmConnected={crmConnected}
-              setIsOpen={setIsOpen}
-              issuesResolved={issuesResolved}
-              linkedInLinked={linkedInLinked}
-              issues={contactIssues}
-            />
-          )}
+    
+          {/* Main content with Frigade as a sidebar */}
+          <div className="flex">
+            {/* Sidebar with Frigade component */}
+            <div className="px-2 mt-4" style={{ width: "325px" }}>
+              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+            </div>
+            
+            {/* Main content area */}
+            <div className="flex-1 p-1 flex-col min-w-0">
+              <div className="flex-shrink-0">
+                <Score
+                  crmConnected={crmConnected}
+                  setCRMConnected={setCRMConnected}
+                  crmScore={crmScore}
+                  numIssues={numIssues}
+                  issuesResolved={issuesResolved}
+                />
+              </div>
+              <div className="flex-shrink-0">
+                <Accounts
+                  crmConnected={crmConnected}
+                  linkedInLinked={linkedInLinked}
+                  db={props.db}
+                  emailConnected={emailConnected}
+                  setEmailConnected={setEmailConnected}
+                />
+              </div>
+              {crmConnected && (
+                <div className="flex-shrink-0">
+                  <Issues
+                    crmConnected={crmConnected}
+                    setIsOpen={setIsOpen}
+                    issuesResolved={issuesResolved}
+                    linkedInLinked={linkedInLinked}
+                    issues={contactIssues}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
