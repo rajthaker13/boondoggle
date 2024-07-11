@@ -8,14 +8,19 @@ import Workflows from "./screens/Workflows";
 import Entries from "./screens/Entries";
 import Login from "./screens/Login";
 import Dashboard from "./screens/Dashboard";
+import * as Frigade from "@frigade/react";
 
 const supabase = createClient(
   "https://gwjtbxxhdsqrelswpgdi.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3anRieHhoZHNxcmVsc3dwZ2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDY3Njc5ODMsImV4cCI6MjAyMjM0Mzk4M30.bjgoombrUXrnMn92P7uNGLK0_2ONNECFrE74_Ql4HEg"
 );
 
+const FRIGADE_API_KEY =
+"api_public_p64HUD7ajq3mcgQGzz0R0B44StuQu6r30NpmWSDY9SdLCY8bs0gAdeQMUjDrqmvH";
+
 export default function App() {
   return (
+    <Frigade.Provider apiKey={FRIGADE_API_KEY}>
     <Router>
       <SpeedInsights />
       <Routes>
@@ -42,5 +47,6 @@ export default function App() {
         */}
       </Routes>
     </Router>
+    </Frigade.Provider>
   );
 }

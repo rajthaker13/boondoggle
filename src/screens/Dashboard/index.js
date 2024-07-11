@@ -10,9 +10,11 @@ import axios from "axios";
 import IssuesModal from "./IssuesModal";
 import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
 import * as Frigade from "@frigade/react";
+import { useFlow } from "@frigade/react";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
+  const [emailConnected, setEmailConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +28,7 @@ function Dashboard(props) {
   const [allIssues, setAllIssues] = useState([]);
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
+  const [showLongTimeMess, setShowLongTimeMess] = useState(false);
 
   useEffect(() => {
     /**
@@ -80,7 +83,7 @@ function Dashboard(props) {
             }
           }
         );
-      } catch (erorr) {
+      } catch (error) {
         setLinkedInLinked(false);
         setIsLoading(false); //loading state is reset on error
       }
@@ -98,6 +101,7 @@ function Dashboard(props) {
         const urlParams = new URLSearchParams(window.location.search);
         const connection_id = urlParams.get("id");
 
+        setShowLongTimeMess(true);
         setIsLoading(true);
 
         //retrieve the CRM scan score and the array of issues
@@ -156,6 +160,7 @@ function Dashboard(props) {
           var cleanUrl = window.location.href.split("?")[0];
           window.history.replaceState({}, document.title, cleanUrl);
           setCRMConnected(true);
+          setShowLongTimeMess(false);
         } catch (error) {
           setIsLoading(false); //loading state is reset on error
         }
@@ -372,102 +377,140 @@ function Dashboard(props) {
     localStorage.setItem("resolvedIssues", true);
   };
 
-  const FRIGADE_API_KEY =
-    "api_public_p64HUD7ajq3mcgQGzz0R0B44StuQu6r30NpmWSDY9SdLCY8bs0gAdeQMUjDrqmvH";
-  const uid = localStorage.getItem("uid");
+  const flowId = "flow_bsW0zsdX";
+  const { flow } = useFlow(flowId);
 
-  console.log("uid: ", uid);
+  useEffect(() => {
+    if(flow) {
+      console.log("flow is active");
+    }
+    if (
+      flow &&
+      flow.getCurrentStep().id == "crm-tooltip" &&
+      crmConnected
+    ) {
+      const currStep = flow.getCurrentStep();
+      currStep.complete();
+    }
+
+    if(!crmConnected && flow && flow.isSkipped) {
+      flow.restart();
+    }
+
+    if (
+      flow &&
+      flow.getCurrentStep().id == "email-tooltip" &&
+      emailConnected
+    ) {
+      const currStep = flow.getCurrentStep();
+      currStep.complete();
+    }
+    if (
+      flow &&
+      flow.getCurrentStep().id == "linkedin-tooltip" &&
+      linkedInLinked
+    ) {
+      const currStep = flow.getCurrentStep();
+      currStep.complete();
+    }
+  }, [flow, crmConnected, linkedInLinked, emailConnected]);
 
   return (
-    <Frigade.Provider apiKey={FRIGADE_API_KEY} userID={uid}>
-      <div>
-        {isLoading && (
-          <LoadingBar
-            messages={[
-              "Fetching CRM data...",
-              "Scanning contacts...",
-              "Analyzing deals...",
-              "Surveying events...",
-              "Generating embeddings...",
-              "Finalizing insights and storing findings...",
-            ]}
-            isLoading={isLoading}
-            screen={"dashboard"}
-          />
-        )}
-        <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
-          <DialogPanel>
-            {modalStep == 0 && (
-              <IssuesModal
-                issues={contactIssues}
-                allIssues={allIssues}
-                type="Contact"
-              />
-            )}
-            {/* {modalStep == 1 && (
+    <div>
+      {isLoading && (
+        <LoadingBar
+          messages={[
+            "Fetching CRM data...",
+            "Scanning contacts...",
+            "Analyzing deals...",
+            "Surveying events...",
+            "Generating embeddings...",
+            "Finalizing insights and storing findings...",
+          ]}
+          isLoading={isLoading}
+          screen={"dashboard"}
+          showMessage={showLongTimeMess}
+        />
+      )}
+      <Frigade.Tour 
+        flowId="flow_bsW0zsdX" 
+        align={flow && (flow.getCurrentStep().id == "linkedin-tooltip" || flow.getCurrentStep().id == "workflows-tooltip" || flow.getCurrentStep().id == "issues-tooltip") ? "before" : "after"}/>
+      <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
+        <DialogPanel>
+          {modalStep == 0 && (
             <IssuesModal
-              issues={companyIssues}
+              issues={contactIssues}
               allIssues={allIssues}
-              type="Company"
+              type="Contact"
             />
           )}
-          {modalStep == 2 && (
-            <>
-              <IssuesModal
-                issues={allIssues}
-                allIssues={allIssues}
-                type="All"
-              />
-            </>
-          )} */}
-
-            <Button
-              className={
-                modalStep === 0
-                  ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
-                  : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
-              }
-              onClick={async () => {
-                await handleUpdate();
-              }}
-            >
-              <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
-                Resolve
-              </div>
-            </Button>
-          </DialogPanel>
-        </Dialog>
-
-        {!isLoading && (
-          <div className="justify-center items-center w-full h-full">
-            <Header selectedTab={0} db={props.db} />
-            <Score
-              crmConnected={crmConnected}
-              setCRMConnected={setCRMConnected}
-              crmScore={crmScore}
-              numIssues={numIssues}
-              issuesResolved={issuesResolved}
-            />
-
-            <Accounts
-              crmConnected={crmConnected}
-              linkedInLinked={linkedInLinked}
-              db={props.db}
-              emailLinked={emailLinked}
-            />
-            {crmConnected && (
-              <Issues
-                crmConnected={crmConnected}
-                setIsOpen={setIsOpen}
-                issuesResolved={issuesResolved}
-                linkedInLinked={linkedInLinked}
-                issues={contactIssues}
-              />
-            )}
-          </div>
+          {/* {modalStep == 1 && (
+          <IssuesModal
+            issues={companyIssues}
+            allIssues={allIssues}
+            type="Company"
+          />
         )}
-      </div>
-    </Frigade.Provider>
+        {modalStep == 2 && (
+          <>
+            <IssuesModal
+              issues={allIssues}
+              allIssues={allIssues}
+              type="All"
+            />
+          </>
+        )} */}
+
+          <Button
+            className={
+              modalStep === 0
+                ? "w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-red-500 rounded-[10.27px] shadow justify-center items-center gap-[7.79px] inline-flex hover:bg-red-400"
+                : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
+            }
+            onClick={async () => {
+              setIsOpen(false);
+              flow.getCurrentStep().complete();
+              await handleUpdate();
+            }}
+          >
+            <div className="text-white text-sm font-medium font-['Inter'] leading-tight">
+              Resolve
+            </div>
+          </Button>
+        </DialogPanel>
+      </Dialog>
+
+      {!isLoading && (
+        <div className="justify-center items-center w-full h-full">
+          <Header selectedTab={0} db={props.db} />
+          <Score
+            crmConnected={crmConnected}
+            setCRMConnected={setCRMConnected}
+            crmScore={crmScore}
+            numIssues={numIssues}
+            issuesResolved={issuesResolved}
+          />
+
+          <Accounts
+            crmConnected={crmConnected}
+            linkedInLinked={linkedInLinked}
+            db={props.db}
+            emailLinked={emailLinked}
+            emailConnected={emailConnected}
+            setEmailConnected={setEmailConnected}
+          />
+          {crmConnected && (
+            <Issues
+              crmConnected={crmConnected}
+              setIsOpen={setIsOpen}
+              issuesResolved={issuesResolved}
+              linkedInLinked={linkedInLinked}
+              issues={contactIssues}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

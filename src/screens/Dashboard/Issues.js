@@ -1,10 +1,21 @@
 import { Button } from "@tremor/react";
 import { RiUserLine, RiFireLine, RiTableLine } from "@remixicon/react";
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useFlow } from "@frigade/react";
 
 function Issues(props) {
   const navigation = useNavigate();
+
+  const flowId = "flow_bsW0zsdX";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if(flow && flow.getCurrentStep().id == "issues-tooltip" && props.issuesResolved) {
+      flow.getCurrentStep().complete();
+    }
+  }, [flow, props.issuesResolved])
+
   return (
     <div class="w-[96vw] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
       <div class="self-stretch justify-between items-center inline-flex">
@@ -49,6 +60,7 @@ function Issues(props) {
               onClick={() => {
                 props.setIsOpen(true);
               }}
+              id="onboarding4"
             >
               <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
                 Resolve {props.issues.length} Issues
@@ -112,7 +124,9 @@ function Issues(props) {
           class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400"
           onClick={() => {
             navigation("/workflows");
+            flow.getCurrentStep().complete();
           }}
+          id="onboarding5"
         >
           <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
             View {props.linkedInLinked ? "8" : "9"} Automations
