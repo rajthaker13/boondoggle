@@ -575,7 +575,7 @@ function BoondogggleAI(props) {
       }
 
       temp_langchain.push(
-        new HumanMessage(searchQuery),
+        new HumanMessage(userQuery),
         new AIMessage(finalAnswer)
       );
 
@@ -603,7 +603,7 @@ function BoondogggleAI(props) {
 
         if (convoID == "") {
           //generate title for query
-          const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${searchQuery}. You should not respond as if you are an AI.`;
+          const titleContext = `You are an automated CRM assistant for businesses and have all of the CRM data for the user. This is an string containing a query that the user has asked you: ${userQuery}, and here is an edited query that might have more context: ${newQuery.content}. You should not respond as if you are an AI.`;
           let completionMessages = [
             { role: "system", content: titleContext },
             {
