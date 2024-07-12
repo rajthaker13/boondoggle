@@ -29,6 +29,7 @@ function Dashboard(props) {
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
   const [showLongTimeMess, setShowLongTimeMess] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
     /**
@@ -379,6 +380,7 @@ function Dashboard(props) {
   useEffect(() => {
     if(flow) {
       console.log("flow is active");
+      console.log(showOnboarding);
     }
     if (
       flow && crmConnected
@@ -402,14 +404,18 @@ function Dashboard(props) {
     }
 
     if (flow) {
-      const stepsArr = Array.from(flow.steps.values());
-      const allStepsCompleted = Array.from(flow.steps.values()).every(
-        (step) => step.$state.complete === true
-      );
+      const steps = Array.from(flow.steps.values());
+      let allStepsCompleted = true;
+
+      for(let i = 0; i < steps.length; i++) {
+        if(steps[i].$state.completed != true) {
+          allStepsCompleted = false;
+        }
+      }
   
       if (allStepsCompleted) {
-        console.log("All steps are completed");
-        // Perform desired action when all steps are completed
+        flow.complete();
+        setShowOnboarding(false);
       }
     }
   }, [flow, crmConnected, linkedInLinked, emailConnected]);
@@ -465,6 +471,7 @@ function Dashboard(props) {
             }
             onClick={async () => {
               setIsOpen(false);
+              flow.steps.get("issues-checklist").complete();
               await handleUpdate();
             }}
           >
@@ -477,19 +484,55 @@ function Dashboard(props) {
 
       {!isLoading && (
         <div className="flex-col">
-          {/* Header at the top, full width */}
-          <Header selectedTab={0} db={props.db} />
     
           {/* Main content with Frigade as a sidebar */}
-          <div className="flex">
-            {/* Sidebar with Frigade component */}
-            <div className="px-2 mt-4" style={{ width: "325px" }}>
-              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+          {showOnboarding &&
+          <div> 
+            {/* Header at the top, full width */}
+            <Header selectedTab={0} db={props.db} />
+            <div className="flex">
+              {/* Sidebar with Frigade component */}
+                <div className="px-2 mt-4" style={{ width: "325px" }}>
+                  <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+                </div>
+                
+                <div className="flex-1 flex-col min-w-0">
+                  <div className="flex-shrink-0">
+                    <Score
+                      crmConnected={crmConnected}
+                      setCRMConnected={setCRMConnected}
+                      crmScore={crmScore}
+                      numIssues={numIssues}
+                      issuesResolved={issuesResolved}
+                    />
+                  </div>
+                  <div className="flex-shrink-0">
+                    <Accounts
+                      crmConnected={crmConnected}
+                      linkedInLinked={linkedInLinked}
+                      db={props.db}
+                      emailConnected={emailConnected}
+                      setEmailConnected={setEmailConnected}
+                    />
+                  </div>
+                  {crmConnected && (
+                    <div className="flex-shrink-0">
+                      <Issues
+                        crmConnected={crmConnected}
+                        setIsOpen={setIsOpen}
+                        issuesResolved={issuesResolved}
+                        linkedInLinked={linkedInLinked}
+                        issues={contactIssues}
+                      />
+                    </div>
+                  )}
+                </div>
             </div>
-            
-            {/* Main content area */}
-            <div className="flex-1 p-1 flex-col min-w-0">
-              <div className="flex-shrink-0">
+          </div>
+          }
+          {!showOnboarding && 
+              <div className="justify-center items-center w-full h-full">
+                <Header selectedTab={0} db={props.db} />
                 <Score
                   crmConnected={crmConnected}
                   setCRMConnected={setCRMConnected}
@@ -497,18 +540,16 @@ function Dashboard(props) {
                   numIssues={numIssues}
                   issuesResolved={issuesResolved}
                 />
-              </div>
-              <div className="flex-shrink-0">
+      
                 <Accounts
                   crmConnected={crmConnected}
                   linkedInLinked={linkedInLinked}
                   db={props.db}
+                  emailLinked={emailLinked}
                   emailConnected={emailConnected}
                   setEmailConnected={setEmailConnected}
                 />
-              </div>
-              {crmConnected && (
-                <div className="flex-shrink-0">
+                {crmConnected && (
                   <Issues
                     crmConnected={crmConnected}
                     setIsOpen={setIsOpen}
@@ -516,10 +557,9 @@ function Dashboard(props) {
                     linkedInLinked={linkedInLinked}
                     issues={contactIssues}
                   />
-                </div>
-              )}
-            </div>
-          </div>
+                )}
+              </div>
+            }
         </div>
       )}
     </div>

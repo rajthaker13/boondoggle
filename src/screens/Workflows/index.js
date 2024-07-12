@@ -13,6 +13,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
 import { CRITERIA_WEIGHTS } from "../../functions/schemas/criteria_weights";
 import SpamModal from "./SpamModal";
+import { useFlow } from "@frigade/react";
 
 let progress = 0;
 
@@ -1586,6 +1587,15 @@ function Workflows(props) {
     };
   }
 
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if(flow && flow.getCurrentStep().id == "workflows-tooltip") {
+      flow.getCurrentStep().complete();
+    }
+  }, [flow])
+
   return (
     <div>
       {isLoading && !fetchingEmails && (
@@ -1763,6 +1773,7 @@ function Workflows(props) {
                       setModalStep(1);
                     } else {
                       setShowSpamModal(false);
+                      flow.steps.get("workflows-checklist").complete();
                     }
                   }}
                 >

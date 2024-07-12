@@ -59,7 +59,6 @@ function Issues(props) {
               class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400"
               onClick={() => {
                 props.setIsOpen(true);
-                flow.steps.get("issues-checklist").complete();
               }}
             >
               <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
@@ -124,7 +123,6 @@ function Issues(props) {
           class="p-2 bg-red-500 rounded shadow justify-center items-center gap-[3.17px] flex hover:bg-red-400"
           onClick={() => {
             navigation("/workflows");
-            flow.steps.get("workflows-checklist").complete();
           }}
         >
           <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
