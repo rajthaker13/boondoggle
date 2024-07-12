@@ -11,9 +11,7 @@ export default function Header(props) {
 
   return (
     <div>
-      <div
-        className="w-full px-6 py-2.5 bg-white shadow border-b border-gray-200 flex justify-between items-center"
-      >
+      <div className="w-full px-6 py-2.5 bg-white shadow border-b border-gray-200 flex justify-between items-center">
         <div className="flex items-center">
           <img src={boondoggleai} alt="Boondoggle Ai" className="mr-5" />
           <div className="flex gap-5">
@@ -31,7 +29,7 @@ export default function Header(props) {
               style={props.selectedTab === 2 ? { fontWeight: "700" } : {}}
               onClick={() => {
                 navigation("/entries");
-                if(props.setViewedActivity) {
+                if (props.setViewedActivity) {
                   props.setViewedActivity(true);
                 }
                 flow.steps.get("activity-checklist").complete();
@@ -54,4 +52,3 @@ export default function Header(props) {
     </div>
   );
 }
-

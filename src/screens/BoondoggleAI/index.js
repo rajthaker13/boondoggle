@@ -24,6 +24,7 @@ import Sidebar from "./Sidebar";
 import "./index.css";
 import boondoggleaiPic from "../../assets/boondoggleAI.png";
 import userPic from "../../assets/user.png";
+import * as Frigade from "@frigade/react";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -662,39 +663,70 @@ function BoondogggleAI(props) {
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="boondoggle-ai-container">
-        <Header db={props.db} selectedTab={3} />
-        <div className="boondoggle-ai-content">
-          <Sidebar
-            conversations={conversations}
-            onSelectConversation={loadConversation}
-            selectedConversationId={convoID}
-            onNewConversation={() => {
-              const chatContent = document.getElementById(
-                "boondoggle-ai-chat-content"
-              );
-              chatContent.innerHTML = ""; // Clear current chat
-              setConvoID("");
-            }}
-          />
-          <div className="boondoggle-ai-main">
+      {props.showOnboarding && (
+        <div className="boondoggle-ai-container">
+          <Header db={props.db} selectedTab={3} />
+          <div className="boondoggle-ai-content">
             <div
-              className="boondoggle-ai-chat-content"
-              id="boondoggle-ai-chat-content"
-              ref={chatContentRef}
-            ></div>
-            <div className="boondoggle-ai-input">
-              <input
-                onKeyDown={async (event) => await onBoondoggleQuery(event)}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Press Enter to Query"
-              />
+              className="px-2 mt-4 overflow-y-auto"
+              style={{ width: "325px" }}
+            >
+              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+            </div>
+            <div className="boondoggle-ai-main">
+              <div
+                className="boondoggle-ai-chat-content"
+                id="boondoggle-ai-chat-content"
+                ref={chatContentRef}
+              ></div>
+              <div className="boondoggle-ai-input">
+                <input
+                  onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Press Enter to Query"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+      {!props.showOnboarding && (
+        <div className="boondoggle-ai-container">
+          <Header db={props.db} selectedTab={3} />
+          <div className="boondoggle-ai-content">
+            <Sidebar
+              conversations={conversations}
+              onSelectConversation={loadConversation}
+              selectedConversationId={convoID}
+              onNewConversation={() => {
+                const chatContent = document.getElementById(
+                  "boondoggle-ai-chat-content"
+                );
+                chatContent.innerHTML = ""; // Clear current chat
+                setConvoID("");
+              }}
+            />
+            <div className="boondoggle-ai-main">
+              <div
+                className="boondoggle-ai-chat-content"
+                id="boondoggle-ai-chat-content"
+                ref={chatContentRef}
+              ></div>
+              <div className="boondoggle-ai-input">
+                <input
+                  onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Press Enter to Query"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </LoadingOverlay>
   );
 }
