@@ -30,6 +30,8 @@ function Dashboard(props) {
   const [companyIssues, setCompanyIssues] = useState([]);
   const [showLongTimeMess, setShowLongTimeMess] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [viewedActivity, setViewedActivity] = useState(false);
+  const [convoEmpty, setConvoEmpty] = useState(true);
 
   useEffect(() => {
     /**
@@ -378,6 +380,24 @@ function Dashboard(props) {
   const { flow } = useFlow(flowId);
 
   useEffect(() => {
+    async function checkConversations() {
+      const uid = localStorage.getItem("uid");
+
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      if(data && data[0]) {
+        if(data[0].boondoggle_conversations[0]) {
+          setConvoEmpty(false);
+        }
+      }
+    }
+
+    checkConversations();
+    console.log("convoEmpty: ", convoEmpty)
+
     if(flow) {
       console.log("flow is active");
       console.log(showOnboarding);
@@ -403,6 +423,12 @@ function Dashboard(props) {
       flow.steps.get("linkedin-checklist").complete();
     }
 
+    if(
+      flow && !convoEmpty
+    ) {
+      flow.steps.get("summon-checklist").complete();
+    }
+
     if (flow) {
       const steps = Array.from(flow.steps.values());
       let allStepsCompleted = true;
@@ -422,7 +448,7 @@ function Dashboard(props) {
         flow.isCompleted = false;
       }
     }
-  }, [flow, crmConnected, linkedInLinked, emailConnected, issuesResolved]);
+  }, [flow, crmConnected, linkedInLinked, emailConnected, issuesResolved, viewedActivity, convoEmpty]);
 
   return (
     <div>
@@ -493,7 +519,7 @@ function Dashboard(props) {
           {showOnboarding &&
           <div> 
             {/* Header at the top, full width */}
-            <Header selectedTab={0} db={props.db} />
+            <Header selectedTab={0} db={props.db} setViewedActivity={setViewedActivity} />
             <div className="flex">
               {/* Sidebar with Frigade component */}
                 <div className="px-2 mt-4" style={{ width: "325px" }}>
@@ -536,7 +562,7 @@ function Dashboard(props) {
           }
           {!showOnboarding && 
               <div className="justify-center items-center w-full h-full">
-                <Header selectedTab={0} db={props.db} />
+                <Header selectedTab={0} db={props.db} setViewedActivity={setViewedActivity}/>
                 <Score
                   crmConnected={crmConnected}
                   setCRMConnected={setCRMConnected}
