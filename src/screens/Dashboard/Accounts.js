@@ -78,7 +78,7 @@ function Accounts(props) {
   }, [props]);
 
   return (
-    <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
+    <div class="w-[95%] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
       <Accordion class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 flex">
         <AccordionHeader class="self-stretch justify-between items-center inline-flex">
           <div class="justify-start items-center  flex-1">

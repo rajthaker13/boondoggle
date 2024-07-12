@@ -17,7 +17,7 @@ function Issues(props) {
   }, [flow, props.issuesResolved])
 
   return (
-    <div class="w-[96vw] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
+    <div class="w-[95%] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
       <div class="self-stretch justify-between items-center inline-flex">
         <div class="text-gray-400 text-sm font-normal font-['Inter'] leading-tight">
           Resolve issues and run workflows to improve CRM health

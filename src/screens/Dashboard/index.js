@@ -417,8 +417,12 @@ function Dashboard(props) {
         flow.complete();
         setShowOnboarding(false);
       }
+      else {
+        flow.isVisible = true;
+        flow.isCompleted = false;
+      }
     }
-  }, [flow, crmConnected, linkedInLinked, emailConnected]);
+  }, [flow, crmConnected, linkedInLinked, emailConnected, issuesResolved]);
 
   return (
     <div>
