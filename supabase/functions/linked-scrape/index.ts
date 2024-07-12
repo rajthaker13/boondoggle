@@ -55,6 +55,40 @@ Deno.serve(async (req) => {
         const senders = await page.$$eval('span.msg-s-message-group__profile-link.msg-s-message-group__name', spans => {
           return spans.map(span => span.textContent.trim());
         });
+        
+        //msg-s-message-list__time-heading t-12 t-black--light t-bold
+        const times = await page.$$eval('time.msg-s-message-list__time-heading.t-12.t-black--light.t-bold', timestamps => {
+          const today = new Date();
+          const currentYear = today.getFullYear();
+          const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const trimmedTimestamps = timestamps.map(ts => {
+              let text = ts.textContent.trim();
+              let date;
+              // Check if the text is a day of the week
+              if (text === "Today") {
+                date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+              } else if (daysOfWeek.includes(text)) { // Check if the text is a day of the week
+                    let dayIndex = daysOfWeek.indexOf(text);
+                    let currentDayIndex = today.getDay();
+                    let diff = dayIndex - currentDayIndex;
+                    date = new Date(today);
+                    date.setDate(today.getDate() + diff);
+              } else if (text.includes(',')) {
+                  // Full date format with year "Jun 5, 2023"
+                  date = new Date(text + " 23:59:59"); // end of the day
+              } else if (text.match(/^[A-Za-z]+\s\d+$/)) {
+                  // Month and day format "Jun 20"
+                  date = new Date(`${text}, ${currentYear} 23:59:59`); // end of the day
+              } else {
+                  return null;
+              }
+      
+              // Convert to ISO string
+              return date.toISOString();
+          });
+          return trimmedTimestamps.length > 1 ? [trimmedTimestamps.pop()] : trimmedTimestamps;
+        });
+
 
         let messageData = [];
         messages.forEach((message, index) => {
@@ -66,6 +100,7 @@ Deno.serve(async (req) => {
           url: profileURL[0],
           messages: messageData,
           profile: profileLink,
+          time: times,
         };
         result.push(data);
       } catch (err) {
