@@ -588,11 +588,49 @@ function BoondogggleAI(props) {
       flow.steps.get("activity-checklist").secondaryButton.uri =
         baseUrl + "/entries";
     }
+
+    async function checkConversations() {
+      const uid = localStorage.getItem("uid");
+
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      if (data && data[0]) {
+        if (flow && data[0].boondoggle_conversations[0]) {
+          flow.steps.get("summon-checklist").complete();
+        }
+      }
+    }
+
+    checkConversations();
+  });
+
+  useEffect(() => {
+    if (flow) {
+      const steps = Array.from(flow.steps.values());
+      let incompleteSteps = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i].$state.completed != true) {
+          incompleteSteps.push(steps[i]);
+        }
+      }
+
+      if (incompleteSteps.length == 0) {
+        flow.complete();
+      } else {
+        flow.isVisible = true;
+        flow.isCompleted = false;
+        incompleteSteps[0].start();
+      }
+    }
   });
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      {props.showOnboarding && (
+      {flow && !flow.isCompleted && (
         <div className="boondoggle-ai-container">
           <Header db={props.db} selectedTab={3} />
           <div className="boondoggle-ai-content">
@@ -628,7 +666,7 @@ function BoondogggleAI(props) {
           </div>
         </div>
       )}
-      {!props.showOnboarding && (
+      {flow && flow.isCompleted && (
         <div className="boondoggle-ai-container">
           <Header db={props.db} selectedTab={3} />
           <div className="boondoggle-ai-content">
