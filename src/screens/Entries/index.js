@@ -245,6 +245,7 @@ function NewEntries(props) {
     if (flow) {
       let currentUrl = window.location.href;
       let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
       flow.steps.get("workflows-checklist").secondaryButton.uri =
         baseUrl + "/workflows";
       flow.steps.get("activity-checklist").secondaryButton.uri =
