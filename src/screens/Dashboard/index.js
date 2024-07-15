@@ -399,23 +399,53 @@ function Dashboard(props) {
     if (flow) {
       console.log("flow is active");
       console.log(showOnboarding);
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
     }
-    if (flow && crmConnected) {
+    if (
+      flow &&
+      !flow.steps.get("crm-checklist").$state.completed &&
+      crmConnected
+    ) {
       flow.steps.get("crm-checklist").complete();
+    } else if (flow && !flow.steps.get("crm-checklist").$state.completed) {
+      flow.steps.get("crm-checklist").start();
     }
 
-    if (!crmConnected && flow && flow.isSkipped) {
-      flow.restart();
-    }
-
-    if (flow && emailConnected) {
+    if (
+      flow &&
+      !flow.steps.get("email-checklist").$state.completed &&
+      emailConnected
+    ) {
       flow.steps.get("email-checklist").complete();
     }
-    if (flow && linkedInLinked) {
+
+    if (
+      flow &&
+      !flow.steps.get("linkedin-checklist").$state.completed &&
+      linkedInLinked
+    ) {
       flow.steps.get("linkedin-checklist").complete();
     }
 
-    if (flow && !props.summonIncomplete) {
+    if (
+      flow &&
+      !flow.steps.get("issues-checklist").$state.completed &&
+      props.issuesResolved
+    ) {
+      flow.steps.get("issues-checklist").complete();
+    }
+
+    if (
+      flow &&
+      !flow.steps.get("summon-checklist").$state.completed &&
+      !props.summonIncomplete
+    ) {
       flow.steps.get("summon-checklist").complete();
     }
 

@@ -2,23 +2,9 @@ import { Button } from "@tremor/react";
 import { RiUserLine, RiFireLine, RiTableLine } from "@remixicon/react";
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useFlow } from "@frigade/react";
 
 function Issues(props) {
   const navigation = useNavigate();
-
-  const flowId = "flow_YBmeka6n";
-  const { flow } = useFlow(flowId);
-
-  useEffect(() => {
-    if (
-      flow &&
-      flow.getCurrentStep().id == "issues-tooltip" &&
-      props.issuesResolved
-    ) {
-      flow.getCurrentStep().complete();
-    }
-  }, [flow, props.issuesResolved]);
 
   return (
     <div class="w-[95%] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">

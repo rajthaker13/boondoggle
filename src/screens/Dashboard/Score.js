@@ -58,8 +58,12 @@ function Score(props) {
           },
         };
 
-        const connectionResponse = await axios.request(connectionOptions);
-        setCRMType(connectionResponse.data.integration_type);
+        try {
+          const connectionResponse = await axios.request(connectionOptions);
+          setCRMType(connectionResponse.data.integration_type);
+        } catch (error) {
+          console.log("error: ", error);
+        }
       }
       setAvailableIntegrations(integrationData);
     }

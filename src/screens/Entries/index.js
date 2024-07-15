@@ -25,9 +25,6 @@ function NewEntries(props) {
   const [selectedEntries, setSelectedEntries] = useState([]);
   const [allSelected, setAllSelected] = useState(false);
 
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
-
   const [isLoading, setIsLoading] = useState(false);
   let renderedData = [];
 
@@ -228,18 +225,6 @@ function NewEntries(props) {
       //   setTasks(data[0].tasks);
       // }
     }
-
-    async function checkOnBoarding() {
-      const uid = localStorage.getItem("uid");
-      const { data, error } = await props.db
-        .from("user_data")
-        .select("")
-        .eq("id", uid);
-      setIsOnboarding(!data[0].hasOnboarded);
-      setOnboardingStep(data[0].onboardingStep);
-    }
-
-    checkOnBoarding();
 
     getData();
   }, []);

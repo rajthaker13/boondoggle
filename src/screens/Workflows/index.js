@@ -1629,12 +1629,6 @@ function Workflows(props) {
   const flowId = "flow_YBmeka6n";
   const { flow } = useFlow(flowId);
 
-  useEffect(() => {
-    if (flow && flow.getCurrentStep().id == "workflows-tooltip") {
-      flow.getCurrentStep().complete();
-    }
-  }, [flow]);
-
   return (
     <div>
       {isLoading && !fetchingEmails && (

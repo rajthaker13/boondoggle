@@ -71,7 +71,7 @@ function BoondogggleAI(props) {
       fetchConversations();
       setFirstLoad(false);
     }
-  });
+  }, []);
 
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
