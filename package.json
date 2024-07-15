@@ -6,6 +6,7 @@
     "@azure/ai-text-analytics": "^5.1.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
+    "@frigade/react": "^2.4.6",
     "@headlessui/react": "^1.7.18",
     "@headlessui/tailwindcss": "^0.2.0",
     "@heroicons/react": "^2.0.18",
@@ -92,8 +93,8 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@tailwindcss/forms": "^0.5.7",
-    "supabase": "^1.136.3",
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "supabase": "^1.136.3"
   }
 }

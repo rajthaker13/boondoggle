@@ -13,6 +13,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import LoadingBar from "../Dashboard/LoadingBar";
 import { CRITERIA_WEIGHTS } from "../../functions/schemas/criteria_weights";
 import SpamModal from "./SpamModal";
+import { useFlow } from "@frigade/react";
 
 let progress = 0;
 
@@ -311,24 +312,26 @@ function Workflows(props) {
               userURL = await fetchEnrichmentProfile(update, "EmailURL");
             }
 
-            if (userURL !== null) {
-              crmUpdate.push({
-                id: uniqueId,
-                date: update.date,
-                customer: current_crm.name,
-                title: update.title,
-                position: current_crm.title,
-                summary: update.summary,
-                company: current_crm.company,
-                url: userURL,
-                source: source,
-                ...(source === "Email"
-                  ? { email: update.email }
-                  : update.email != null
-                  ? { email: update.email }
-                  : { email: null }),
-              });
+            if (userURL === null) {
+              userURL = "";
             }
+
+            crmUpdate.push({
+              id: uniqueId,
+              date: update.date,
+              customer: current_crm.name,
+              title: update.title,
+              position: current_crm.title,
+              summary: update.summary,
+              company: current_crm.company,
+              url: userURL,
+              source: source,
+              ...(source === "Email"
+                ? { email: update.email }
+                : update.email != null
+                ? { email: update.email }
+                : { email: null }),
+            });
           }
 
           const event = {
@@ -1021,7 +1024,7 @@ function Workflows(props) {
     } else {
       const createCompanyOptions = {
         method: "POST",
-        url: `https://vast-waters-56699-3595bd537b3a.herokuapp.com/https://api.unified.to/crm/${connection_id}/company`,
+        url: `https://api.unified.to/crm/${connection_id}/company`,
         headers: {
           authorization: `bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0`,
         },
@@ -1083,6 +1086,7 @@ function Workflows(props) {
       let userLinkedInUrl;
       let profile = null;
       if (source === "Email") {
+        console.log("Profile Data", profileData);
         try {
           const userURLResponse = await axios.request(
             getLinkedInURLByEmail(profileData.email)
@@ -1205,6 +1209,13 @@ function Workflows(props) {
     }
   }
 
+  //Checks if email is automated
+  function isAutomatedEmail(customerEmail) {
+    const regex =
+      /no[-]?reply|invoice|notifications|notification|support|team/i;
+    return regex.test(customerEmail);
+  }
+
   /**
    * Uploads emails, processes them, and updates the CRM with relevant information.
    *
@@ -1231,6 +1242,8 @@ function Workflows(props) {
 
     let emails = data.emailData;
     setAllEmails(emails);
+
+    console.log("All emails", emails);
 
     localStorage.setItem("user_email", userEmail);
 
@@ -1263,24 +1276,30 @@ function Workflows(props) {
           }
         });
 
-        createNewEmailObj(new_emails, email, userEmail, validEmailsIndex);
+        const isAutomated = isAutomatedEmail(email.author_member.email);
 
-        const { title, summary } = await generateEmailCRMData(
-          new_emails[validEmailsIndex]
-        );
-        new_emails[validEmailsIndex].title = title;
-        new_emails[validEmailsIndex].summary = summary;
+        if (!isAutomated) {
+          createNewEmailObj(new_emails, email, userEmail, validEmailsIndex);
 
-        const isSpamEmail = await checkEmail(new_emails[validEmailsIndex]);
-        new_emails[validEmailsIndex].isSpam = isSpamEmail;
+          const { title, summary } = await generateEmailCRMData(
+            new_emails[validEmailsIndex]
+          );
+          new_emails[validEmailsIndex].title = title;
+          new_emails[validEmailsIndex].summary = summary;
 
-        validEmailsIndex++;
+          const isSpamEmail = await checkEmail(new_emails[validEmailsIndex]);
+          new_emails[validEmailsIndex].isSpam = isSpamEmail;
+
+          validEmailsIndex++;
+        }
       }
 
       progress++;
     }
 
     new_emails.sort((a, b) => a.isSpam - b.isSpam);
+
+    console.log("new_emails", new_emails);
 
     setAllEmails(new_emails);
 
@@ -1335,32 +1354,16 @@ function Workflows(props) {
     const MAX_TOKEN_SIZE = 8191; // Define your maximum token size here
 
     const subject = email.data.subject.toLowerCase();
+
     let body = email.data.message.replace(/<[^>]+>/g, ""); // Remove HTML content
-    body = body.substring(0, MAX_TOKEN_SIZE); //Adjusting for additional characters
 
     const index = pinecone.index("spam-data");
     const ns1 = index.namespace("version-3");
 
-    function isAutomatedEmail(customerEmail) {
-      const regex = /no[-]?reply|invoice|notifications|support|team/i;
-      return regex.test(customerEmail);
-    }
-
     try {
-      const customerEmail = email.email;
-      const customerName = email.customer;
-
-      if (customerEmail === "" || customerName === "") {
-        return true;
-      } else {
-        const isAutomatedEmailResponse = isAutomatedEmail(customerEmail);
-        if (isAutomatedEmailResponse) {
-          return true;
-        }
-      }
       const embedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
-        input: `Subject: ${subject} \n ${body}`,
+        input: `Subject: ${subject} \r\n ${body}`.substring(0, MAX_TOKEN_SIZE),
       });
 
       const spamEmailResponse = await ns1.query({
@@ -1389,12 +1392,49 @@ function Workflows(props) {
 
       if (
         subject === "" ||
-        email.channel_id === "DRAFT" ||
         spamMatchCount / SPAM_EMAIL_COMPARISIONS > threshold // Check if queried data has higher ratio than threshold
       ) {
         return true;
       } else {
-        return false;
+        const customer = email.data.author_member.name;
+        const emailMessageTypes = [
+          new Document({ pageContent: "Marketing" }),
+          new Document({ pageContent: "Sales" }),
+          new Document({ pageContent: "Recruiting" }),
+          new Document({ pageContent: "Networking" }),
+          new Document({ pageContent: "Spam" }),
+          new Document({ pageContent: "Customer" }),
+        ];
+        const emailMessageTypesText = [
+          "Marketing",
+          "Sales",
+          "Recruiting",
+          "Networking",
+          "Spam",
+          "Customer",
+        ];
+        const model = new ChatOpenAI({
+          model: "gpt-4o",
+          temperature: 0.2,
+          openAIApiKey: process.env.REACT_APP_OPENAI_KEY,
+        });
+        const chain = loadQAMapReduceChain(model);
+        const res = await chain.invoke({
+          input_documents: emailMessageTypes,
+          question:
+            `Based on the following summary of a Email conversation from ${customer}, determine what type of message this is. Only return 'Customer' if the conversation should be logged in a company's CRM. Here is the coversation: Subject: ${subject} \r\n ${body}.`.substring(
+              0,
+              MAX_TOKEN_SIZE
+            ),
+        });
+        const filteredMessageType = emailMessageTypesText.find((messageType) =>
+          res.text.includes(messageType)
+        );
+        if (filteredMessageType === "Customer") {
+          return false;
+        } else {
+          return true;
+        }
       }
     } catch (error) {
       console.error("Error processing email:", error);
@@ -1586,6 +1626,15 @@ function Workflows(props) {
     };
   }
 
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if (flow && flow.getCurrentStep().id == "workflows-tooltip") {
+      flow.getCurrentStep().complete();
+    }
+  }, [flow]);
+
   return (
     <div>
       {isLoading && !fetchingEmails && (
@@ -1763,6 +1812,7 @@ function Workflows(props) {
                       setModalStep(1);
                     } else {
                       setShowSpamModal(false);
+                      flow.steps.get("workflows-checklist").complete();
                     }
                   }}
                 >

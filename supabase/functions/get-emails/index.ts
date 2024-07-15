@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
 
   const { user_id } = await req.json()
 
-  const emailUrl = `https://api.unified.to/messaging/${user_id}/message?limit=50`;
+  const emailUrl = `https://api.unified.to/messaging/${user_id}/message?channel_id=IMPORTANT`;
   const emailOptions = {
     method: "GET",
     headers: {

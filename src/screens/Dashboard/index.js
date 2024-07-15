@@ -9,9 +9,12 @@ import { createPineconeIndexes } from "../../functions/crm_entries";
 import axios from "axios";
 import IssuesModal from "./IssuesModal";
 import { fetchEnrichmentProfile } from "../../functions/enrich_crm";
+import { useFlow } from "@frigade/react";
+import * as Frigade from "@frigade/react";
 
 function Dashboard(props) {
   const [crmConnected, setCRMConnected] = useState(false);
+  const [emailConnected, setEmailConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanComplete, setScanComplete] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +28,9 @@ function Dashboard(props) {
   const [allIssues, setAllIssues] = useState([]);
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
+  const [showLongTimeMess, setShowLongTimeMess] = useState(false);
+  const [viewedActivity, setViewedActivity] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
     /**
@@ -79,7 +85,7 @@ function Dashboard(props) {
             }
           }
         );
-      } catch (erorr) {
+      } catch (error) {
         setLinkedInLinked(false);
         setIsLoading(false); //loading state is reset on error
       }
@@ -98,6 +104,7 @@ function Dashboard(props) {
         const connection_id = urlParams.get("id");
 
         setIsLoading(true);
+        setShowLongTimeMess(true);
 
         //retrieve the CRM scan score and the array of issues
         let scanResult;
@@ -152,6 +159,7 @@ function Dashboard(props) {
           setCompanyIssues(companyIssuesTemp);
           setNumIssues(issuesArray.length);
           setCRMScore(newScore);
+          setShowLongTimeMess(false);
           var cleanUrl = window.location.href.split("?")[0];
           window.history.replaceState({}, document.title, cleanUrl);
           setCRMConnected(true);
@@ -367,6 +375,78 @@ function Dashboard(props) {
     localStorage.setItem("resolvedIssues", true);
   };
 
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    async function checkConversations() {
+      const uid = localStorage.getItem("uid");
+
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      if (data && data[0]) {
+        if (data[0].boondoggle_conversations[0]) {
+          props.setSummonIncomplete(false);
+        }
+      }
+    }
+
+    checkConversations();
+
+    if (flow) {
+      console.log("flow is active");
+      console.log(showOnboarding);
+    }
+    if (flow && crmConnected) {
+      flow.steps.get("crm-checklist").complete();
+    }
+
+    if (!crmConnected && flow && flow.isSkipped) {
+      flow.restart();
+    }
+
+    if (flow && emailConnected) {
+      flow.steps.get("email-checklist").complete();
+    }
+    if (flow && linkedInLinked) {
+      flow.steps.get("linkedin-checklist").complete();
+    }
+
+    if (flow && !props.summonIncomplete) {
+      flow.steps.get("summon-checklist").complete();
+    }
+
+    if (flow) {
+      const steps = Array.from(flow.steps.values());
+      let allStepsCompleted = true;
+
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i].$state.completed != true) {
+          allStepsCompleted = false;
+        }
+      }
+
+      if (allStepsCompleted) {
+        flow.complete();
+        setShowOnboarding(false);
+      } else {
+        flow.isVisible = true;
+        flow.isCompleted = false;
+      }
+    }
+  }, [
+    flow,
+    crmConnected,
+    linkedInLinked,
+    emailConnected,
+    issuesResolved,
+    viewedActivity,
+    props.summonIncomplete,
+  ]);
+
   return (
     <div>
       {isLoading && (
@@ -381,6 +461,7 @@ function Dashboard(props) {
           ]}
           isLoading={isLoading}
           screen={"dashboard"}
+          showMessage={showLongTimeMess}
         />
       )}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
@@ -416,6 +497,8 @@ function Dashboard(props) {
                 : "flex-shrink-0 w-[100%] h-[46.77px] px-[20.77px] py-[10.38px] bg-blue-500 rounded-[10.27px] shadow justify-center items-center hover:bg-blue-400"
             }
             onClick={async () => {
+              setIsOpen(false);
+              flow.steps.get("issues-checklist").complete();
               await handleUpdate();
             }}
           >
@@ -427,30 +510,95 @@ function Dashboard(props) {
       </Dialog>
 
       {!isLoading && (
-        <div className="justify-center items-center w-full h-full">
-          <Header selectedTab={0} db={props.db} />
-          <Score
-            crmConnected={crmConnected}
-            setCRMConnected={setCRMConnected}
-            crmScore={crmScore}
-            numIssues={numIssues}
-            issuesResolved={issuesResolved}
-          />
+        <div className="flex-col">
+          {showOnboarding && (
+            <div>
+              {/* Header at the top, full width */}
+              <Header
+                selectedTab={0}
+                db={props.db}
+                setViewedActivity={setViewedActivity}
+              />
+              <div className="flex">
+                {/* Sidebar with Frigade component */}
+                <div className="px-2 mt-4" style={{ width: "325px" }}>
+                  <Frigade.Checklist.Collapsible
+                    flowId="flow_YBmeka6n"
+                    css={{
+                      ".fr-field-radio-value": {
+                        borderColor: "#999",
+                      },
+                    }}
+                  />
+                </div>
 
-          <Accounts
-            crmConnected={crmConnected}
-            linkedInLinked={linkedInLinked}
-            db={props.db}
-            emailLinked={emailLinked}
-          />
-          {crmConnected && (
-            <Issues
-              crmConnected={crmConnected}
-              setIsOpen={setIsOpen}
-              issuesResolved={issuesResolved}
-              linkedInLinked={linkedInLinked}
-              issues={contactIssues}
-            />
+                <div className="flex-1 flex-col min-w-0">
+                  <div className="flex-shrink-0">
+                    <Score
+                      crmConnected={crmConnected}
+                      setCRMConnected={setCRMConnected}
+                      crmScore={crmScore}
+                      numIssues={numIssues}
+                      issuesResolved={issuesResolved}
+                    />
+                  </div>
+                  <div className="flex-shrink-0">
+                    <Accounts
+                      crmConnected={crmConnected}
+                      linkedInLinked={linkedInLinked}
+                      db={props.db}
+                      emailConnected={emailConnected}
+                      setEmailConnected={setEmailConnected}
+                    />
+                  </div>
+                  {crmConnected && (
+                    <div className="flex-shrink-0">
+                      <Issues
+                        crmConnected={crmConnected}
+                        setIsOpen={setIsOpen}
+                        issuesResolved={issuesResolved}
+                        linkedInLinked={linkedInLinked}
+                        issues={contactIssues}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {!showOnboarding && (
+            <div className="justify-center items-center w-full h-full">
+              <Header
+                selectedTab={0}
+                db={props.db}
+                setViewedActivity={setViewedActivity}
+              />
+              <Score
+                crmConnected={crmConnected}
+                setCRMConnected={setCRMConnected}
+                crmScore={crmScore}
+                numIssues={numIssues}
+                issuesResolved={issuesResolved}
+              />
+
+              <Accounts
+                crmConnected={crmConnected}
+                linkedInLinked={linkedInLinked}
+                db={props.db}
+                emailLinked={emailLinked}
+                emailConnected={emailConnected}
+                setEmailConnected={setEmailConnected}
+              />
+              {crmConnected && (
+                <Issues
+                  crmConnected={crmConnected}
+                  setIsOpen={setIsOpen}
+                  issuesResolved={issuesResolved}
+                  linkedInLinked={linkedInLinked}
+                  issues={contactIssues}
+                />
+              )}
+            </div>
           )}
         </div>
       )}

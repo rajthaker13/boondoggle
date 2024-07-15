@@ -24,6 +24,7 @@ import Sidebar from "./Sidebar";
 import "./index.css";
 import boondoggleaiPic from "../../assets/boondoggleAI.png";
 import userPic from "../../assets/user.png";
+import * as Frigade from "@frigade/react";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -261,8 +262,10 @@ function BoondogggleAI(props) {
       const newQuery = await queryTransformationChain.invoke({
         messages: [...temp_langchain, new HumanMessage(userQuery)],
       });
+
+      const queryDate = new Date().toISOString();
       // Get the new search quergy
-      const searchQuery = `User query: ${userQuery}, Edited Query: ${newQuery.content}`;
+      const searchQuery = `Query: ${newQuery.content}, created_at: ${queryDate} `;
 
       //Generate embeddings for a semantic search
       const embedding = await openai.embeddings.create({
@@ -334,113 +337,29 @@ function BoondogggleAI(props) {
         ...notesMatches,
         ...companiesMatches,
       ];
-      // Fetch all results from unified based on matches
-      let queryArray = [];
-      // REST API calls
-      await Promise.all(
-        matches.map(async (match, index) => {
-          const matchType = match.type;
 
-          if (matchType == "Deal") {
-            const options = {
-              method: "GET",
-              url: `https://api.unified.to/crm/${id}/deal/${match.id}`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-            let results;
-            try {
-              results = await axios.request(options);
-            } catch (err) {
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-              results = await axios.request(options);
-            }
-            queryArray.push(results.data);
-          } else if (matchType == "Contact") {
-            const options = {
-              method: "GET",
-              url: `https://api.unified.to/crm/${id}/contact/${match.id}`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-            let results;
-            try {
-              results = await axios.request(options);
-              queryArray.push(results.data);
-            } catch (err) {
-              if (err.response && err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                results = await axios.request(options);
-                queryArray.push(results.data);
-              }
-            }
-          } else if (matchType == "Company") {
-            const options = {
-              method: "GET",
-              url: `https://api.unified.to/crm/${id}/company/${match.id}`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-            let results;
-            try {
-              results = await axios.request(options);
-              queryArray.push(results.data);
-            } catch (err) {
-              if (err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                results = await axios.request(options);
-                queryArray.push(results.data);
-              }
-            }
-          } else if (matchType == "NOTE") {
-            const options = {
-              method: "GET",
-              url: `https://api.unified.to/crm/${id}/event/${match.id}`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-            let results;
-            try {
-              results = await axios.request(options);
-              queryArray.push(results.data);
-            } catch (err) {
-              if (err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                results = await axios.request(options);
-                queryArray.push(results.data);
-              }
-            }
-          } else if (matchType == "Lead") {
-            const options = {
-              method: "GET",
-              url: `https://api.unified.to/crm/${id}/lead/${match.id}`,
-              headers: {
-                authorization:
-                  "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzMzgiLCJ3b3Jrc3BhY2VfaWQiOiI2NWMwMmRiZWM5ODEwZWQxZjIxNWMzM2IiLCJpYXQiOjE3MDcwOTM0Mzh9.sulAKJa6He9fpH9_nQIMTo8_SxEHFj5u_17Rlga_nx0",
-              },
-            };
-            let results;
-            try {
-              results = await axios.request(options);
-              queryArray.push(results.data);
-            } catch (err) {
-              if (err.response.status === 429) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                results = await axios.request(options);
-                queryArray.push(results.data);
-              }
-            }
-          }
-        })
-      );
+      // Fetch all results from unified based on matches
+      let queryArray = matches.map((item) => {
+        const created_at = new Date(item.created_at).toLocaleString();
+        const updated_at = new Date(item.updated_at).toLocaleString();
+        return {
+          type: item.type,
+          created_at: created_at,
+          updated_at: updated_at,
+          ...(item.type !== "NOTE" ? { name: item.name } : {}),
+          ...(item.type === "NOTE" ? { note: item.note } : {}),
+          ...(item.type === "Contact" ? { emails: item.emails } : {}),
+          ...(item.type === "Contact" ? { title: item.title } : {}),
+          ...(item.type === "Contact" ? { company: item.company } : {}),
+          ...(item.type === "Company" ? { address: item.address } : {}),
+          ...(item.type === "Company" ? { description: item.description } : {}),
+          ...(item.type === "Company" ? { industry: item.industry } : {}),
+          ...(item.type === "Company" ? { websites: item.websites } : {}),
+          ...(item.type === "Company" ? { employees: item.employees } : {}),
+          ...(item.type === "Deal" ? { stage: item.stage } : {}),
+        };
+      });
+
       // Create a string from the query result array
       const queryArrayString = queryArray
         .map((item) => `${JSON.stringify(item)}`)
@@ -577,14 +496,8 @@ function BoondogggleAI(props) {
         new AIMessage(finalAnswer)
       );
 
-      console.log("messages array", temp_langchain);
       let newMessagesArr = [];
       for (const obj of temp_langchain) {
-        /*if (obj.constructor.name == "HumanMessage") {
-          newMessagesArr.push(extractUserQuery(obj.content));
-        } else {
-          newMessagesArr.push(obj.content);
-        }*/
         newMessagesArr.push(obj.content);
       }
 
@@ -662,39 +575,70 @@ function BoondogggleAI(props) {
   }
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      <div className="boondoggle-ai-container">
-        <Header db={props.db} selectedTab={3} />
-        <div className="boondoggle-ai-content">
-          <Sidebar
-            conversations={conversations}
-            onSelectConversation={loadConversation}
-            selectedConversationId={convoID}
-            onNewConversation={() => {
-              const chatContent = document.getElementById(
-                "boondoggle-ai-chat-content"
-              );
-              chatContent.innerHTML = ""; // Clear current chat
-              setConvoID("");
-            }}
-          />
-          <div className="boondoggle-ai-main">
+      {props.showOnboarding && (
+        <div className="boondoggle-ai-container">
+          <Header db={props.db} selectedTab={3} />
+          <div className="boondoggle-ai-content">
             <div
-              className="boondoggle-ai-chat-content"
-              id="boondoggle-ai-chat-content"
-              ref={chatContentRef}
-            ></div>
-            <div className="boondoggle-ai-input">
-              <input
-                onKeyDown={async (event) => await onBoondoggleQuery(event)}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Press Enter to Query"
-              />
+              className="px-2 mt-4 overflow-y-auto"
+              style={{ width: "325px" }}
+            >
+              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+            </div>
+            <div className="boondoggle-ai-main">
+              <div
+                className="boondoggle-ai-chat-content"
+                id="boondoggle-ai-chat-content"
+                ref={chatContentRef}
+              ></div>
+              <div className="boondoggle-ai-input">
+                <input
+                  onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Press Enter to Query"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+      {!props.showOnboarding && (
+        <div className="boondoggle-ai-container">
+          <Header db={props.db} selectedTab={3} />
+          <div className="boondoggle-ai-content">
+            <Sidebar
+              conversations={conversations}
+              onSelectConversation={loadConversation}
+              selectedConversationId={convoID}
+              onNewConversation={() => {
+                const chatContent = document.getElementById(
+                  "boondoggle-ai-chat-content"
+                );
+                chatContent.innerHTML = ""; // Clear current chat
+                setConvoID("");
+              }}
+            />
+            <div className="boondoggle-ai-main">
+              <div
+                className="boondoggle-ai-chat-content"
+                id="boondoggle-ai-chat-content"
+                ref={chatContentRef}
+              ></div>
+              <div className="boondoggle-ai-input">
+                <input
+                  onKeyDown={async (event) => await onBoondoggleQuery(event)}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Press Enter to Query"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </LoadingOverlay>
   );
 }

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getCrmEntriesProgress } from "../../functions/crm_entries";
 import { getWorkflowsProgress } from "../Workflows";
 
-function LoadingBar({ messages, isLoading, screen }) {
+function LoadingBar({ messages, isLoading, screen, showMessage }) {
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -107,7 +107,7 @@ function LoadingBar({ messages, isLoading, screen }) {
 
     //CALLOUT MIDDLE TOP MIDDLE ALIGN
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white bg-opacity-80">
-      {screen === "dashboard" && (
+      {screen === "dashboard" && showMessage && (
         <div className="absolute top-0 left-0 w-full p-4">
           <Callout
             className="w-full h-28 flex items-center justify-center border-l-0"

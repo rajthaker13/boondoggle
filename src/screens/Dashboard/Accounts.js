@@ -17,7 +17,6 @@ function Accounts(props) {
   const [availableEmail, setAvailableEmail] = useState([]);
   const [selectedEnrichment, setSelectedEnrichment] = useState({});
   const [selectedEmail, setSelectedEmail] = useState({});
-  const [emailConnected, setEmailConnected] = useState(false);
   const [connectedEmailsList, setConnectedEmailsList] = useState([]);
 
   useEffect(() => {
@@ -66,9 +65,9 @@ function Accounts(props) {
       if (data && data[0]) {
         let connectedEmails = data[0].email_data;
         if (connectedEmails.length > 0) {
-          setEmailConnected(true);
+          props.setEmailConnected(true);
         } else {
-          setEmailConnected(false);
+          props.setEmailConnected(false);
         }
         setConnectedEmailsList(connectedEmails);
       }
@@ -79,7 +78,7 @@ function Accounts(props) {
   }, [props]);
 
   return (
-    <div class="w-[96vw] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
+    <div class="w-[95%] mt-[5vh] ml-[2vw] mr-[2vw]  justify-start items-center gap-[17px] inline-flex flex-wrap">
       <Accordion class="grow shrink basis-0 p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-center items-center gap-4 flex">
         <AccordionHeader class="self-stretch justify-between items-center inline-flex">
           <div class="justify-start items-center  flex-1">
@@ -94,12 +93,12 @@ function Accounts(props) {
             <div class="px-2 py-[2.50px] bg-white/opacity-90 rounded-md border border-white/opacity-80 justify-start items-center gap-1.5 flex">
               <div
                 class={
-                  emailConnected
+                  props.emailConnected
                     ? "text-emerald-600 text-xs font-normal font-['Inter']"
                     : "text-orange-600 text-xs font-normal font-['Inter']"
                 }
               >
-                {emailConnected ? "Connected" : "Disconnected"}
+                {props.emailConnected ? "Connected" : "Disconnected"}
               </div>
             </div>
             <div class="w-5 h-5 relative"></div>

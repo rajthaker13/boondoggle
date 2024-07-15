@@ -69,7 +69,7 @@ function Score(props) {
   return (
     <>
       {props.crmConnected && (
-        <div class="w-[96vw] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
+        <div class="w-[95%] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
           <div class="flex-col justify-start items-start gap-[15px] inline-flex">
             <div class="flex-col justify-start items-start flex">
               <div class="self-stretch">
@@ -101,7 +101,7 @@ function Score(props) {
         </div>
       )}
       {!props.crmConnected && (
-        <div class="w-[96vw] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
+        <div class="w-[95%] ml-[2vw] mr-[2vw] mt-[5vh] h-[200.64px] p-[37.21px] bg-white rounded-lg shadow border-2 border-gray-200 justify-between items-center inline-flex">
           <div class="flex-col justify-start items-start gap-[15px] inline-flex">
             <div class="flex-col justify-start items-start flex">
               <div class="self-stretch">
