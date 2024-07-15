@@ -29,7 +29,6 @@ function Dashboard(props) {
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
   const [showLongTimeMess, setShowLongTimeMess] = useState(false);
-  const [viewedActivity, setViewedActivity] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
@@ -379,6 +378,18 @@ function Dashboard(props) {
   const { flow } = useFlow(flowId);
 
   useEffect(() => {
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
+    }
+  });
+
+  useEffect(() => {
     async function checkConversations() {
       const uid = localStorage.getItem("uid");
 
@@ -397,8 +408,6 @@ function Dashboard(props) {
     checkConversations();
 
     if (flow) {
-      console.log("flow is active");
-      console.log(showOnboarding);
       let currentUrl = window.location.href;
       let url = new URL(currentUrl);
       let baseUrl = `${url.protocol}//${url.host}`;
@@ -407,14 +416,13 @@ function Dashboard(props) {
       flow.steps.get("activity-checklist").secondaryButton.uri =
         baseUrl + "/entries";
     }
+
     if (
       flow &&
       !flow.steps.get("crm-checklist").$state.completed &&
       crmConnected
     ) {
       flow.steps.get("crm-checklist").complete();
-    } else if (flow && !flow.steps.get("crm-checklist").$state.completed) {
-      flow.steps.get("crm-checklist").start();
     }
 
     if (
@@ -451,20 +459,21 @@ function Dashboard(props) {
 
     if (flow) {
       const steps = Array.from(flow.steps.values());
-      let allStepsCompleted = true;
+      let incompleteSteps = [];
 
       for (let i = 0; i < steps.length; i++) {
         if (steps[i].$state.completed != true) {
-          allStepsCompleted = false;
+          incompleteSteps.push(steps[i]);
         }
       }
 
-      if (allStepsCompleted) {
+      if (incompleteSteps.length == 0) {
         flow.complete();
         setShowOnboarding(false);
       } else {
         flow.isVisible = true;
         flow.isCompleted = false;
+        incompleteSteps[0].start();
       }
     }
   }, [
@@ -473,7 +482,6 @@ function Dashboard(props) {
     linkedInLinked,
     emailConnected,
     issuesResolved,
-    viewedActivity,
     props.summonIncomplete,
   ]);
 
@@ -544,11 +552,7 @@ function Dashboard(props) {
           {showOnboarding && (
             <div>
               {/* Header at the top, full width */}
-              <Header
-                selectedTab={0}
-                db={props.db}
-                setViewedActivity={setViewedActivity}
-              />
+              <Header selectedTab={0} db={props.db} />
               <div className="flex">
                 {/* Sidebar with Frigade component */}
                 <div className="px-2 mt-4" style={{ width: "325px" }}>
@@ -598,11 +602,7 @@ function Dashboard(props) {
           )}
           {!showOnboarding && (
             <div className="justify-center items-center w-full h-full">
-              <Header
-                selectedTab={0}
-                db={props.db}
-                setViewedActivity={setViewedActivity}
-              />
+              <Header selectedTab={0} db={props.db} />
               <Score
                 crmConnected={crmConnected}
                 setCRMConnected={setCRMConnected}

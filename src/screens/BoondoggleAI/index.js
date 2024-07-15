@@ -104,7 +104,7 @@ function BoondogggleAI(props) {
 
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db.from("users").select().eq("id", uid);
-    const supaConversations = data[0].boondoggle_conversations;
+    const supaConversations = data[0] ? data[0].boondoggle_conversations : [];
     setConversations(supaConversations);
 
     const selectedConversation = supaConversations.find(

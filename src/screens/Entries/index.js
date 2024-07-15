@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@tremor/react";
 import { RiLinkedinFill, RiMailLine } from "@remixicon/react";
+import { useFlow } from "@frigade/react";
 
 function NewEntries(props) {
   const [tableData, setTableData] = useState([]);
@@ -194,6 +195,9 @@ function NewEntries(props) {
     setIsLoading(false);
   }
 
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
@@ -205,29 +209,35 @@ function NewEntries(props) {
         .from("data")
         .select()
         .eq("connection_id", connection_id);
-      setTableData(data[0].crm_data.reverse());
-      setTasks(data[0].tasks);
+      if (data && data[0]) {
+        setTableData(data[0].crm_data.reverse());
+        setTasks(data[0].tasks);
 
-      //Will uncomment this out when we bring in team manager
-      // if (isAdmin == "true" && connection_id != null) {
-      //   const { data, error } = await props.db
-      //     .from("data")
-      //     .select()
-      //     .eq("connection_id", connection_id);
-      //   setTableData(data[0].crm_data.reverse());
-      //   setTasks(data[0].tasks);
-      // } else if (isAdmin == "false" && connection_id != null) {
-      //   const { data, error } = await props.db
-      //     .from("users")
-      //     .select()
-      //     .eq("id", uid);
-      //   setTableData(data[0].crm_data.reverse());
-      //   setTasks(data[0].tasks);
-      // }
+        //Will uncomment this out when we bring in team manager
+        // if (isAdmin == "true" && connection_id != null) {
+        //   const { data, error } = await props.db
+        //     .from("data")
+        //     .select()
+        //     .eq("connection_id", connection_id);
+        //   setTableData(data[0].crm_data.reverse());
+        //   setTasks(data[0].tasks);
+        // } else if (isAdmin == "false" && connection_id != null) {
+        //   const { data, error } = await props.db
+        //     .from("users")
+        //     .select()
+        //     .eq("id", uid);
+        //   setTableData(data[0].crm_data.reverse());
+        //   setTasks(data[0].tasks);
+        // }
+      }
+    }
+
+    if (flow && !flow.steps.get("activity-checklist").$state.completed) {
+      flow.steps.get("activity-checklist").complete();
     }
 
     getData();
-  }, []);
+  }, [flow]);
 
   function timeAgo(timestamp) {
     const currentTime = new Date();
