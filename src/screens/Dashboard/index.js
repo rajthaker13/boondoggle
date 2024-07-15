@@ -555,7 +555,10 @@ function Dashboard(props) {
               <Header selectedTab={0} db={props.db} />
               <div className="flex">
                 {/* Sidebar with Frigade component */}
-                <div className="px-2 mt-4" style={{ width: "325px" }}>
+                <div
+                  className="px-2 mt-4 overflow-y-auto"
+                  style={{ width: "325px" }}
+                >
                   <Frigade.Checklist.Collapsible
                     flowId="flow_YBmeka6n"
                     css={{

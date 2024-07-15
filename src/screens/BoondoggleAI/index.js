@@ -25,6 +25,7 @@ import "./index.css";
 import boondoggleaiPic from "../../assets/boondoggleAI.png";
 import userPic from "../../assets/user.png";
 import * as Frigade from "@frigade/react";
+import { useFlow } from "@frigade/react";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -573,6 +574,22 @@ function BoondogggleAI(props) {
       }
     }
   }
+
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
+    }
+  });
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
       {props.showOnboarding && (
@@ -583,7 +600,14 @@ function BoondogggleAI(props) {
               className="px-2 mt-4 overflow-y-auto"
               style={{ width: "325px" }}
             >
-              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+              <Frigade.Checklist.Collapsible
+                flowId="flow_YBmeka6n"
+                css={{
+                  ".fr-field-radio-value": {
+                    borderColor: "#999",
+                  },
+                }}
+              />
             </div>
             <div className="boondoggle-ai-main">
               <div

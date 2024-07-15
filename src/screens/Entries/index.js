@@ -11,8 +11,10 @@ import {
 } from "@tremor/react";
 import { RiLinkedinFill, RiMailLine } from "@remixicon/react";
 import { useFlow } from "@frigade/react";
+import * as Frigade from "@frigade/react";
 
 function NewEntries(props) {
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [tableData, setTableData] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
@@ -195,9 +197,6 @@ function NewEntries(props) {
     setIsLoading(false);
   }
 
-  const flowId = "flow_YBmeka6n";
-  const { flow } = useFlow(flowId);
-
   useEffect(() => {
     async function getData() {
       const uid = localStorage.getItem("uid");
@@ -232,12 +231,20 @@ function NewEntries(props) {
       }
     }
 
+    getData();
+  }, []);
+
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
     if (flow && !flow.steps.get("activity-checklist").$state.completed) {
       flow.steps.get("activity-checklist").complete();
     }
-
-    getData();
-  }, [flow]);
+    if (flow && flow.isCompleted) {
+      setShowOnboarding(false);
+    }
+  });
 
   function timeAgo(timestamp) {
     const currentTime = new Date();
@@ -263,90 +270,179 @@ function NewEntries(props) {
     }
   }
 
+  useEffect(() => {
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
+    }
+  });
+
   return (
     <div>
-      <Header selectedTab={2} db={props.db} />
-      <div class="w-[100vw] h-[90vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] flex-col">
-        <div class="w-[95vw] h-[85vh] p-6 bg-white rounded-[5.13px] shadow border border-gray-200 flex-col justify-start items-center gap-6 inline-flex">
-          <div class="w-[90vw] h-6 justify-start items-center gap-2.5 inline-flex">
-            <div class="grow shrink basis-0 text-gray-700 text-base font-medium font-['Inter'] leading-normal">
-              Activity Log
+      {showOnboarding && (
+        <div className="h-full">
+          {/* Header at the top, full width */}
+          <Header selectedTab={2} db={props.db} />
+          <div className="flex h-full">
+            {/* Sidebar with Frigade component */}
+            <div
+              className="px-2 mt-4 overflow-y-auto"
+              style={{ width: "325px" }}
+            >
+              <Frigade.Checklist.Collapsible
+                flowId="flow_YBmeka6n"
+                css={{
+                  ".fr-field-radio-value": {
+                    borderColor: "#999",
+                  },
+                }}
+              />
             </div>
-            {/* <div class="h-[21px] justify-end items-center gap-2.5 flex">
-              <div class="w-[77.50px] px-2.5 py-0.5 bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 flex">
-                <div class="text-blue-700 text-xs font-normal font-['Inter']">
-                  Review
-                </div>
-                <div class="p-[0.75px] bg-blue-500 rounded-sm justify-start items-start gap-[3px] flex">
-                  <div class="w-[9px] h-[9px] relative"></div>
-                </div>
-              </div>
-              <div class="w-[91.50px] px-2.5 py-0.5 bg-white bg-opacity-90 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
-                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
-                  <div class="text-emerald-600 text-xs font-normal font-['Inter']">
-                    Approved
+            <div className="flex-1 flex-col min-w-0 overflow-hidden">
+              <div className="w-full h-full mt-4 p-4 bg-gray-50 flex flex-col">
+                <div className="w-full h-full p-6 bg-white rounded shadow border border-gray-200 flex flex-col gap-6">
+                  <div className="w-full flex justify-between items-center">
+                    <div className="text-gray-700 text-base font-medium">
+                      Activity Log
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-full">
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell>Customer</TableHeaderCell>
+                          <TableHeaderCell>Title</TableHeaderCell>
+                          <TableHeaderCell>Summary</TableHeaderCell>
+                          <TableHeaderCell>Source</TableHeaderCell>
+                          <TableHeaderCell>LinkedIn</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {tableData.map((lead) => {
+                          const timestamp = lead.date;
+                          const timeAgoString = timeAgo(timestamp);
+                          return (
+                            <TableRow key={lead.id}>
+                              <TableCell>{timeAgoString}</TableCell>
+                              <TableCell className="whitespace-normal">
+                                {`${lead.customer}: ${lead.position} @ ${lead.company}`}
+                              </TableCell>
+                              <TableCell className="whitespace-normal">
+                                {lead.title}
+                              </TableCell>
+                              <TableCell className="whitespace-normal">
+                                {lead.summary}
+                              </TableCell>
+                              <TableCell>{lead.source}</TableCell>
+                              <TableCell
+                                onClick={() => window.open(lead.url, "_blank")}
+                              >
+                                <RiLinkedinFill />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
-                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
-                  <div></div>
-                </div>
               </div>
-              <div class="w-[86.50px] px-2.5 py-0.5 bg-rose-100 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
-                <div class="flex-col justify-start items-center gap-2.5 inline-flex">
-                  <div class="text-rose-700 text-xs font-normal font-['Inter']">
-                    Rejected
-                  </div>
-                </div>
-                <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
-                  <div></div>
-                </div>
-              </div>
-            </div> */}
-          </div>
-          <div className="overflow-x-auto">
-            <Table className="w-[90vw]">
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Customer</TableHeaderCell>
-                  <TableHeaderCell>Title</TableHeaderCell>
-                  <TableHeaderCell>Summary</TableHeaderCell>
-                  <TableHeaderCell>Source</TableHeaderCell>
-                  <TableHeaderCell>LinkedIn</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <>
-                  {tableData.map((lead, index) => {
-                    const timestamp = lead.date;
-                    const timeAgoString = timeAgo(timestamp);
-                    return (
-                      <TableRow key={lead.id}>
-                        <TableCell>{timeAgoString}</TableCell>
-                        <TableCell className="whitespace-normal w-[20vw]">{`${lead.customer}: ${lead.position} @ ${lead.company}`}</TableCell>
-                        <TableCell className="whitespace-normal">
-                          {lead.title}
-                        </TableCell>
-                        <TableCell className="whitespace-normal w-[30vw]">
-                          {lead.summary}
-                        </TableCell>
-                        <TableCell>{lead.source}</TableCell>
-                        <TableCell
-                          onClick={() => {
-                            window.open(lead.url, "_blank");
-                          }}
-                        >
-                          <RiLinkedinFill />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </>
-              </TableBody>
-            </Table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+      {!showOnboarding && (
+        <div>
+          <Header selectedTab={2} db={props.db} />
+          <div class="w-[100vw] h-[90vh] p-[38px] bg-gray-50 justify-center items-start gap-[18px] flex-col">
+            <div class="w-[95vw] h-[85vh] p-6 bg-white rounded-[5.13px] shadow border border-gray-200 flex-col justify-start items-center gap-6 inline-flex">
+              <div class="w-[90vw] h-6 justify-start items-center gap-2.5 inline-flex">
+                <div class="grow shrink basis-0 text-gray-700 text-base font-medium font-['Inter'] leading-normal">
+                  Activity Log
+                </div>
+                {/* <div class="h-[21px] justify-end items-center gap-2.5 flex">
+            <div class="w-[77.50px] px-2.5 py-0.5 bg-blue-50 rounded-md border border-blue-200 justify-start items-center gap-1.5 flex">
+              <div class="text-blue-700 text-xs font-normal font-['Inter']">
+                Review
+              </div>
+              <div class="p-[0.75px] bg-blue-500 rounded-sm justify-start items-start gap-[3px] flex">
+                <div class="w-[9px] h-[9px] relative"></div>
+              </div>
+            </div>
+            <div class="w-[91.50px] px-2.5 py-0.5 bg-white bg-opacity-90 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
+              <div class="flex-col justify-start items-center gap-2.5 inline-flex">
+                <div class="text-emerald-600 text-xs font-normal font-['Inter']">
+                  Approved
+                </div>
+              </div>
+              <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
+                <div></div>
+              </div>
+            </div>
+            <div class="w-[86.50px] px-2.5 py-0.5 bg-rose-100 rounded border border-white border-opacity-80 justify-start items-center gap-1.5 flex">
+              <div class="flex-col justify-start items-center gap-2.5 inline-flex">
+                <div class="text-rose-700 text-xs font-normal font-['Inter']">
+                  Rejected
+                </div>
+              </div>
+              <div class="p-[0.75px] bg-white rounded-sm border border-gray-400 justify-start items-start gap-[3px] flex">
+                <div></div>
+              </div>
+            </div>
+          </div> */}
+              </div>
+              <div className="overflow-x-auto">
+                <Table className="w-[90vw]">
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Date</TableHeaderCell>
+                      <TableHeaderCell>Customer</TableHeaderCell>
+                      <TableHeaderCell>Title</TableHeaderCell>
+                      <TableHeaderCell>Summary</TableHeaderCell>
+                      <TableHeaderCell>Source</TableHeaderCell>
+                      <TableHeaderCell>LinkedIn</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <>
+                      {tableData.map((lead, index) => {
+                        const timestamp = lead.date;
+                        const timeAgoString = timeAgo(timestamp);
+                        return (
+                          <TableRow key={lead.id}>
+                            <TableCell>{timeAgoString}</TableCell>
+                            <TableCell className="whitespace-normal w-[20vw]">{`${lead.customer}: ${lead.position} @ ${lead.company}`}</TableCell>
+                            <TableCell className="whitespace-normal">
+                              {lead.title}
+                            </TableCell>
+                            <TableCell className="whitespace-normal w-[30vw]">
+                              {lead.summary}
+                            </TableCell>
+                            <TableCell>{lead.source}</TableCell>
+                            <TableCell
+                              onClick={() => {
+                                window.open(lead.url, "_blank");
+                              }}
+                            >
+                              <RiLinkedinFill />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

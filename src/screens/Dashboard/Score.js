@@ -30,12 +30,17 @@ function Score(props) {
       await Promise.all(
         integrations.map(async (integration) => {
           const url = `https://api.unified.to/unified/integration/auth/${workspace_id}/${integration.type}?success_redirect=${window.location.href}`;
-          const urlResponse = await axios.get(url);
+          let urlResponse;
+          try {
+            urlResponse = await axios.get(url);
+          } catch (error) {
+            console.log("error: ", error);
+          }
 
           // Push integration data (integration object and authentication URL) to integrationData array
           integrationData.push({
             data: integration,
-            url: urlResponse.data,
+            url: urlResponse ? urlResponse.data : null,
           });
         })
       );
