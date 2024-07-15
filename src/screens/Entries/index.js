@@ -241,10 +241,38 @@ function NewEntries(props) {
     if (flow && !flow.steps.get("activity-checklist").$state.completed) {
       flow.steps.get("activity-checklist").complete();
     }
-    if (flow && flow.isCompleted) {
-      setShowOnboarding(false);
+
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
     }
   });
+
+  useEffect(() => {
+    if (flow) {
+      const steps = Array.from(flow.steps.values());
+      let incompleteSteps = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i].$state.completed != true) {
+          incompleteSteps.push(steps[i]);
+        }
+      }
+
+      if (incompleteSteps.length == 0) {
+        flow.complete();
+        setShowOnboarding(false);
+      } else {
+        flow.isVisible = true;
+        flow.isCompleted = false;
+        incompleteSteps[0].start();
+      }
+    }
+  }, [flow]);
 
   function timeAgo(timestamp) {
     const currentTime = new Date();
