@@ -27,42 +27,42 @@ const data = [
     source: "LinkedIn",
     destination: "airtable",
   },
-  {
-    id: 2,
-    title: "Update CRM Deal Status via Emails",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: emailDeal,
-    source: "Email",
-    destination: "crm",
-  },
-  {
-    id: 3,
-    title: "Update CRM Deal Status via LinkedIn Messages",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: linkedInDeal,
-    source: "LinkedIn",
-    destination: "crm",
-  },
-  {
-    id: 4,
-    title: "Update CRM Deal Status & Contacts via Emails",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: emailContacts,
-    source: "Email",
-    destination: "crm",
-  },
-  {
-    id: 5,
-    title: "Update CRM Deal Status & Contacts via LinkedIn Messages",
-    description:
-      "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
-    src: linkedInBoth,
-    source: "LinkedIn",
-    destination: "crm",
-  },
+  // {
+  //   id: 2,
+  //   title: "Update CRM Deal Status via Emails",
+  //   description:
+  //     "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
+  //   src: emailDeal,
+  //   source: "Email",
+  //   destination: "crm",
+  // },
+  // {
+  //   id: 3,
+  //   title: "Update CRM Deal Status via LinkedIn Messages",
+  //   description:
+  //     "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
+  //   src: linkedInDeal,
+  //   source: "LinkedIn",
+  //   destination: "crm",
+  // },
+  // {
+  //   id: 4,
+  //   title: "Update CRM Deal Status & Contacts via Emails",
+  //   description:
+  //     "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
+  //   src: emailContacts,
+  //   source: "Email",
+  //   destination: "crm",
+  // },
+  // {
+  //   id: 5,
+  //   title: "Update CRM Deal Status & Contacts via LinkedIn Messages",
+  //   description:
+  //     "Connect your email to generate new CRM contacts and enrich your existing contacts with conversational context.",
+  //   src: linkedInBoth,
+  //   source: "LinkedIn",
+  //   destination: "crm",
+  // },
 ];
 
 export default data;

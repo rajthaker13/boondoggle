@@ -11,10 +11,14 @@ function Issues(props) {
   const { flow } = useFlow(flowId);
 
   useEffect(() => {
-    if(flow && flow.getCurrentStep().id == "issues-tooltip" && props.issuesResolved) {
+    if (
+      flow &&
+      flow.getCurrentStep().id == "issues-tooltip" &&
+      props.issuesResolved
+    ) {
       flow.getCurrentStep().complete();
     }
-  }, [flow, props.issuesResolved])
+  }, [flow, props.issuesResolved]);
 
   return (
     <div class="w-[95%] h-[auto] ml-[2vw] mr-[2vw] mt-[5vh] p-6 bg-white rounded-lg shadow border border-gray-200 flex-col justify-start items-start gap-6 inline-flex">
@@ -126,7 +130,7 @@ function Issues(props) {
           }}
         >
           <span class="text-white text-xs font-bold font-['Inter'] leading-[10.56px]">
-            View {props.linkedInLinked ? "8" : "9"} Automations
+            View 2 Automations
           </span>
         </Button>
       </div>
