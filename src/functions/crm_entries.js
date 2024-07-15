@@ -119,7 +119,11 @@ export async function createPineconeIndexes(connection_id) {
         missingFieldNormalized * 0.7 + objectPriority * 0.3;
 
       if (missingFields.length > 0 && type !== "Deal") {
-        if (type === "Contact" && missingFields.includes("emails[0].email") && missingFields.includes("company")) {
+        if (
+          type === "Contact" &&
+          missingFields.includes("emails[0].email") &&
+          missingFields.includes("company")
+        ) {
           // Do not push to issuesArray if both 'emails[0].email' and 'company' are missing for Contacts
         } else {
           // Push to issuesArray for other types or if not both fields are missing for Contacts
@@ -160,15 +164,15 @@ export async function createPineconeIndexes(connection_id) {
           for (let attempt = 1; attempt <= 3; attempt++) {
             try {
               response = await axios.request(apiOptions(type, date));
-              break; // Exit the loop if the request is successful
+              if (response.data) {
+                break; // Exit the loop if the request is successful
+              }
             } catch (err) {
               if (attempt === 3) {
                 throw err;
                 // Rethrow the error after the final attempt
               }
-              await new Promise((resolve) =>
-                setTimeout(resolve, attempt * 5000)
-              ); // Increase delay with each attempt
+              await new Promise((resolve) => setTimeout(resolve, 2000)); // Increase delay with each attempt
             }
           }
           // Handle pagination
@@ -180,7 +184,7 @@ export async function createPineconeIndexes(connection_id) {
             dataFetched = true;
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Increase delay with each attempt
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return result;
       } catch (error) {
         console.error(`Error fetching ${type} data:`, error);
@@ -236,14 +240,14 @@ export async function createPineconeIndexes(connection_id) {
                         model: "text-embedding-3-small",
                         input: chunk.pageContent,
                       });
-                      break; // Exit the loop if the request is successful
+                      if (response.data) {
+                        break; // Exit the loop if the request is successful
+                      }
                     } catch (err) {
                       if (attempt === 3) {
                         throw err; // Rethrow the error after the final attempt
                       }
-                      await new Promise((resolve) =>
-                        setTimeout(resolve, attempt * 2000)
-                      ); // Increase delay with each attempt
+                      await new Promise((resolve) => setTimeout(resolve, 2000)); // Increase delay with each attempt
                     }
                   }
 
@@ -329,7 +333,7 @@ export async function createPineconeIndexes(connection_id) {
                 if (retries === 0) {
                   throw error;
                 }
-                await delay(5000); // Wait for 5 seconds before retrying
+                await new Promise((resolve) => setTimeout(resolve, 2000));
               }
             }
           }
@@ -348,7 +352,7 @@ export async function createPineconeIndexes(connection_id) {
           if (retries === 0) {
             throw error;
           }
-          await delay(5000); // Wait for 5 seconds before retrying
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
       progress += 8;
@@ -368,7 +372,7 @@ export async function createPineconeIndexes(connection_id) {
       points: Math.round(score),
       maxPoints: Math.round(maxScore),
     };
-  } catch (error) { }
+  } catch (error) {}
 }
 
 export function getCrmEntriesProgress() {
