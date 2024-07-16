@@ -12,8 +12,9 @@ export default function Header(props) {
           <img src={boondoggleai} alt="Boondoggle Ai" className="mr-5" />
           <div className="flex gap-5">
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 0 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 0 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/home");
               }}
@@ -21,8 +22,9 @@ export default function Header(props) {
               Dashboard
             </p>
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 2 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 2 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/entries");
               }}
@@ -30,8 +32,9 @@ export default function Header(props) {
               Activity
             </p>
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 3 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 3 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/boondoggleai");
               }}
