@@ -504,30 +504,13 @@ function Dashboard(props) {
       )}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
-          {modalStep == 0 && (
+          {modalStep === 0 && (
             <IssuesModal
               issues={contactIssues}
               allIssues={allIssues}
               type="Contact"
             />
           )}
-          {/* {modalStep == 1 && (
-            <IssuesModal
-              issues={companyIssues}
-              allIssues={allIssues}
-              type="Company"
-            />
-          )}
-          {modalStep == 2 && (
-            <>
-              <IssuesModal
-                issues={allIssues}
-                allIssues={allIssues}
-                type="All"
-              />
-            </>
-          )} */}
-
           <Button
             className={
               modalStep === 0
@@ -551,13 +534,16 @@ function Dashboard(props) {
         <div className="flex-col">
           {showOnboarding && (
             <div>
-              {/* Header at the top, full width */}
               <Header selectedTab={0} db={props.db} />
               <div className="flex">
                 {/* Sidebar with Frigade component */}
                 <div
                   className="px-2 mt-4 overflow-y-auto"
-                  style={{ width: "325px" }}
+                  style={{
+                    width: "325px",
+                    height: "89vh",
+                    overflowY: "scroll",
+                  }}
                 >
                   <Frigade.Checklist.Collapsible
                     flowId="flow_YBmeka6n"
@@ -618,7 +604,7 @@ function Dashboard(props) {
                 crmConnected={crmConnected}
                 linkedInLinked={linkedInLinked}
                 db={props.db}
-                emailLinked={emailLinked}
+                emailLinked={emailConnected}
                 emailConnected={emailConnected}
                 setEmailConnected={setEmailConnected}
               />

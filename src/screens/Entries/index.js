@@ -321,7 +321,11 @@ function NewEntries(props) {
             {/* Sidebar with Frigade component */}
             <div
               className="px-2 mt-4 overflow-y-auto"
-              style={{ width: "325px" }}
+              style={{
+                width: "325px",
+                height: "89vh",
+                overflowY: "scroll",
+              }}
             >
               <Frigade.Checklist.Collapsible
                 flowId="flow_YBmeka6n"

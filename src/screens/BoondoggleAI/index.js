@@ -626,7 +626,7 @@ function BoondogggleAI(props) {
         incompleteSteps[0].start();
       }
     }
-  });
+  }, [flow]);
 
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
