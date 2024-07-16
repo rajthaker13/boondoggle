@@ -29,7 +29,6 @@ function Dashboard(props) {
   const [contactIssues, setContactIssues] = useState([]);
   const [companyIssues, setCompanyIssues] = useState([]);
   const [showLongTimeMess, setShowLongTimeMess] = useState(false);
-  const [viewedActivity, setViewedActivity] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
 
   useEffect(() => {
@@ -379,6 +378,18 @@ function Dashboard(props) {
   const { flow } = useFlow(flowId);
 
   useEffect(() => {
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
+    }
+  });
+
+  useEffect(() => {
     async function checkConversations() {
       const uid = localStorage.getItem("uid");
 
@@ -397,44 +408,72 @@ function Dashboard(props) {
     checkConversations();
 
     if (flow) {
-      console.log("flow is active");
-      console.log(showOnboarding);
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
     }
-    if (flow && crmConnected) {
+
+    if (
+      flow &&
+      !flow.steps.get("crm-checklist").$state.completed &&
+      crmConnected
+    ) {
       flow.steps.get("crm-checklist").complete();
     }
 
-    if (!crmConnected && flow && flow.isSkipped) {
-      flow.restart();
-    }
-
-    if (flow && emailConnected) {
+    if (
+      flow &&
+      !flow.steps.get("email-checklist").$state.completed &&
+      emailConnected
+    ) {
       flow.steps.get("email-checklist").complete();
     }
-    if (flow && linkedInLinked) {
+
+    if (
+      flow &&
+      !flow.steps.get("linkedin-checklist").$state.completed &&
+      linkedInLinked
+    ) {
       flow.steps.get("linkedin-checklist").complete();
     }
 
-    if (flow && !props.summonIncomplete) {
+    if (
+      flow &&
+      !flow.steps.get("issues-checklist").$state.completed &&
+      props.issuesResolved
+    ) {
+      flow.steps.get("issues-checklist").complete();
+    }
+
+    if (
+      flow &&
+      !flow.steps.get("summon-checklist").$state.completed &&
+      !props.summonIncomplete
+    ) {
       flow.steps.get("summon-checklist").complete();
     }
 
     if (flow) {
       const steps = Array.from(flow.steps.values());
-      let allStepsCompleted = true;
+      let incompleteSteps = [];
 
       for (let i = 0; i < steps.length; i++) {
         if (steps[i].$state.completed != true) {
-          allStepsCompleted = false;
+          incompleteSteps.push(steps[i]);
         }
       }
 
-      if (allStepsCompleted) {
+      if (incompleteSteps.length == 0) {
         flow.complete();
         setShowOnboarding(false);
       } else {
         flow.isVisible = true;
         flow.isCompleted = false;
+        incompleteSteps[0].start();
       }
     }
   }, [
@@ -443,7 +482,6 @@ function Dashboard(props) {
     linkedInLinked,
     emailConnected,
     issuesResolved,
-    viewedActivity,
     props.summonIncomplete,
   ]);
 
@@ -466,30 +504,13 @@ function Dashboard(props) {
       )}
       <Dialog open={isOpen} onClose={(val) => setIsOpen(val)} static={true}>
         <DialogPanel>
-          {modalStep == 0 && (
+          {modalStep === 0 && (
             <IssuesModal
               issues={contactIssues}
               allIssues={allIssues}
               type="Contact"
             />
           )}
-          {/* {modalStep == 1 && (
-            <IssuesModal
-              issues={companyIssues}
-              allIssues={allIssues}
-              type="Company"
-            />
-          )}
-          {modalStep == 2 && (
-            <>
-              <IssuesModal
-                issues={allIssues}
-                allIssues={allIssues}
-                type="All"
-              />
-            </>
-          )} */}
-
           <Button
             className={
               modalStep === 0
@@ -513,15 +534,17 @@ function Dashboard(props) {
         <div className="flex-col">
           {showOnboarding && (
             <div>
-              {/* Header at the top, full width */}
-              <Header
-                selectedTab={0}
-                db={props.db}
-                setViewedActivity={setViewedActivity}
-              />
+              <Header selectedTab={0} db={props.db} />
               <div className="flex">
                 {/* Sidebar with Frigade component */}
-                <div className="px-2 mt-4" style={{ width: "325px" }}>
+                <div
+                  className="px-2 mt-4 overflow-y-auto"
+                  style={{
+                    width: "325px",
+                    height: "89vh",
+                    overflowY: "scroll",
+                  }}
+                >
                   <Frigade.Checklist.Collapsible
                     flowId="flow_YBmeka6n"
                     css={{
@@ -568,11 +591,7 @@ function Dashboard(props) {
           )}
           {!showOnboarding && (
             <div className="justify-center items-center w-full h-full">
-              <Header
-                selectedTab={0}
-                db={props.db}
-                setViewedActivity={setViewedActivity}
-              />
+              <Header selectedTab={0} db={props.db} />
               <Score
                 crmConnected={crmConnected}
                 setCRMConnected={setCRMConnected}
@@ -585,7 +604,7 @@ function Dashboard(props) {
                 crmConnected={crmConnected}
                 linkedInLinked={linkedInLinked}
                 db={props.db}
-                emailLinked={emailLinked}
+                emailLinked={emailConnected}
                 emailConnected={emailConnected}
                 setEmailConnected={setEmailConnected}
               />

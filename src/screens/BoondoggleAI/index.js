@@ -25,6 +25,7 @@ import "./index.css";
 import boondoggleaiPic from "../../assets/boondoggleAI.png";
 import userPic from "../../assets/user.png";
 import * as Frigade from "@frigade/react";
+import { useFlow } from "@frigade/react";
 
 function BoondogggleAI(props) {
   // References and states to manage component behavior
@@ -71,7 +72,7 @@ function BoondogggleAI(props) {
       fetchConversations();
       setFirstLoad(false);
     }
-  });
+  }, []);
 
   function generateUniqueId() {
     const timestamp = Date.now().toString(); // Get current timestamp as string
@@ -104,7 +105,7 @@ function BoondogggleAI(props) {
 
     const uid = localStorage.getItem("uid");
     const { data, error } = await props.db.from("users").select().eq("id", uid);
-    const supaConversations = data[0].boondoggle_conversations;
+    const supaConversations = data[0] ? data[0].boondoggle_conversations : [];
     setConversations(supaConversations);
 
     const selectedConversation = supaConversations.find(
@@ -573,9 +574,63 @@ function BoondogggleAI(props) {
       }
     }
   }
+
+  const flowId = "flow_YBmeka6n";
+  const { flow } = useFlow(flowId);
+
+  useEffect(() => {
+    if (flow) {
+      let currentUrl = window.location.href;
+      let url = new URL(currentUrl);
+      let baseUrl = `${url.protocol}//${url.host}`;
+      flow.steps.get("workflows-checklist").secondaryButton.uri =
+        baseUrl + "/workflows";
+      flow.steps.get("activity-checklist").secondaryButton.uri =
+        baseUrl + "/entries";
+    }
+
+    async function checkConversations() {
+      const uid = localStorage.getItem("uid");
+
+      const { data, error } = await props.db
+        .from("users")
+        .select()
+        .eq("id", uid);
+
+      if (data && data[0]) {
+        if (flow && data[0].boondoggle_conversations[0]) {
+          flow.steps.get("summon-checklist").complete();
+        }
+      }
+    }
+
+    checkConversations();
+  });
+
+  useEffect(() => {
+    if (flow) {
+      const steps = Array.from(flow.steps.values());
+      let incompleteSteps = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i].$state.completed != true) {
+          incompleteSteps.push(steps[i]);
+        }
+      }
+
+      if (incompleteSteps.length == 0) {
+        flow.complete();
+      } else {
+        flow.isVisible = true;
+        flow.isCompleted = false;
+        incompleteSteps[0].start();
+      }
+    }
+  }, [flow]);
+
   return (
     <LoadingOverlay active={isLoading} spinner text="Please wait...">
-      {props.showOnboarding && (
+      {flow && !flow.isCompleted && (
         <div className="boondoggle-ai-container">
           <Header db={props.db} selectedTab={3} />
           <div className="boondoggle-ai-content">
@@ -583,7 +638,14 @@ function BoondogggleAI(props) {
               className="px-2 mt-4 overflow-y-auto"
               style={{ width: "325px" }}
             >
-              <Frigade.Checklist.Collapsible flowId="flow_YBmeka6n" />
+              <Frigade.Checklist.Collapsible
+                flowId="flow_YBmeka6n"
+                css={{
+                  ".fr-field-radio-value": {
+                    borderColor: "#999",
+                  },
+                }}
+              />
             </div>
             <div className="boondoggle-ai-main">
               <div
@@ -604,7 +666,7 @@ function BoondogggleAI(props) {
           </div>
         </div>
       )}
-      {!props.showOnboarding && (
+      {flow && flow.isCompleted && (
         <div className="boondoggle-ai-container">
           <Header db={props.db} selectedTab={3} />
           <div className="boondoggle-ai-content">

@@ -1,13 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import boondoggleai from "../../assets/ui-update/new-logo.svg";
-import { useFlow } from "@frigade/react";
 
 export default function Header(props) {
   const navigation = useNavigate();
-
-  const flowId = "flow_YBmeka6n";
-  const { flow } = useFlow(flowId);
 
   return (
     <div>
@@ -16,8 +12,9 @@ export default function Header(props) {
           <img src={boondoggleai} alt="Boondoggle Ai" className="mr-5" />
           <div className="flex gap-5">
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 0 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 0 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/home");
               }}
@@ -25,21 +22,19 @@ export default function Header(props) {
               Dashboard
             </p>
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 2 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 2 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/entries");
-                if (props.setViewedActivity) {
-                  props.setViewedActivity(true);
-                }
-                flow.steps.get("activity-checklist").complete();
               }}
             >
               Activity
             </p>
             <p
-              className="header-2-picker-text"
-              style={props.selectedTab === 3 ? { fontWeight: "700" } : {}}
+              className={`header-2-picker-text cursor-pointer ${
+                props.selectedTab === 3 ? "font-bold" : ""
+              }`}
               onClick={() => {
                 navigation("/boondoggleai");
               }}
